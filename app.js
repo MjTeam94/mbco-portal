@@ -505,6 +505,6 @@
   /* ---------------- التشغيل ---------------- */
   window.addEventListener('hashchange', function () { if (st.token && !st.mustChange) render(); });
   if (DEMO && !window.MBCO_DEMO) {
-    var s = document.createElement('script'); s.src = 'assets/demo.js'; s.onload = render; document.head.appendChild(s);
+    var s = document.createElement('script'); s.src = 'demo.js'; s.onload = render; document.head.appendChild(s);
   } else render();
 })();
