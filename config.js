@@ -3,5 +3,5 @@
    إذا كان الرابط فارغاً يعمل الموقع في «وضع العرض» ببيانات تجريبية.
    ويمكن فتح وضع العرض في أي وقت بإضافة ?demo=1 للرابط. */
 window.MBCO_CONFIG = {
-  HUB_URL: ''
+  HUB_URL: 'https://github.com/MjTeam94/mbco-portal.git'
 };
