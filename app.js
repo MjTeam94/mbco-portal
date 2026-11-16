@@ -12,11 +12,32 @@
     set: function (k, v) { try { v === null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch (e) {} },
     json: function (k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   };
+  /* نسخة محلية من آخر بيانات: تظهر فوراً، ثم تتحدث في الخلفية */
+  var CC = 'mbco_c_';
+  function ccKey(k) { return CC + ((st.user && st.user.emp_id) || 'x') + '_' + k; }
+  function ccGet(k) {
+    var o = ls.json(ccKey(k));
+    return o && o.d && Date.now() - o.t < 12 * 3600e3 ? o.d : null;
+  }
+  function ccClear() {
+    try { Object.keys(localStorage).forEach(function (k) { if (k.indexOf(CC) === 0) localStorage.removeItem(k); }); } catch (e) {}
+  }
+  function ccSet(k, d) {
+    var v = JSON.stringify({ t: Date.now(), d: d });
+    if (v.length > 1500000) return;                       // جداول كبيرة جداً لا تُحفظ محلياً
+    try { localStorage.setItem(ccKey(k), v); }
+    catch (e) { ccClear(); try { localStorage.setItem(ccKey(k), v); } catch (e2) {} }
+  }
+  function setSync(on) {
+    var b = document.getElementById('refBtn');
+    if (b) { b.classList.toggle('spinning', !!on); b.setAttribute('aria-busy', on ? 'true' : 'false'); }
+  }
+
   var st = {
     token: ls.get('mbco_token'), user: ls.json('mbco_user'), sections: ls.json('mbco_sections') || [],
     mustChange: ls.get('mbco_must') === '1',
     lang: ls.get('mbco_lang') || 'ar', theme: document.documentElement.getAttribute('data-theme') || 'light',
-    date: '', heatDays: 7, home: null, homeKey: '', sec: {}, timer: null
+    date: '', heatDays: 7, home: null, homeKey: '', homeAt: 0, sec: {}, timer: null, fresh: false
   };
 
   function t(k) { return (I18N[st.lang] && I18N[st.lang][k]) || I18N.ar[k] || k; }
@@ -50,6 +71,7 @@
     if (j.mustChange !== undefined) { st.mustChange = !!j.mustChange; ls.set('mbco_must', j.mustChange ? '1' : null); }
   }
   function logout(expired) {
+    ccClear();
     ['mbco_token', 'mbco_user', 'mbco_sections', 'mbco_must'].forEach(function (k) { ls.set(k, null); });
     st.token = null; st.user = null; st.home = null; st.sec = {};
     if (expired) toast(t('e_auth'));
@@ -197,7 +219,11 @@
       '<footer class="foot"><span>' + t('source') + '</span><span>' + t('opday_note') + '</span><span class="ltr">MBCO · Modern Bus Company Limited</span></footer>';
     bindTools();
     document.getElementById('outBtn').onclick = function () { logout(false); };
-    document.getElementById('refBtn').onclick = function () { st.home = null; st.homeKey = ''; st.sec = {}; render(); };
+    document.getElementById('refBtn').onclick = function () {
+      st.fresh = true; st.homeAt = 0;
+      Object.keys(st.sec).forEach(function (k) { st.sec[k].at = 0; });
+      render();
+    };
     var di = document.getElementById('dateIn');
     var showDate = r === 'home' || r === 'reports';
     document.getElementById('dateField').classList.toggle('hide', !showDate);
@@ -224,15 +250,25 @@
   function loadHome(isReport) {
     var main = document.getElementById('main');
     var key = (st.date || todayStr()) + '|' + st.heatDays;
-    var go = function (fresh) {
-      if (!fresh && st.home && st.homeKey === key) { main.innerHTML = homeHTML(st.home, isReport); bindHome(isReport); return; }
-      api('home', { date: st.date || '', heatDays: st.heatDays }).then(function (j) {
-        st.home = j.data; st.homeKey = key; setBadges();
-        if (route() === (isReport ? 'reports' : 'home')) { main.innerHTML = homeHTML(j.data, isReport); bindHome(isReport); }
-      }).catch(function (e) { failBox(main, e, function () { go(true); }); });
+    var ck = 'home|' + key;
+    var page = isReport ? 'reports' : 'home';
+    var draw = function (d) { if (route() === page) { main.innerHTML = homeHTML(d, isReport); bindHome(isReport); } };
+    var go = function (force) {
+      var mem = st.home && st.homeKey === key ? st.home : null;
+      var shown = mem || ccGet(ck);
+      if (shown && !force) { draw(shown); if (!mem) { st.home = shown; st.homeKey = key; setBadges(); } }
+      if (mem && !force && !st.fresh && Date.now() - st.homeAt < 60000) return;
+      var fresh = st.fresh; st.fresh = false;
+      setSync(true);
+      api('home', { date: st.date || '', heatDays: st.heatDays, fresh: fresh }).then(function (j) {
+        st.home = j.data; st.homeKey = key; st.homeAt = Date.now(); ccSet(ck, j.data); setBadges();
+        draw(j.data);
+      }).catch(function (e) {
+        if (shown) toast(errText(e)); else if (route() === page) failBox(main, e, function () { go(true); });
+      }).then(function () { setSync(false); });
     };
     go(false);
-    if (!isReport) st.timer = setInterval(function () { if (!document.hidden && route() === 'home' && (!st.date || st.date === todayStr())) go(true); }, 120000);
+    if (!isReport) st.timer = setInterval(function () { if (!document.hidden && route() === 'home' && (!st.date || st.date === todayStr())) go(true); }, 300000);
   }
 
   function bindHome(isReport) {
@@ -402,23 +438,37 @@
       '<button type="button" class="btn" id="sCsv">' + icon('download') + t('export') + '</button>' +
       '<button type="button" class="btn hide" id="sDash">' + icon('external') + t('open_dash') + '</button></div><div id="sBody"><div class="loading"><div class="spin"></div>' + t('loading') + '</div></div></div>';
     main.innerHTML = head;
-    var fetchIt = function () {
-      document.getElementById('sBody').innerHTML = '<div class="loading"><div class="spin"></div>' + t('loading') + '</div>';
-      api('section', { key: key, from: s.from, to: s.to }).then(function (j) {
-        if (route() !== key) return;
-        s.data = j.data; s.from = j.data.from; s.to = j.data.to;
-        document.getElementById('sFrom').value = s.from; document.getElementById('sTo').value = s.to;
-        document.getElementById('sDash').classList.toggle('hide', !j.data.canOpenDashboard);
-        drawSection(key);
-      }).catch(function (e) { failBox(document.getElementById('sBody'), e, fetchIt); });
+    var apply = function (d) {
+      s.data = d; s.from = d.from; s.to = d.to;
+      document.getElementById('sFrom').value = s.from; document.getElementById('sTo').value = s.to;
+      document.getElementById('sDash').classList.toggle('hide', !d.canOpenDashboard);
+      drawSection(key);
     };
-    document.getElementById('sGo').onclick = function () { s.from = document.getElementById('sFrom').value; s.to = document.getElementById('sTo').value; fetchIt(); };
+    var fetchIt = function (force) {
+      var ck = 'sec|' + key + '|' + s.from + '|' + s.to;
+      var mem = s.data && s.dataKey === ck ? s.data : null;
+      var shown = mem || ccGet(ck);
+      if (shown) apply(shown);
+      else document.getElementById('sBody').innerHTML = '<div class="loading"><div class="spin"></div>' + t('loading') + '</div>';
+      if (mem && !force && !st.fresh && Date.now() - (s.at || 0) < 60000) return;
+      var fresh = st.fresh; st.fresh = false;
+      setSync(true);
+      api('section', { key: key, from: s.from, to: s.to, fresh: fresh }).then(function (j) {
+        if (route() !== key) return;
+        apply(j.data);
+        s.at = Date.now(); s.dataKey = 'sec|' + key + '|' + s.from + '|' + s.to;
+        ccSet(ck, j.data); if (s.dataKey !== ck) ccSet(s.dataKey, j.data);
+      }).catch(function (e) {
+        if (shown) toast(errText(e)); else failBox(document.getElementById('sBody'), e, function () { fetchIt(true); });
+      }).then(function () { setSync(false); });
+    };
+    document.getElementById('sGo').onclick = function () { s.from = document.getElementById('sFrom').value; s.to = document.getElementById('sTo').value; fetchIt(true); };
     document.getElementById('sQ').oninput = function () { s.q = this.value; if (s.data) drawTable(key); };
     document.getElementById('sCsv').onclick = function () { if (s.data) csv(key); };
     document.getElementById('sDash').onclick = function () {
       api('dashLink', { key: key }).then(function (j) { if (j.url) window.open(j.url, '_blank', 'noopener'); });
     };
-    if (s.data) { document.getElementById('sDash').classList.toggle('hide', !s.data.canOpenDashboard); drawSection(key); } else fetchIt();
+    fetchIt(false);
   }
 
   function drawSection(key) {

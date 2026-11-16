@@ -45,6 +45,8 @@ button{cursor:pointer}
 .btn.on{border-color:var(--accent);background:var(--tint);color:var(--accent-text)}
 .btn svg{width:18px;height:18px;flex:0 0 auto}
 .btn[disabled]{opacity:.5;cursor:default}
+.btn.spinning svg{animation:sp .8s linear infinite}
+@media (prefers-reduced-motion:reduce){.btn.spinning svg{animation:none}.btn.spinning{opacity:.75}}
 
 /* التخطيط */
 .wrap{display:flex;flex-wrap:wrap;align-items:stretch;min-height:calc(100vh - 80px)}
