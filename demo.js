@@ -1,8 +1,8 @@
 /* MBCO – وضع العرض: بيانات تجريبية للتجربة قبل التركيب (يعمل عندما يكون HUB_URL فارغاً أو ?demo=1) */
 window.MBCO_DEMO = (function () {
   var SECTIONS = [
-    ['home', 'الرئيسية', 'Home', ''], ['cdc', 'بلاغات العمليات CDC', 'CDC cases', 'ops'], ['ins', 'الفحص والمخالفات', 'Inspections & violations', 'ops'],
-    ['car', 'السيارات Carlog', 'Vehicles (Carlog)', 'ops'], ['roster', 'الروستر والتوزيع', 'Roster & distribution', 'staff'], ['att', 'التحضير والغياب', 'Attendance', 'staff'],
+    ['home', 'الرئيسية', 'Home', ''], ['cdc', 'بلاغات العمليات', 'Operations cases', 'ops'], ['ins', 'الفحص والمخالفات', 'Inspections & violations', 'ops'],
+    ['car', 'إدارة الأسطول', 'Carlog', 'ops'], ['roster', 'الروستر والتوزيع', 'Roster & distribution', 'staff'], ['att', 'التحضير والغياب', 'Attendance', 'staff'],
     ['leaves', 'الإجازات', 'Leaves', 'staff'], ['requests', 'الطلبات الإدارية', 'Admin requests', 'staff'], ['people', 'أداء الموظفين', 'Staff performance', 'analysis'],
     ['reports', 'التقرير اليومي', 'Daily report', 'analysis'], ['settings', 'الإعدادات والمستخدمين', 'Settings & users', 'system']
   ].map(function (s) { return { key: s[0], ar: s[1], en: s[2], group: s[3] }; });
@@ -92,6 +92,58 @@ window.MBCO_DEMO = (function () {
     return res;
   }
 
+
+  /* بيانات تجريبية للوحة الروستر داخل البوابة */
+  function rstDemo(month, date) {
+    var D = date || opDay(), M = month || D.slice(0, 7);
+    var y = +M.slice(0, 4), m = +M.slice(5, 7), n = new Date(Date.UTC(y, m, 0)).getUTCDate(), days = [];
+    for (var i = 1; i <= n; i++) days.push(M + '-' + (i < 10 ? '0' : '') + i);
+    var emps = [
+      { id: '10190', ar: 'ماجد', en: 'Majed', team: 'ADM', role: 'مشرف عمليات أول', lead: '', reg: true, task: 'الإدارة' },
+      { id: '10090', ar: 'سامي الهوساوي', en: 'Sami Alhawsawi', team: 'ENF', role: 'مشرف', lead: 'قائد وردية', reg: true, task: 'فحص' },
+      { id: '10101', ar: 'خالد العتيبي', en: 'Khalid Alotaibi', team: 'ENF', role: 'مفتش', lead: '', reg: true, task: 'فحص' },
+      { id: '10102', ar: 'فهد الحربي', en: 'Fahad Alharbi', team: 'ENF', role: 'مفتش', lead: '', reg: false, task: 'فحص' },
+      { id: '10201', ar: 'عبدالله الزهراني', en: 'Abdullah Alzahrani', team: 'STN', role: 'مشرف محطات', lead: 'قائد وردية', reg: true, task: 'محطات' },
+      { id: '10202', ar: 'تركي الشهري', en: 'Turki Alshehri', team: 'STN', role: 'موظف محطة', lead: '', reg: true, task: 'محطات' },
+      { id: '10203', ar: 'نواف القرشي', en: 'Nawaf Alqurashi', team: 'STN', role: 'موظف محطة', lead: '', reg: true, task: 'محطات' }
+    ];
+    var shifts = { A: { name_ar: 'صباحي', color: '#E9DDF0' }, B: { name_ar: 'مسائي', color: '#FBE3D3' }, C: { name_ar: 'ليلي', color: '#D7EDE3' }, O: { name_ar: 'أوف', color: '#F1F2F4' }, AL: { name_ar: 'إجازة سنوية', color: '#F6D7B0' } };
+    var pat = ['A', 'A', 'B', 'B', 'C', 'O', 'O'];
+    var grid = emps.map(function (e, k) {
+      return { id: e.id, cells: days.map(function (d, i) {
+        var c = { c: pat[(i + k) % 7] };
+        if (d < D && c.c !== 'O') c.a = (i + k) % 11 === 0 ? 'غائب' : 'حاضر';
+        if (c.a === 'حاضر' && (i + k) % 9 === 0) c.late = 12;
+        if (e.id === '10102' && i >= 20 && i <= 24) { c.lv = 'AL'; c.lvf = i > 22; }
+        return c;
+      }) };
+    });
+    var LV = { PENDING_SUP: 'بانتظار المشرف', SUP_APPROVED: 'موافقة المشرف – بانتظار Mena-Me', SUP_REJECTED: 'مرفوض من المشرف', FINAL: 'معتمد نهائياً (Mena-Me)', ADMIN_REJECTED: 'مرفوض إدارياً', CANCELLED: 'ملغى من الموظف', PENDING_ADMIN: 'بانتظار الإدارة' };
+    var REQ = { NEW: 'جديد', WIP: 'قيد التنفيذ', DONE: 'منفذ', REJECTED: 'مرفوض', CANCELLED: 'ملغى من الموظف' };
+    var lv = function (id, eid, nm, tm, type, f, t, days, st, extra) { return Object.assign({ case_id: id, emp_id: eid, emp_name: nm, team: tm, leave_type: type, from_date: f, to_date: t, days: days, request_status: st, created_at: D + ' 08:15', approver_name: 'سامي الهوساوي', approver_level: 'مشرف', escalated: '', emp_note: '', sup_note: '', admin_note: '', admin_by: '', admin_at: '', attachment_url: '' }, extra || {}); };
+    var leaves = [
+      lv('RST-LV-' + D.replace(/-/g, '') + '-0003', '10202', 'تركي الشهري', 'STN', 'إجازة اضطرارية', D, D, 1, LV.PENDING_SUP, { emp_note: 'ظرف عائلي' }),
+      lv('RST-LV-' + D.replace(/-/g, '') + '-0002', '10102', 'فهد الحربي', 'ENF', 'إجازة سنوية', days[20], days[24], 5, LV.SUP_APPROVED, { sup_note: 'موافق، البديل خالد' }),
+      lv('RST-LV-' + D.replace(/-/g, '') + '-0001', '10203', 'نواف القرشي', 'STN', 'إجازة مرضية', D, days[Math.min(n - 1, +D.slice(8) + 1)], 2, LV.PENDING_ADMIN, { attachment_url: 'https://example.com/report.pdf', escalated: 'Y' }),
+      lv('RST-LV-20261101-0004', '10101', 'خالد العتيبي', 'ENF', 'إجازة سنوية', days[2], days[4], 3, LV.FINAL, { admin_by: 'ماجد', admin_at: M + '-01 10:20' })
+    ];
+    var reqs = [
+      { case_id: 'RST-REQ-' + D.replace(/-/g, '') + '-0002', emp_id: '10101', emp_name: 'خالد العتيبي', team: 'ENF', req_type: 'تعريف بالراتب', details: 'مطلوب للبنك\nباللغة العربية', request_status: REQ.NEW, created_at: D + ' 09:02', attachment_url: '', admin_note: '', admin_by: '', admin_at: '' },
+      { case_id: 'RST-REQ-' + D.replace(/-/g, '') + '-0001', emp_id: '10201', emp_name: 'عبدالله الزهراني', team: 'STN', req_type: 'تعديل بيانات', details: 'تحديث رقم الجوال', request_status: REQ.WIP, created_at: D + ' 07:40', attachment_url: '', admin_note: 'جاري التنفيذ مع HR', admin_by: 'ماجد', admin_at: D + ' 08:00' }
+    ];
+    var att = function (code, sup, items) { var c = { present: 0, late: 0, absent: 0, leave: 0, off: 0, permission: 0, withdrawal: 0 }; items.forEach(function (x) { if (x.att_status === 'حاضر') c.present++; if (x.att_status === 'غائب') c.absent++; if (x.att_status === 'إجازة') c.leave++; if (x.att_status === 'أوف') c.off++; if (+x.late_min > 0) c.late++; }); return Object.assign({ case_id: 'RST-ATT-' + D.replace(/-/g, '') + '-' + code, supervisor_name: sup }, c); };
+    var it = function (id, nm, s, late, note) { return { emp_id: id, emp_name: nm, att_status: s, late_min: late || 0, note: note || '' }; };
+    var stnItems = [it('10201', 'عبدالله الزهراني', 'حاضر'), it('10202', 'تركي الشهري', 'حاضر', 15, 'تأخير 15 د'), it('10203', 'نواف القرشي', 'إجازة', 0, 'إجازة مرضية')];
+    var day = {
+      STN: [{ code: 'A', hours: '07:00-15:00', dist: { case_id: 'RST-DST-' + D.replace(/-/g, '') + '-0001', version: 2 }, distItems: [{ emp_id: '10201', emp_name: 'عبدالله الزهراني', report_label: 'الزاهر (103)', break_start: '11:00', break_end: '11:30' }, { emp_id: '10202', emp_name: 'تركي الشهري', report_label: 'المروة', break_start: '11:30', break_end: '12:00' }], att: att('A', 'عبدالله الزهراني', stnItems), attItems: stnItems, scheduled: ['10201', '10202'], leave: [], off: [] },
+            { code: 'B', hours: '15:00-23:00', dist: null, distItems: [], att: null, attItems: [], scheduled: ['10203'], leave: [], off: ['10202'] }],
+      ENF: [{ code: 'A', hours: '07:00-15:00', dist: { case_id: 'RST-DSE-' + D.replace(/-/g, '') + '-0001', version: 1 }, distItems: [{ emp_id: '10101', emp_name: 'خالد العتيبي', report_label: 'فحص ميداني – مسار 10' }], att: null, attItems: [], scheduled: ['10090', '10101'], leave: [{ id: '10102', label: 'إجازة سنوية' }], off: [] }],
+      ADM: []
+    };
+    var kpi = {}; emps.forEach(function (e, k) { kpi[e.id] = { work: 20 - k, present: 18 - k, absent: k % 3, late: k % 4, lateMin: (k % 4) * 9, permission: k % 2, withdrawal: 0, leaveDays: k === 3 ? 5 : 0, notes: k % 3, pending: k === 6 ? 1 : 0 }; });
+    return { emps: emps, grid: grid, shifts: shifts, days: days, day: day, leaves: leaves, reqs: reqs, LV: LV, REQ: REQ, admins: ['ماجد'], kpi: kpi, rosterRange: [days[0], days[n - 1]], today: opDay(), now: opDay() + ' ' + new Date().toTimeString().slice(0, 5), month: M, date: D };
+  }
+
   return {
     handle: function (p) {
       if (p.action === 'login') return p.emp_id === '10190' && p.pin === '1234' ? ok({ token: 'demo', user: USER, mustChange: false, sections: SECTIONS }) : fail('badpin');
@@ -102,8 +154,11 @@ window.MBCO_DEMO = (function () {
         case 'changePin': return p.old === '1234' ? ok({ token: 'demo' }) : fail('badpin');
         case 'users': return ok({ users: [{ emp_id: '10190', name: 'ماجد', team: 'ADM', role: 'Admin', access: 'نعم', last_login: opDay() + ' 13:40' }, { emp_id: '10090', name: 'سامي الهوساوي', team: 'ENF', role: 'Supervisor', access: 'نعم', last_login: '' }, { emp_id: '10001', name: 'موظف تجريبي 1', team: 'ENF', role: 'Officer', access: 'لا', last_login: '' }] });
         case 'setUser': return ok({ pin: p.resetPin ? '482913' : null });
-        case 'ping': return ok({ systems: [{ code: 'CDC', name: 'بلاغات العمليات', ok: true, file: 'CDC cases passenger without ticket', ms: 820 }, { code: 'INS', name: 'الفحص والمخالفات', ok: true, file: 'Inspection and Violations', ms: 760 }, { code: 'RST', name: 'الروستر والطلبات', ok: true, file: 'MBCO Roster & Attendance', ms: 910 }, { code: 'CAR', name: 'السيارات Carlog', ok: true, file: 'Carlog – تسليم واستلام السيارات', ms: 700 }] });
+        case 'ping': return ok({ systems: [{ code: 'CDC', name: 'بلاغات العمليات', ok: true, file: 'CDC cases passenger without ticket', ms: 820 }, { code: 'INS', name: 'الفحص والمخالفات', ok: true, file: 'Inspection and Violations', ms: 760 }, { code: 'RST', name: 'الروستر والطلبات', ok: true, file: 'MBCO Roster & Attendance', ms: 910 }, { code: 'CAR', name: 'إدارة الأسطول', ok: true, file: 'Carlog – تسليم واستلام السيارات', ms: 700 }] });
         case 'dashLink': return ok({ url: null });
+        case 'embed': return ok({ reason: 'demo' });
+        case 'rstDash': return ok({ data: rstDemo(p.month, p.date), canLeave: true, canReq: true, by: USER.name });
+        case 'rstAct': return ok({});
         case 'sendReport': window.__sentReport = { filename: p.filename, size: (p.pdf || '').length, caption: p.caption }; return ok({});
         default: return fail('unknown');
       }

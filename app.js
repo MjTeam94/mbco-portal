@@ -14,6 +14,7 @@
   };
   /* نسخة محلية من آخر بيانات: تظهر فوراً، ثم تتحدث في الخلفية */
   var CC = 'mbco_c_';
+  var CDC_SESSION = 'cdc-noticket-session';        // نفس مفتاح جلسة صفحة البلاغات (نفس النطاق github.io)
   function ccKey(k) { return CC + ((st.user && st.user.emp_id) || 'x') + '_' + k; }
   function ccGet(k) {
     var o = ls.json(ccKey(k));
@@ -37,7 +38,7 @@
     token: ls.get('mbco_token'), user: ls.json('mbco_user'), sections: ls.json('mbco_sections') || [],
     mustChange: ls.get('mbco_must') === '1',
     lang: ls.get('mbco_lang') || 'ar', theme: document.documentElement.getAttribute('data-theme') || 'light',
-    date: '', heatDays: 7, home: null, homeKey: '', homeAt: 0, sec: {}, timer: null, fresh: false
+    date: '', heatDays: 7, home: null, homeKey: '', homeAt: 0, sec: {}, timer: null, fresh: false, embeds: {}
   };
 
   /* ترجمة القيم القادمة من الأنظمة في الوضع الإنجليزي: قاموس ثابت (i18n.js) + قاموس الـ Hub (تبويب Translations وأسماء الموظفين) */
@@ -93,7 +94,8 @@
   }
   function logout(expired) {
     ccClear();
-    ['mbco_token', 'mbco_user', 'mbco_sections', 'mbco_must'].forEach(function (k) { ls.set(k, null); });
+    ['mbco_token', 'mbco_user', 'mbco_sections', 'mbco_must', 'mbco_cdc_sso', CDC_SESSION].forEach(function (k) { ls.set(k, null); });
+    st.embeds = {};
     st.token = null; st.user = null; st.home = null; st.sec = {};
     if (expired) toast(t('e_auth'));
     location.hash = '';
@@ -593,12 +595,492 @@
   }
 
   /* ---------------- صفحات الأقسام ---------------- */
+  /* ---------------- لوحات التحكم المضمّنة (v1.6) ----------------
+     كل قسم نظام له وضعان: «لوحة التحكم» = صفحة النظام نفسها بكل إجراءاتها داخل البوابة،
+     و«السجلات» = الجدول الموحد. CDC يدخل تلقائياً بحساب الموظف في نظام البلاغات. */
+  var EMBED_KEYS = { cdc: 1, ins: 1, car: 1, roster: 1, att: 1, leaves: 1, requests: 1 };
+  function secMode(key) {
+    if (!EMBED_KEYS[key]) return 'rec';
+    var m = ls.get('mbco_mode_' + key);
+    if (m === 'ctl' || m === 'rec') return m;
+    return key === 'cdc' || (st.user && st.user.role !== 'Officer') ? 'ctl' : 'rec';
+  }
+  function modeSwitch(key, mode) {
+    if (!EMBED_KEYS[key]) return '';
+    return '<div class="seg noprint" role="tablist">' + [['ctl', 'ctl_tab'], ['rec', 'rec_tab']].map(function (m) {
+      return '<button type="button" role="tab" data-m="' + m[0] + '" class="' + (mode === m[0] ? 'on' : '') + '" aria-selected="' + (mode === m[0]) + '">' + t(m[1]) + '</button>';
+    }).join('') + '</div>';
+  }
+  function bindModeSwitch(key) {
+    Array.prototype.forEach.call(document.querySelectorAll('.seg [data-m]'), function (b) {
+      b.onclick = function () { ls.set('mbco_mode_' + key, b.getAttribute('data-m')); loadSection(key); };
+    });
+  }
+  function withParam(url, p) {
+    var h = url.indexOf('#'), hash = h >= 0 ? url.slice(h) : '', base = h >= 0 ? url.slice(0, h) : url;
+    return base + (base.indexOf('?') >= 0 ? '&' : '?') + p + hash;
+  }
+  function getEmbed(key, renew) {
+    if (DEMO) return Promise.resolve({ reason: 'demo' });
+    if (key === 'cdc') {
+      var memo = ls.json('mbco_cdc_sso'), cur = ls.json(CDC_SESSION);
+      if (!renew && memo && cur && cur.token === memo.token && memo.emp === st.user.emp_id && Date.now() - memo.at < (memo.hours - 1) * 3600e3)
+        return Promise.resolve({ kind: 'cdc', url: memo.url });
+      return api('embed', { key: 'cdc', renew: !!renew }).then(function (j) {
+        if (!j.session) return j;
+        ls.set(CDC_SESSION, JSON.stringify(j.session));
+        ls.set('mbco_cdc_sso', JSON.stringify({ token: j.session.token, emp: st.user.emp_id, at: Date.now(), hours: j.hours || 12, url: j.url }));
+        return { kind: 'cdc', url: j.url };
+      });
+    }
+    if (st.embeds[key] && !renew) return Promise.resolve(st.embeds[key]);
+    return api('embed', { key: key }).then(function (j) { if (j.url) st.embeds[key] = j; return j; });
+  }
+  function reasonText(j) {
+    var m = { demo: 'ctl_demo', role: 'ctl_role', no_url: 'ctl_nourl', cdc_no_user: 'ctl_cdc_nouser', cdc_old_api: 'ctl_cdc_oldapi', cdc_error: 'ctl_cdc_err', none: 'ctl_none' }[j.reason] || 'ctl_cdc_err';
+    return t(m).replace('{emp}', st.user ? st.user.emp_id : '').replace('{sys}', j.sys || '') + (j.reason === 'cdc_error' && j.error ? ' (' + j.error + ')' : '');
+  }
+  function renderControl(key, wrap, renew, retried) {
+    wrap.innerHTML = '<div class="ctlload" id="ctlLoad"><div class="spin"></div>' + t('ctl_loading') + '</div>';
+    getEmbed(key, renew).then(function (j) {
+      if (route() !== key || !wrap.isConnected) return;
+      if (!j.url) {
+        wrap.innerHTML = '<div class="ctlmsg"><div>' + icon('alert') + '</div><p>' + esc(reasonText(j)) + '</p><button type="button" class="btn" id="toRec">' + t('rec_tab') + '</button></div>';
+        document.getElementById('toRec').onclick = function () { ls.set('mbco_mode_' + key, 'rec'); loadSection(key); };
+        return;
+      }
+      var url = j.kind === 'cdc' ? withParam(j.url, 'embed=1') + (j.url.indexOf('#') < 0 ? '#board' : '') : j.url;
+      var f = document.createElement('iframe');
+      f.className = 'ctlframe'; f.title = t('ctl_tab');
+      f.setAttribute('allow', 'clipboard-write; camera; geolocation; fullscreen');
+      f.onload = function () {
+        var l = document.getElementById('ctlLoad'); if (l) l.remove();
+        if (j.kind === 'cdc') tuneCdc(f, key, wrap, retried);
+        else tuneSameOrigin(f);
+      };
+      f.src = url;
+      wrap.appendChild(f);
+      var nw = document.getElementById('ctlNew');
+      if (nw) { nw.classList.remove('hide'); nw.onclick = function () { window.open(url.replace(/[?&]embed=1/, ''), '_blank'); }; }
+    }).catch(function (e) {
+      if (route() !== key) return;
+      failBox(wrap, e, function () { renderControl(key, wrap, true); });
+    });
+  }
+  /* صفحة البلاغات من نفس النطاق: نخفي ترويستها (البوابة لها ترويستها) ونجدد الجلسة لو انتهت */
+  function tuneCdc(f, key, wrap, retried) {
+    try {
+      var d = f.contentDocument; if (!d) return;
+      if (!d.getElementById('mbcoEmbedCss')) {
+        var css = d.createElement('style'); css.id = 'mbcoEmbedCss';
+        css.textContent = '.top{border-top:0!important}.top-in{display:none!important}main{padding-top:12px!important}';
+        d.head.appendChild(css);
+      }
+      setTimeout(function () {
+        var lg = d.getElementById('login');
+        if (lg && lg.style.display !== 'none' && !retried && f.isConnected) { ls.set('mbco_cdc_sso', null); renderControl(key, wrap, true, true); }
+      }, 1500);
+    } catch (e) {}
+  }
+
+  /* صفحة نظام على نفس النطاق (مثل لوحة الفحص على github.io): نخفي شعارها فقط. الصفحات الأخرى لا يمكن الوصول لها وهذا طبيعي */
+  function tuneSameOrigin(f) {
+    try {
+      var d = f.contentDocument; if (!d || !d.head) return;
+      var css = d.createElement('style');
+      css.textContent = '.top-in .brand,.top .brand{display:none!important}.top{border-top:0!important}';
+      d.head.appendChild(css);
+    } catch (e) {}
+  }
+
+
+  /* ================= الروستر داخل البوابة (v1.7) =================
+     لوحة تحكم مبنية في البوابة نفسها: تتبع اللغة والوضع الداكن، والإجراءات
+     تمر عبر الـ Hub لنفس دوال نظام الروستر (والبوت يرسل إشعاراته كالعادة). */
+  var RST_NATIVE = { roster: 1, att: 1, leaves: 1, requests: 1 };
+  var RT = {
+    ar: {
+      month: 'الشهر', day: 'اليوم', refresh: 'تحديث', all: 'الكل', stn: 'المحطات', enf: 'التذاكر', adm: 'الإدارة',
+      overview: 'نظرة عامة', grid: 'الروستر', emps: 'أداء الموظفين', report: 'التقرير اليومي',
+      opday: 'اليوم التشغيلي', updated: 'آخر تحديث', k_psup: 'إجازات بانتظار المشرف', k_padm: 'إجازات بانتظار الإدارة',
+      k_mena: 'موافقة المشرف – بانتظار Mena-Me', k_rnew: 'طلبات إدارية جديدة', k_rwip: 'طلبات قيد التنفيذ', k_reg: 'مسجلون في البوت',
+      present: 'حضور', late: 'تأخير', absent: 'غياب', leave: 'إجازة', off: 'أوف', exits: 'انسحاب/استئذان',
+      commit: 'نسبة الالتزام', prep_ok: 'التحضير المعتمد', no_prep: 'لم يُعتمد تحضير الوردية', abs_l: 'الغياب', late_l: 'التأخير', leave_l: 'الإجازات',
+      upcoming: 'الإجازات الحالية والقادمة', none: 'لا يوجد', emp: 'الموظف', type: 'النوع', from: 'من', to: 'إلى', status: 'الحالة',
+      no_roster: 'لا يوجد روستر لهذا الشهر. استورد الروستر من القائمة في شيت الروستر.', abs_mark: 'غ',
+      lg_abs: 'غ = غياب', lg_late: 'تأخير', lg_pres: 'حاضر', lg_pend: 'إجازة بانتظار Mena-Me',
+      shift: 'وردية', dist_ok: 'التوزيع معتمد', dist_no: 'لا يوجد توزيع', att_ok: 'التحضير معتمد', att_no: 'التحضير غير معتمد', sup: 'المشرف',
+      dist: 'التوزيع', att: 'التحضير', task: 'الموقع/المهمة', brk: 'البريك', scheduled: 'المجدولون حسب الروستر', update: 'تحديث',
+      open: 'المفتوحة', search: 'بحث بالاسم أو الرقم', req_n: 'طلب', req_id: 'رقم الطلب', period: 'الفترة', days_n: 'الأيام', file: 'المرفق',
+      approver: 'المعتمد', notes: 'ملاحظات', action: 'إجراء', open_file: 'فتح', escalated: 'مُصعّد',
+      a_approve: 'موافقة', a_final: 'اعتماد Mena-Me', a_reject: 'رفض', a_wip: 'قيد التنفيذ', a_done: 'منفذ',
+      m_approve: 'موافقة إدارية على الطلب', m_final: 'تأكيد الاعتماد في Mena-Me', m_reject: 'رفض الطلب', m_req: 'تحديث الطلب إلى',
+      m_body: 'الطلب {id} · يوصل إشعار للموظف عبر البوت. المنفّذ: {by}', note_ph: 'ملاحظة (اختياري)', confirm: 'تأكيد', cancel: 'إلغاء', done: 'تم ✓',
+      details: 'التفاصيل', admin_note: 'ملاحظة الإدارة', team: 'الفريق', work: 'أيام العمل', late_min: 'دقائق التأخير', perm: 'استئذان', wd: 'انسحاب',
+      lv_days: 'أيام الإجازة', att_notes: 'ملاحظات الحضور', rate: 'الالتزام %', pending: 'طلبات معلقة', bot: 'البوت',
+      emps_note: 'مؤشرات شهر {m} من التحضير المعتمد والإجازات المعتمدة. اضغط على العنوان للترتيب.',
+      print: 'طباعة / حفظ PDF', rep_title: 'تقرير الحضور والغياب اليومي', by_team: 'نسبة الالتزام حسب الفريق', leaves_t: 'الإجازات', ex_t: 'الالتزام',
+      mena_wait: 'إجازات بانتظار الاعتماد في Mena-Me', rep_foot: 'MBCO · نظام الروستر والتحضير', made: 'أُنشئ', note: 'الملاحظة',
+      no_rights: 'ما عندك صلاحية لهذا الإجراء.'
+    },
+    en: {
+      month: 'Month', day: 'Day', refresh: 'Refresh', all: 'All', stn: 'Stations', enf: 'Tickets', adm: 'Admin',
+      overview: 'Overview', grid: 'Roster', emps: 'Staff performance', report: 'Daily report',
+      opday: 'Operating day', updated: 'Updated', k_psup: 'Leaves awaiting supervisor', k_padm: 'Leaves awaiting admin',
+      k_mena: 'Supervisor approved – awaiting Mena-Me', k_rnew: 'New admin requests', k_rwip: 'Requests in progress', k_reg: 'Registered on the bot',
+      present: 'Present', late: 'Late', absent: 'Absent', leave: 'Leave', off: 'Off', exits: 'Withdrawal/permission',
+      commit: 'Commitment rate', prep_ok: 'Approved attendance', no_prep: 'Attendance not approved for shift', abs_l: 'Absent', late_l: 'Late', leave_l: 'On leave',
+      upcoming: 'Current and upcoming leaves', none: 'None', emp: 'Employee', type: 'Type', from: 'From', to: 'To', status: 'Status',
+      no_roster: 'No roster for this month. Import it from the menu in the roster sheet.', abs_mark: 'A',
+      lg_abs: 'A = absent', lg_late: 'late', lg_pres: 'present', lg_pend: 'Leave awaiting Mena-Me',
+      shift: 'Shift', dist_ok: 'Distribution approved', dist_no: 'No distribution', att_ok: 'Attendance approved', att_no: 'Attendance not approved', sup: 'Supervisor',
+      dist: 'Distribution', att: 'Attendance', task: 'Location/task', brk: 'Break', scheduled: 'Scheduled per roster', update: 'update',
+      open: 'Open', search: 'Search name or ID', req_n: 'requests', req_id: 'Request', period: 'Period', days_n: 'Days', file: 'Attachment',
+      approver: 'Approver', notes: 'Notes', action: 'Action', open_file: 'Open', escalated: 'escalated',
+      a_approve: 'Approve', a_final: 'Confirm Mena-Me', a_reject: 'Reject', a_wip: 'In progress', a_done: 'Done',
+      m_approve: 'Admin approval of the request', m_final: 'Confirm approval in Mena-Me', m_reject: 'Reject the request', m_req: 'Update request to',
+      m_body: 'Request {id} · the employee is notified on the bot. By: {by}', note_ph: 'Note (optional)', confirm: 'Confirm', cancel: 'Cancel', done: 'Done ✓',
+      details: 'Details', admin_note: 'Admin note', team: 'Team', work: 'Work days', late_min: 'Late minutes', perm: 'Permission', wd: 'Withdrawal',
+      lv_days: 'Leave days', att_notes: 'Attendance notes', rate: 'Commitment %', pending: 'Pending requests', bot: 'Bot',
+      emps_note: 'Month {m} indicators from approved attendance and leaves. Click a header to sort.',
+      print: 'Print / save PDF', rep_title: 'Daily attendance report', by_team: 'Commitment by team', leaves_t: 'Leaves', ex_t: 'Commitment',
+      mena_wait: 'Leaves awaiting Mena-Me approval', rep_foot: 'MBCO · Roster & attendance system', made: 'Generated', note: 'Note',
+      no_rights: 'You do not have permission for this action.'
+    }
+  };
+  function rt(k) { return (RT[st.lang] && RT[st.lang][k]) || RT.ar[k] || k; }
+  var RTEAMS = { STN: ['فريق المحطات', 'Stations team'], ENF: ['فريق التذاكر', 'Tickets team'], ADM: ['الإدارة', 'Admin'] };
+  var RDAYS = { ar: ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'], en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] };
+  function rTeam(tm) { var x = RTEAMS[tm]; return x ? x[st.lang === 'en' ? 1 : 0] : (tm || ''); }
+  function rDmy(s) { if (!s) return ''; var p = String(s).slice(0, 10).split('-'); return p.length < 3 ? esc(s) : '<span class="ltr">' + p[2] + '-' + p[1] + '-' + p[0] + '</span>'; }
+  function rDow(s) { var p = s.split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay(); }
+
+  function rstState() {
+    if (!st.rst) st.rst = { month: '', date: '', team: 'ALL', lvf: 'open', rqf: 'open', q: '', sub: ls.get('mbco_rst_sub') || 'overview', sort: { k: 'notes', d: -1 }, d: null, at: 0, key: '' };
+    return st.rst;
+  }
+  function rEmp(id) {
+    var D = st.rst.d; id = String(id);
+    for (var i = 0; i < D.emps.length; i++) if (D.emps[i].id === id) return D.emps[i];
+    return { id: id, ar: id, en: id };
+  }
+  function rName(id, fallback) {
+    var e = id ? rEmp(id) : null;
+    if (!e || e.ar === e.id) { // بدون رقم: نبحث بالاسم العربي في قائمة الموظفين
+      var D = st.rst.d, f = String(fallback || '').trim();
+      for (var i = 0; f && i < D.emps.length; i++) if (D.emps[i].ar === f) { e = D.emps[i]; break; }
+      if (!e) e = { id: '', ar: f, en: '' };
+    }
+    if (st.lang === 'en') return e.en && e.en !== e.id ? e.en : tr(fallback || e.ar);
+    return e.ar && e.ar !== e.id ? e.ar : (fallback || e.ar);
+  }
+  function rTeamOk(tm) { return st.rst.team === 'ALL' || st.rst.team === tm; }
+  function rStBadge(s) {
+    var c = /مرفوض|ملغى/.test(s) ? 'b-bad' : /نهائ|منفذ/.test(s) ? 'b-ok' : /موافقة المشرف|قيد التنفيذ/.test(s) ? 'b-acc' : 'b-warn';
+    return '<span class="tag ' + c + '">' + esc(tr(s)) + '</span>';
+  }
+
+  function renderRst(key, wrap, force) {
+    var R = rstState();
+    if (!wrap.querySelector('#rstBody')) {
+      var subs = key === 'roster' ? [['overview', 'overview'], ['grid', 'grid'], ['emps', 'emps'], ['report', 'report']] : null;
+      if (subs && !subs.some(function (s) { return s[0] === R.sub; })) R.sub = 'overview';
+      var needMonth = key === 'roster', needDay = key === 'att' || key === 'roster';
+      wrap.innerHTML = '<div class="card rsttools noprint">' +
+        (subs ? '<div class="seg sub">' + subs.map(function (s) { return '<button type="button" data-sub="' + s[0] + '" class="' + (R.sub === s[0] ? 'on' : '') + '">' + rt(s[1]) + '</button>'; }).join('') + '</div>' : '') +
+        '<div class="rstctl">' +
+        (needMonth ? '<label class="field">' + rt('month') + '<input class="input num" type="month" id="rMonth" value="' + esc(R.month) + '"></label>' : '') +
+        (needDay ? '<label class="field">' + rt('day') + '<input class="input num" type="date" id="rDate" value="' + esc(R.date) + '"></label>' : '') +
+        '<div class="seg teams">' + [['ALL', 'all'], ['STN', 'stn'], ['ENF', 'enf'], ['ADM', 'adm']].map(function (x) { return '<button type="button" data-team="' + x[0] + '" class="' + (R.team === x[0] ? 'on' : '') + '">' + rt(x[1]) + '</button>'; }).join('') + '</div>' +
+        '<button type="button" class="btn sm" id="rRef">' + icon('refresh') + rt('refresh') + '</button></div></div>' +
+        '<div id="rstBody"><div class="loading"><div class="spin"></div>' + t('loading') + '</div></div>';
+      Array.prototype.forEach.call(wrap.querySelectorAll('[data-sub]'), function (b) { b.onclick = function () { R.sub = b.getAttribute('data-sub'); ls.set('mbco_rst_sub', R.sub); wrap.querySelectorAll('[data-sub]').forEach(function (x) { x.classList.toggle('on', x === b); }); rstDraw(key); }; });
+      Array.prototype.forEach.call(wrap.querySelectorAll('[data-team]'), function (b) { b.onclick = function () { R.team = b.getAttribute('data-team'); wrap.querySelectorAll('[data-team]').forEach(function (x) { x.classList.toggle('on', x === b); }); rstDraw(key); }; });
+      var m = document.getElementById('rMonth'), d = document.getElementById('rDate');
+      if (m) m.onchange = function () { R.month = m.value; renderRst(key, wrap, true); };
+      if (d) d.onchange = function () { R.date = d.value; if (d.value) R.month = d.value.slice(0, 7); var mm = document.getElementById('rMonth'); if (mm) mm.value = R.month; renderRst(key, wrap, true); };
+      document.getElementById('rRef').onclick = function () { renderRst(key, wrap, true); };
+    }
+    var ck = R.month + '|' + R.date;
+    if (R.d && R.key === ck && !force && Date.now() - R.at < 60000) return rstDraw(key);
+    if (R.d && R.key === ck) rstDraw(key);
+    setSync(true);
+    return api('rstDash', { month: R.month, date: R.date, fresh: !!force }).then(function (j) {
+      R.d = j.data; R.canLeave = j.canLeave; R.canReq = j.canReq; R.by = j.by; R.at = Date.now();
+      if (!R.month) R.month = j.data.month; if (!R.date) R.date = j.data.date;
+      R.key = R.month + '|' + R.date;
+      var m = document.getElementById('rMonth'), d = document.getElementById('rDate');
+      if (m && !m.value) m.value = R.month; if (d && !d.value) d.value = R.date;
+      if (route() === key) rstDraw(key);
+    }).catch(function (e) {
+      var b = document.getElementById('rstBody');
+      if (b && route() === key) failBox(b, e, function () { renderRst(key, wrap, true); });
+    }).then(function () { setSync(false); });
+  }
+
+  function rstDraw(key) {
+    var b = document.getElementById('rstBody'), R = st.rst;
+    if (!b || !R.d) return;
+    var v = key === 'att' ? 'day' : key === 'leaves' ? 'leaves' : key === 'requests' ? 'reqs' : R.sub;
+    b.innerHTML = ({ overview: rstOverview, grid: rstGrid, day: rstDay, leaves: rstLeaves, reqs: rstReqs, emps: rstEmps, report: rstReport }[v] || rstOverview)();
+    rstBind(key, b);
+  }
+
+  function rDayAgg(team) {
+    var D = st.rst.d, a = { present: 0, late: 0, absent: 0, leave: 0, off: 0, perm: 0, wd: 0, done: 0, shifts: 0, absList: [], lateList: [], leaveList: [], missing: [] };
+    (D.day[team] || []).forEach(function (s) {
+      a.shifts++;
+      if (s.att) {
+        a.done++; a.present += +s.att.present; a.late += +s.att.late; a.absent += +s.att.absent; a.leave += +s.att.leave; a.off += +s.att.off; a.perm += +s.att.permission; a.wd += +s.att.withdrawal;
+        (s.attItems || []).forEach(function (x) { if (x.att_status === 'غائب') a.absList.push(x); if (+x.late_min > 0) a.lateList.push(x); if (x.att_status === 'إجازة') a.leaveList.push({ id: x.emp_id }); });
+      } else { a.leave += s.leave.length; a.off += s.off.length; s.leave.forEach(function (l) { a.leaveList.push(l); }); if (s.scheduled.length) a.missing.push(s.code); }
+    });
+    return a;
+  }
+  function rKpi(label, val, tone) { return '<div class="kpi ' + (tone || '') + '"><span class="l">' + esc(label) + '</span><span class="v num">' + val + '</span></div>'; }
+  function rBar(label, val, max, color, txt) {
+    var p = max ? Math.round(val / max * 100) : 0;
+    return '<div class="rbar"><span class="lb">' + esc(label) + '</span><span class="tr"><i style="width:' + p + '%;background:' + color + '"></i></span><b class="num">' + (txt !== undefined ? txt : val) + '</b></div>';
+  }
+  function rTeamCard(tm) {
+    var a = rDayAgg(tm), base = Math.max(a.present + a.absent, 1);
+    var mini = function (k, v, tone) { return '<div class="rmini ' + (tone || '') + '"><b class="num">' + v + '</b><span>' + rt(k) + '</span></div>'; };
+    return '<section class="card"><div class="chead"><span class="bar4"></span><h2>' + esc(rTeam(tm)) + '</h2></div>' +
+      '<div class="rminis">' + mini('present', a.present, 'ok') + mini('late', a.late, 'warn') + mini('absent', a.absent, 'bad') + mini('leave', a.leave) + mini('off', a.off) + mini('exits', a.wd + a.perm, 'warn') + '</div>' +
+      rBar(rt('commit'), a.present, base, 'var(--ok)', Math.round(a.present / base * 100) + '%') +
+      rBar(rt('prep_ok'), a.done, Math.max(a.shifts, 1), 'var(--accent)', a.done + '/' + a.shifts) +
+      (a.missing.length ? '<p class="rnote warn">⚠️ ' + rt('no_prep') + ': ' + a.missing.map(esc).join('، ') + '</p>' : '') +
+      (a.absList.length ? '<p class="rnote"><b>❌ ' + rt('abs_l') + ':</b> ' + a.absList.map(function (x) { return esc(rName(x.emp_id, x.emp_name)); }).join('، ') + '</p>' : '') +
+      (a.lateList.length ? '<p class="rnote"><b>⏰ ' + rt('late_l') + ':</b> ' + a.lateList.map(function (x) { return esc(rName(x.emp_id, x.emp_name)) + ' (' + x.late_min + t('min') + ')'; }).join('، ') + '</p>' : '') +
+      (a.leaveList.length ? '<p class="rnote"><b>🏖 ' + rt('leave_l') + ':</b> ' + a.leaveList.map(function (x) { return esc(rName(x.id)); }).join('، ') + '</p>' : '') +
+      '</section>';
+  }
+
+  function rstOverview() {
+    var D = st.rst.d, c = function (arr, s) { return arr.filter(function (r) { return r.request_status === s; }).length; };
+    var up = D.leaves.filter(function (r) { return (r.request_status === D.LV.SUP_APPROVED || r.request_status === D.LV.FINAL) && r.to_date >= D.today && rTeamOk(r.team); }).slice(0, 12);
+    return '<p class="muted rmeta"><b>' + rt('opday') + ': ' + rDmy(D.date) + '</b> · ' + rt('updated') + ' <span class="ltr">' + esc(D.now) + '</span></p>' +
+      '<div class="kpis k6">' + rKpi(rt('k_psup'), c(D.leaves, D.LV.PENDING_SUP), 'warn') + rKpi(rt('k_padm'), c(D.leaves, D.LV.PENDING_ADMIN), 'warn') + rKpi(rt('k_mena'), c(D.leaves, D.LV.SUP_APPROVED)) +
+      rKpi(rt('k_rnew'), c(D.reqs, D.REQ.NEW), 'bad') + rKpi(rt('k_rwip'), c(D.reqs, D.REQ.WIP)) + rKpi(rt('k_reg'), D.emps.filter(function (e) { return e.reg; }).length + ' / ' + D.emps.length, 'ok') + '</div>' +
+      '<div class="row2 r2eq">' + ['STN', 'ENF'].filter(rTeamOk).map(rTeamCard).join('') + '</div>' +
+      '<section class="card"><div class="chead"><span class="bar4"></span><h2>' + rt('upcoming') + '</h2></div>' +
+      (up.length ? '<div class="tblwrap"><table class="tbl"><thead><tr><th>' + rt('emp') + '</th><th>' + rt('type') + '</th><th>' + rt('from') + '</th><th>' + rt('to') + '</th><th>' + rt('status') + '</th></tr></thead><tbody>' +
+        up.map(function (r) { return '<tr><td>' + esc(rName(r.emp_id, r.emp_name)) + ' <span class="muted num">' + esc(r.emp_id) + '</span></td><td>' + esc(tr(r.leave_type)) + '</td><td>' + rDmy(r.from_date) + '</td><td>' + rDmy(r.to_date) + '</td><td>' + rStBadge(r.request_status) + '</td></tr>'; }).join('') + '</tbody></table></div>'
+        : '<p class="muted">' + rt('none') + '</p>') + '</section>';
+  }
+
+  function rstGrid() {
+    var D = st.rst.d, sh = D.shifts || {}, days = D.days || [], L = st.lang === 'en';
+    var h = '<div class="rlegend">' + Object.keys(sh).map(function (k) { return '<span><i style="background:' + esc(sh[k].color || '#fff') + '"></i>' + esc(k) + ' ' + esc(tr(sh[k].name_ar)) + '</span>'; }).join('') +
+      '<span><i style="background:#F8E1DF"></i>' + rt('lg_abs') + '</span><span><b style="color:#B26A00">●</b> ' + rt('lg_late') + '</span><span><b style="color:#2E7D5B">✓</b> ' + rt('lg_pres') + '</span><span><i class="pend" style="background:#F6D7B0"></i>' + rt('lg_pend') + '</span></div>';
+    if (!D.rosterRange || !D.rosterRange.length || !days.length || days[days.length - 1] < D.rosterRange[0] || days[0] > D.rosterRange[1]) h += '<div class="card muted">' + rt('no_roster') + '</div>';
+    h += '<div class="rwrap"><table class="rt"><thead><tr><th class="nm">' + rt('emp') + '</th>' + days.map(function (d) { var w = rDow(d); return '<th class="' + (w === 5 || w === 6 ? 'wk' : '') + '">' + RDAYS[L ? 'en' : 'ar'][w] + '<br><span class="num">' + d.slice(8) + '</span></th>'; }).join('') + '</tr></thead><tbody>';
+    ['ADM', 'ENF', 'STN'].forEach(function (tm) {
+      if (!rTeamOk(tm)) return;
+      var rows = D.grid.filter(function (g) { return rEmp(g.id).team === tm; });
+      if (!rows.length) return;
+      h += '<tr class="tm"><td class="nm">' + esc(rTeam(tm)) + '</td><td colspan="' + days.length + '"></td></tr>';
+      rows.forEach(function (g) {
+        var e = rEmp(g.id);
+        h += '<tr><td class="nm"><b>' + esc(rName(g.id)) + '</b> <span class="muted num">' + esc(e.id) + '</span>' + (e.lead ? ' <span class="tag b-acc">' + esc(tr(e.lead)) + '</span>' : '') + '</td>';
+        g.cells.forEach(function (c, i) {
+          var code = c.lv || c.c || '', s = sh[code] || {}, cls = 'cell', tip = [days[i]];
+          if (c.c) tip.push(c.c + (sh[c.c] ? ' ' + tr(sh[c.c].name_ar) : ''));
+          if (c.lv) { tip.push((sh[c.lv] ? tr(sh[c.lv].name_ar) : c.lv) + (c.lvf ? ' ✓' : ' …')); if (!c.lvf) cls += ' pend'; }
+          var txt = esc(code), extra = '';
+          if (c.a === 'غائب') { cls += ' abs'; txt = rt('abs_mark'); tip.push(tr('غائب')); }
+          else if (c.a === 'حاضر') { extra += '<span class="ck">✓</span>'; tip.push(tr('حاضر')); }
+          if (c.late) { extra += '<span class="dot"></span>'; tip.push(rt('late') + ' ' + c.late + t('min')); }
+          if (c.x) { extra += '<span class="dot x"></span>'; tip.push(tr(c.x)); }
+          if (c.n) tip.push(c.n);
+          if (days[i] === D.today) cls += ' today';
+          h += '<td><div class="' + cls + '" style="background:' + esc(s.color || 'transparent') + '" title="' + esc(tip.join(' · ')) + '">' + txt + extra + '</div></td>';
+        });
+        h += '</tr>';
+      });
+    });
+    return h + '</tbody></table></div>';
+  }
+
+  function rstDay() {
+    var D = st.rst.d, h = '<p class="muted rmeta"><b>' + rDmy(D.date) + '</b></p><div class="row2 r2eq">' + ['STN', 'ENF'].filter(rTeamOk).map(rTeamCard).join('') + '</div>';
+    ['STN', 'ENF', 'ADM'].forEach(function (tm) {
+      if (!rTeamOk(tm)) return;
+      var list = D.day[tm] || []; if (!list.length) return;
+      h += '<h3 class="rh3">' + esc(rTeam(tm)) + '</h3>';
+      list.forEach(function (s) {
+        h += '<section class="card rshift"><div class="rshd"><span class="tag b-acc">' + rt('shift') + ' (' + esc(s.code) + ') <span class="ltr">' + esc(s.hours) + '</span></span>' +
+          (s.dist ? '<span class="tag b-ok">' + rt('dist_ok') + ' <span class="ltr">' + esc(s.dist.case_id) + '</span>' + (s.dist.version > 1 ? ' · ' + rt('update') + ' ' + (s.dist.version - 1) : '') + '</span>' : '<span class="tag b-mu">' + rt('dist_no') + '</span>') +
+          (s.att ? '<span class="tag b-ok">' + rt('att_ok') + ' <span class="ltr">' + esc(s.att.case_id) + '</span></span><span class="muted">' + rt('sup') + ': ' + esc(rName(s.att.supervisor_id || '', s.att.supervisor_name)) + '</span>' : '<span class="tag b-warn">' + rt('att_no') + '</span>') + '</div><div class="row2 r2eq">';
+        h += '<div><b class="rsub">📋 ' + rt('dist') + '</b>' + ((s.distItems || []).length
+          ? '<div class="tblwrap"><table class="tbl"><thead><tr><th>' + rt('emp') + '</th><th>' + rt('task') + '</th><th>' + rt('brk') + '</th></tr></thead><tbody>' + s.distItems.map(function (x) { return '<tr><td>' + esc(rName(x.emp_id, x.emp_name)) + ' <span class="muted num">' + esc(x.emp_id) + '</span></td><td>' + esc(tr(x.report_label)) + '</td><td class="ltr">' + (x.break_start ? esc(x.break_start + '-' + x.break_end) : '-') + '</td></tr>'; }).join('') + '</tbody></table></div>'
+          : '<div class="rnames">' + s.scheduled.map(function (id) { return '<span>' + esc(rName(id)) + '</span>'; }).join('') + '</div><p class="muted rnote">' + rt('scheduled') + '</p>') + '</div>';
+        h += '<div><b class="rsub">🕘 ' + rt('att') + '</b>';
+        if (s.att) {
+          var g = {}; (s.attItems || []).forEach(function (x) { (g[x.att_status] = g[x.att_status] || []).push(x); });
+          h += ['حاضر', 'غائب', 'إجازة', 'أوف', 'استئذان', 'انسحاب'].filter(function (k) { return g[k] || ['حاضر', 'غائب'].indexOf(k) >= 0; }).map(function (k) { var a = g[k] || []; return '<div class="rnote"><b>' + esc(tr(k)) + ' (' + a.length + ')</b><div class="rnames">' + a.map(function (x) { return '<span>' + esc(rName(x.emp_id, x.emp_name)) + (x.note ? ' – ' + esc(tr(x.note)) : '') + '</span>'; }).join('') + '</div></div>'; }).join('');
+        } else {
+          h += '<p class="rnote">🏖 ' + rt('leave') + ': ' + (s.leave.map(function (l) { return esc(rName(l.id)) + ' (' + esc(tr(l.label)) + ')'; }).join('، ') || '-') + '</p><p class="rnote">💤 ' + rt('off') + ': ' + (s.off.map(function (id) { return esc(rName(id)); }).join('، ') || '-') + '</p>';
+        }
+        h += '</div></div></section>';
+      });
+    });
+    return h;
+  }
+
+  function rstLeaves() {
+    var D = st.rst.d, R = st.rst, LV = D.LV, open = [LV.PENDING_SUP, LV.PENDING_ADMIN, LV.SUP_APPROVED], q = (R.q || '').toLowerCase();
+    var rows = D.leaves.filter(function (r) { return rTeamOk(r.team) && (R.lvf === 'all' || (R.lvf === 'open' ? open.indexOf(r.request_status) >= 0 : r.request_status === R.lvf)) && (!q || (r.emp_name + ' ' + rName(r.emp_id) + ' ' + r.emp_id + ' ' + r.case_id).toLowerCase().indexOf(q) >= 0); });
+    var opts = [['open', rt('open')], [LV.PENDING_SUP], [LV.PENDING_ADMIN], [LV.SUP_APPROVED], [LV.FINAL], [LV.SUP_REJECTED], [LV.ADMIN_REJECTED], ['all', rt('all')]];
+    var h = '<div class="toolbar"><select class="input" id="rLvf">' + opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (R.lvf === o[0] ? ' selected' : '') + '>' + esc(o[1] || tr(o[0])) + '</option>'; }).join('') + '</select>' +
+      '<input class="input" type="search" id="rQ" placeholder="' + esc(rt('search')) + '" value="' + esc(R.q || '') + '"><span class="muted"><span class="num">' + rows.length + '</span> ' + rt('req_n') + '</span></div>';
+    h += '<div class="tblwrap rtbl"><table class="tbl twrap"><thead><tr><th>' + rt('req_id') + '</th><th>' + rt('emp') + '</th><th>' + rt('type') + '</th><th>' + rt('period') + '</th><th>' + rt('days_n') + '</th><th>' + rt('file') + '</th><th>' + rt('approver') + '</th><th>' + rt('status') + '</th><th>' + rt('notes') + '</th><th>' + rt('action') + '</th></tr></thead><tbody>';
+    h += rows.map(function (r) {
+      var act = '';
+      if (R.canLeave) {
+        if (r.request_status === LV.SUP_APPROVED) act = rBtn('leave', r.case_id, 'final', 'a_final', 'ok') + rBtn('leave', r.case_id, 'reject', 'a_reject', 'bad');
+        else if (r.request_status === LV.PENDING_SUP || r.request_status === LV.PENDING_ADMIN) act = rBtn('leave', r.case_id, 'approve', 'a_approve', 'pri') + rBtn('leave', r.case_id, 'reject', 'a_reject', 'bad');
+      }
+      var notes = [r.emp_note && ('📝 ' + esc(r.emp_note)), r.sup_note && ('👮 ' + esc(r.sup_note)), r.admin_note && ('🏢 ' + esc(r.admin_note)), r.admin_by && ('<span class="muted">' + esc(tr(r.admin_by)) + ' <span class="ltr">' + esc(r.admin_at) + '</span></span>')].filter(Boolean).join('<br>');
+      return '<tr><td><b class="ltr">' + esc(r.case_id) + '</b><div class="muted ltr">' + esc(r.created_at) + '</div></td><td>' + esc(rName(r.emp_id, r.emp_name)) + '<div class="muted"><span class="num">' + esc(r.emp_id) + '</span> · ' + esc(rTeam(r.team)) + '</div></td>' +
+        '<td>' + esc(tr(r.leave_type)) + (r.relation ? '<div class="muted">' + esc(tr(r.relation)) + '</div>' : '') + '</td><td>' + rDmy(r.from_date) + '<br>' + rDmy(r.to_date) + '</td><td class="num">' + esc(r.days) + '</td>' +
+        '<td>' + (r.attachment_url ? '<a href="' + esc(r.attachment_url) + '" target="_blank" rel="noopener">📎 ' + rt('open_file') + '</a>' : '-') + '</td>' +
+        '<td>' + esc(rName('', r.approver_name)) + '<div class="muted">' + esc(tr(r.approver_level || '')) + (r.escalated === 'Y' ? ' · ' + rt('escalated') : '') + '</div></td><td>' + rStBadge(r.request_status) + '</td><td class="rnotes">' + notes + '</td><td class="racts">' + act + '</td></tr>';
+    }).join('') || '<tr><td colspan="10" class="empty">' + t('no_rows') + '</td></tr>';
+    return h + '</tbody></table></div>';
+  }
+
+  function rstReqs() {
+    var D = st.rst.d, R = st.rst, RQ = D.REQ, open = [RQ.NEW, RQ.WIP];
+    var rows = D.reqs.filter(function (r) { return rTeamOk(r.team) && (R.rqf === 'all' || (R.rqf === 'open' ? open.indexOf(r.request_status) >= 0 : r.request_status === R.rqf)); });
+    var opts = [['open', rt('open')], [RQ.NEW], [RQ.WIP], [RQ.DONE], [RQ.REJECTED], ['all', rt('all')]];
+    var h = '<div class="toolbar"><select class="input" id="rRqf">' + opts.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (R.rqf === o[0] ? ' selected' : '') + '>' + esc(o[1] || tr(o[0])) + '</option>'; }).join('') + '</select><span class="muted"><span class="num">' + rows.length + '</span> ' + rt('req_n') + '</span></div>';
+    h += '<div class="tblwrap rtbl"><table class="tbl twrap"><thead><tr><th>' + rt('req_id') + '</th><th>' + rt('emp') + '</th><th>' + rt('type') + '</th><th>' + rt('details') + '</th><th>' + rt('file') + '</th><th>' + rt('status') + '</th><th>' + rt('admin_note') + '</th><th>' + rt('action') + '</th></tr></thead><tbody>';
+    h += rows.map(function (r) {
+      var act = '';
+      if (R.canReq) {
+        if (r.request_status === RQ.NEW) act += rBtn('req', r.case_id, RQ.WIP, 'a_wip', '');
+        if (open.indexOf(r.request_status) >= 0) act += rBtn('req', r.case_id, RQ.DONE, 'a_done', 'ok') + rBtn('req', r.case_id, RQ.REJECTED, 'a_reject', 'bad');
+      }
+      return '<tr><td><b class="ltr">' + esc(r.case_id) + '</b><div class="muted ltr">' + esc(r.created_at) + '</div></td><td>' + esc(rName(r.emp_id, r.emp_name)) + '<div class="muted num">' + esc(r.emp_id) + '</div></td><td>' + esc(tr(r.req_type)) + '</td>' +
+        '<td class="rdet">' + esc(r.details) + '</td><td>' + (r.attachment_url ? '<a href="' + esc(r.attachment_url) + '" target="_blank" rel="noopener">📎 ' + rt('open_file') + '</a>' : '-') + '</td><td>' + rStBadge(r.request_status) + '</td>' +
+        '<td class="rnotes">' + esc(r.admin_note) + (r.admin_by ? '<div class="muted">' + esc(tr(r.admin_by)) + ' <span class="ltr">' + esc(r.admin_at) + '</span></div>' : '') + '</td><td class="racts">' + act + '</td></tr>';
+    }).join('') || '<tr><td colspan="8" class="empty">' + t('no_rows') + '</td></tr>';
+    return h + '</tbody></table></div>';
+  }
+  function rBtn(kind, id, act, label, tone) {
+    return '<button type="button" class="btn sm rb ' + tone + '" data-kind="' + kind + '" data-id="' + esc(id) + '" data-act="' + esc(act) + '" data-label="' + label + '">' + rt(label) + '</button>';
+  }
+
+  function rstEmps() {
+    var D = st.rst.d, S = st.rst.sort;
+    var cols = [['name', 'emp'], ['team', 'team'], ['work', 'work'], ['present', 'present'], ['absent', 'absent'], ['late', 'late'], ['lateMin', 'late_min'], ['permission', 'perm'], ['withdrawal', 'wd'], ['leaveDays', 'lv_days'], ['notes', 'att_notes'], ['rate', 'rate'], ['pending', 'pending'], ['reg', 'bot']];
+    var rows = D.emps.filter(function (e) { return rTeamOk(e.team); }).map(function (e) {
+      var k = (D.kpi || {})[e.id] || {}, r = {};
+      for (var x in k) r[x] = k[x];
+      r.name = rName(e.id); r.id = e.id; r.team = e.team; r.role = e.role; r.task = e.task; r.reg = e.reg ? 1 : 0;
+      r.rate = (k.present + k.absent) ? Math.round(k.present / (k.present + k.absent) * 100) : '';
+      return r;
+    });
+    rows.sort(function (a, b) { var x = a[S.k], y = b[S.k]; if (x === y) return 0; return (x > y ? 1 : -1) * S.d; });
+    var n = function (v) { return v === undefined || v === '' ? '0' : esc(v); };
+    return '<p class="muted rmeta">' + rt('emps_note').replace('{m}', '<span class="ltr">' + esc(D.month) + '</span>') + '</p>' +
+      '<div class="tblwrap rtbl"><table class="tbl"><thead><tr>' + cols.map(function (c) { return '<th class="sortable" data-sort="' + c[0] + '">' + rt(c[1]) + (S.k === c[0] ? (S.d > 0 ? ' ▲' : ' ▼') : '') + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      rows.map(function (r) {
+        return '<tr><td><b>' + esc(r.name) + '</b> <span class="muted num">' + esc(r.id) + '</span><div class="muted">' + esc(tr(r.role || '')) + (r.task ? ' · ' + esc(tr(r.task)) : '') + '</div></td><td>' + esc(rTeam(r.team)) + '</td><td class="num">' + n(r.work) + '</td><td class="num">' + n(r.present) + '</td>' +
+          '<td class="num' + (r.absent ? ' tbad' : '') + '">' + n(r.absent) + '</td><td class="num' + (r.late ? ' twarn' : '') + '">' + n(r.late) + '</td><td class="num">' + n(r.lateMin) + '</td><td class="num">' + n(r.permission) + '</td><td class="num">' + n(r.withdrawal) + '</td><td class="num">' + n(r.leaveDays) + '</td>' +
+          '<td>' + (r.notes ? '<span class="tag b-warn num">' + esc(r.notes) + '</span>' : '0') + '</td><td class="num">' + (r.rate === '' ? '-' : r.rate + '%') + '</td><td>' + (r.pending ? '<span class="tag b-acc num">' + esc(r.pending) + '</span>' : '0') + '</td><td>' + (r.reg ? '✅' : '<span class="muted">—</span>') + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+
+  function rstReport() {
+    var D = st.rst.d, tot = { present: 0, late: 0, absent: 0, leave: 0, off: 0 }, A = { STN: rDayAgg('STN'), ENF: rDayAgg('ENF') };
+    ['STN', 'ENF'].forEach(function (tm) { var a = A[tm]; tot.present += a.present; tot.late += a.late; tot.absent += a.absent; tot.leave += a.leave; tot.off += a.off; });
+    var base = Math.max(tot.present + tot.absent, 1);
+    var h = '<div class="toolbar noprint"><button type="button" class="btn primary sm" id="rPrint">' + icon('print') + rt('print') + '</button></div><div class="card rrep">' +
+      '<div class="rrh"><div><b class="rlogo">MBCO</b><div class="muted">Modern Bus Company Limited</div></div><span class="tag b-acc">Daily · ' + rDmy(D.date) + '</span></div>' +
+      '<h2 class="rrt">' + rt('rep_title') + '</h2><div class="kpis k6">' + [['present', tot.present], ['late', tot.late], ['absent', tot.absent], ['leaves_t', tot.leave], ['off', tot.off], ['ex_t', Math.round(tot.present / base * 100) + '%']].map(function (x) { return rKpi(rt(x[0]), x[1]); }).join('') + '</div>' +
+      '<h3 class="rh3">' + rt('by_team') + '</h3>' + ['STN', 'ENF'].map(function (tm, i) { var a = A[tm], b = Math.max(a.present + a.absent, 1); return rBar(rTeam(tm), a.present, b, ['var(--accent)', '#eb6834'][i], Math.round(a.present / b * 100) + '%'); }).join('');
+    ['STN', 'ENF'].forEach(function (tm) {
+      h += '<h3 class="rh3">' + esc(rTeam(tm)) + '</h3><div class="tblwrap"><table class="tbl"><thead><tr><th>' + rt('shift') + '</th><th>' + rt('present') + '</th><th>' + rt('late') + '</th><th>' + rt('absent') + '</th><th>' + rt('leave') + '</th><th>' + rt('off') + '</th><th>' + rt('wd') + '</th><th>' + rt('perm') + '</th><th>' + rt('sup') + '</th></tr></thead><tbody>';
+      (D.day[tm] || []).forEach(function (s) {
+        var a = s.att;
+        h += '<tr><td>(' + esc(s.code) + ') <span class="ltr">' + esc(s.hours) + '</span></td>' + (a ? '<td class="num">' + a.present + '</td><td class="num">' + a.late + '</td><td class="num">' + a.absent + '</td><td class="num">' + a.leave + '</td><td class="num">' + a.off + '</td><td class="num">' + a.withdrawal + '</td><td class="num">' + a.permission + '</td><td>' + esc(rName(a.supervisor_id || '', a.supervisor_name)) + '</td>' : '<td colspan="8" class="twarn">' + rt('att_no') + '</td>') + '</tr>';
+      });
+      h += '</tbody></table></div>';
+      var notes = []; (D.day[tm] || []).forEach(function (s) { (s.attItems || []).forEach(function (x) { if (x.att_status === 'غائب' || +x.late_min > 0 || x.exit_time) notes.push([s.code, x]); }); });
+      if (notes.length) h += '<div class="tblwrap" style="margin-top:8px"><table class="tbl"><thead><tr><th>' + rt('shift') + '</th><th>' + rt('emp') + '</th><th>' + rt('status') + '</th><th>' + rt('note') + '</th></tr></thead><tbody>' + notes.map(function (x) { return '<tr><td>(' + esc(x[0]) + ')</td><td>' + esc(rName(x[1].emp_id, x[1].emp_name)) + ' <span class="muted num">' + esc(x[1].emp_id) + '</span></td><td>' + esc(tr(x[1].att_status)) + '</td><td>' + esc(tr(x[1].note || '')) + '</td></tr>'; }).join('') + '</tbody></table></div>';
+    });
+    var pend = D.leaves.filter(function (r) { return r.request_status === D.LV.SUP_APPROVED; });
+    h += '<h3 class="rh3">' + rt('mena_wait') + ' (<span class="num">' + pend.length + '</span>)</h3>' + (pend.length ? '<div class="tblwrap"><table class="tbl"><thead><tr><th>' + rt('emp') + '</th><th>' + rt('type') + '</th><th>' + rt('period') + '</th><th>' + rt('approver') + '</th></tr></thead><tbody>' + pend.map(function (r) { return '<tr><td>' + esc(rName(r.emp_id, r.emp_name)) + '</td><td>' + esc(tr(r.leave_type)) + '</td><td>' + rDmy(r.from_date) + ' ← ' + rDmy(r.to_date) + '</td><td>' + esc(rName('', r.approver_name)) + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<p class="muted">' + rt('none') + '</p>');
+    return h + '<div class="rfoot muted"><span>' + rt('rep_foot') + '</span><span>' + rt('made') + ' <span class="ltr">' + esc(D.now) + '</span></span></div></div>';
+  }
+
+  function rstBind(key, b) {
+    var R = st.rst;
+    var lvf = b.querySelector('#rLvf'); if (lvf) lvf.onchange = function () { R.lvf = lvf.value; rstDraw(key); };
+    var rqf = b.querySelector('#rRqf'); if (rqf) rqf.onchange = function () { R.rqf = rqf.value; rstDraw(key); };
+    var q = b.querySelector('#rQ'); if (q) q.oninput = function () { R.q = q.value; var pos = q.selectionStart; rstDraw(key); var n = document.getElementById('rQ'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } };
+    var p = b.querySelector('#rPrint'); if (p) p.onclick = function () { window.print(); };
+    Array.prototype.forEach.call(b.querySelectorAll('[data-sort]'), function (th) { th.onclick = function () { var k = th.getAttribute('data-sort'); R.sort = { k: k, d: R.sort.k === k ? -R.sort.d : -1 }; rstDraw(key); }; });
+    Array.prototype.forEach.call(b.querySelectorAll('.rb'), function (btn) {
+      btn.onclick = function () {
+        var kind = btn.getAttribute('data-kind'), id = btn.getAttribute('data-id'), act = btn.getAttribute('data-act');
+        var title = kind === 'leave' ? rt('m_' + act) : rt('m_req') + ': ' + tr(act);
+        confirmBox(title, rt('m_body').replace('{id}', id).replace('{by}', R.by || ''), function (note, done) {
+          api('rstAct', { kind: kind, id: id, act: act, note: note }).then(function () {
+            done(); toast(rt('done'));
+            var wrap = document.getElementById('ctlWrap'); if (wrap) renderRst(key, wrap, true);
+          }).catch(function (e) { done(errText(e)); });
+        });
+      };
+    });
+  }
+
+  /* نافذة تأكيد مع ملاحظة */
+  function confirmBox(title, body, onOk) {
+    var ov = document.createElement('div'); ov.className = 'mov';
+    ov.innerHTML = '<div class="mbox" role="dialog" aria-modal="true"><h3>' + esc(title) + '</h3><p class="muted">' + esc(body) + '</p>' +
+      '<textarea class="input" id="mNote" rows="3" placeholder="' + esc(rt('note_ph')) + '"></textarea><div class="err hide" id="mErr"></div>' +
+      '<div class="mrow"><button type="button" class="btn" id="mNo">' + rt('cancel') + '</button><button type="button" class="btn primary" id="mOk">' + rt('confirm') + '</button></div></div>';
+    document.body.appendChild(ov);
+    var close = function () { ov.remove(); };
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('#mNo').onclick = close;
+    var ok = ov.querySelector('#mOk'); ov.querySelector('#mNote').focus();
+    ok.onclick = function () {
+      ok.disabled = true; ok.classList.add('spinning');
+      onOk(ov.querySelector('#mNote').value.trim(), function (err) {
+        if (!err) return close();
+        ok.disabled = false; ok.classList.remove('spinning');
+        var m = ov.querySelector('#mErr'); m.textContent = err; m.classList.remove('hide');
+      });
+    };
+  }
+
   function loadSection(key) {
     var main = document.getElementById('main');
     var s = st.sec[key] || { from: '', to: '', q: '' };
     st.sec[key] = s;
     var sec = st.sections.filter(function (x) { return x.key === key; })[0] || {};
-    var head = '<div class="pagehead"><div><h1>' + esc(st.lang === 'en' ? sec.en : sec.ar) + '</h1></div>' + (DEMO ? '<span class="notice">' + t('demo') + '</span>' : '') + '</div>' +
+    var mode = secMode(key);
+    var title = '<div class="pagehead"><div><h1>' + esc(st.lang === 'en' ? sec.en : sec.ar) + '</h1></div>' + modeSwitch(key, mode) +
+      (mode === 'ctl' ? '<button type="button" class="btn sm hide noprint" id="ctlNew">' + icon('external') + t('ctl_newwin') + '</button>' : '') +
+      (DEMO ? '<span class="notice">' + t('demo') + '</span>' : '') + '</div>';
+    if (mode === 'ctl') {
+      if (RST_NATIVE[key]) {
+        main.innerHTML = title + '<div class="ctlnative" id="ctlWrap"></div>';
+        bindModeSwitch(key);
+        if (st.user.role === 'Officer') { document.getElementById('ctlWrap').innerHTML = '<div class="ctlmsg"><p>' + esc(t('ctl_role')) + '</p></div>'; return; }
+        renderRst(key, document.getElementById('ctlWrap'), false);
+        return;
+      }
+      main.innerHTML = title + (st.lang === 'en' ? '<p class="muted ctlnote">' + t('ctl_arabic') + '</p>' : '') + '<div class="ctlwrap" id="ctlWrap"></div>';
+      bindModeSwitch(key);
+      renderControl(key, document.getElementById('ctlWrap'), false);
+      return;
+    }
+    var head = title +
       '<div class="card"><div class="toolbar noprint">' +
       '<label class="field">' + t('from') + '<input class="input num" type="date" id="sFrom" value="' + esc(s.from) + '"></label>' +
       '<label class="field">' + t('to') + '<input class="input num" type="date" id="sTo" value="' + esc(s.to) + '"></label>' +
@@ -607,10 +1089,11 @@
       '<button type="button" class="btn" id="sCsv">' + icon('download') + t('export') + '</button>' +
       '<button type="button" class="btn hide" id="sDash">' + icon('external') + t('open_dash') + '</button></div><div id="sBody"><div class="loading"><div class="spin"></div>' + t('loading') + '</div></div></div>';
     main.innerHTML = head;
+    bindModeSwitch(key);
     var apply = function (d) {
       addDict(d.dict); s.data = d; s.from = d.from; s.to = d.to;
       document.getElementById('sFrom').value = s.from; document.getElementById('sTo').value = s.to;
-      document.getElementById('sDash').classList.toggle('hide', !d.canOpenDashboard);
+      document.getElementById('sDash').classList.toggle('hide', !d.canOpenDashboard || !!EMBED_KEYS[key]);
       drawSection(key);
     };
     var fetchIt = function (force) {

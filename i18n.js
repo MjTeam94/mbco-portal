@@ -2,7 +2,7 @@
    القيم التي تأتي من الأنظمة (الحالات، الأسماء، المحطات) تُعرض كما هي في الشيت. */
 window.MBCO_I18N = {
   ar: {
-    portal: 'لوحة العمليات الموحدة', systems_line: 'CDC · الفحص · الروستر · الطلبات · Carlog',
+    portal: 'لوحة العمليات الموحدة', systems_line: 'العمليات · الفحص · الروستر · الطلبات · الأسطول',
     op_day: 'اليوم التشغيلي', refresh: 'تحديث', lang_btn: 'EN', lang_label: 'تغيير اللغة إلى الإنجليزية',
     dark: 'الوضع الداكن', light: 'الوضع الفاتح', logout: 'تسجيل الخروج',
     g_ops: 'العمليات', g_staff: 'الموظفون', g_analysis: 'التحليل', g_system: 'النظام',
@@ -26,7 +26,15 @@ window.MBCO_I18N = {
     people_title: 'أداء الموظفين اليوم', people_sub: 'من كل الأنظمة', daily_report: 'التقرير اليومي القابل للطباعة',
     col_emp: 'الموظف', col_team: 'الفريق · الوردية', col_post: 'الموقع في التوزيع', col_cdc: 'بلاغات CDC', col_ins: 'فحوصات',
     col_vio: 'مخالفات', col_car: 'عهدة سيارة', col_att: 'الحضور',
-    source: 'المصدر: 4 أنظمة · CDC · الفحص والمخالفات · الروستر والطلبات · Carlog', opday_note: 'اليوم التشغيلي يبدأ 07:00 ص · Asia/Riyadh',
+    source: 'المصدر: 4 أنظمة · بلاغات العمليات · الفحص والمخالفات · الروستر والطلبات · إدارة الأسطول', opday_note: 'اليوم التشغيلي يبدأ 07:00 ص · Asia/Riyadh',
+    e_rst_old_api: 'نظام الروستر يحتاج تحديث: استبدل Api.gs في مشروع الروستر وانشر نسخة جديدة (دليل التحديث 1.7).', e_badinput: 'بيانات غير صحيحة',
+    ctl_tab: 'لوحة التحكم', rec_tab: 'السجلات', ctl_loading: 'جارِ فتح لوحة النظام…', ctl_newwin: 'نافذة مستقلة',
+    ctl_arabic: '', ctl_demo: 'في وضع التجربة لا تُعرض لوحات الأنظمة الحقيقية.',
+    ctl_role: 'لوحة التحكم لهذا القسم متاحة للإدارة والمشرفين فقط. تقدر تشوف السجلات.',
+    ctl_nourl: 'لم يُضبط رابط لوحة النظام في الـ Hub: أضف DASH_{sys} في Script Properties (راجع دليل التحديث 1.6).',
+    ctl_cdc_nouser: 'رقمك الوظيفي ({emp}) غير مسجّل في نظام البلاغات. من صفحة «المستخدمين» في نظام البلاغات أضف رقمك الوظيفي لحسابك، ثم افتح هذا التبويب مرة ثانية.',
+    ctl_cdc_oldapi: 'نظام البلاغات يحتاج تحديث: استبدل Api.gs وأضف PortalSso.gs في مشروع CDC ثم انشر نسخة جديدة (دليل التحديث 1.6).',
+    ctl_cdc_err: 'تعذر فتح نظام البلاغات من البوابة', ctl_none: 'لا توجد لوحة تحكم لهذا القسم.',
     from: 'من', to: 'إلى', apply: 'عرض', search: 'بحث في الجدول', export: 'تصدير CSV', open_dash: 'اللوحة الكاملة للنظام',
     rows: 'سجل', no_rows: 'لا توجد سجلات في هذه الفترة', truncated: 'يُعرض أول 2000 سجل من',
     print: 'طباعة / حفظ PDF', report_title: 'التقرير اليومي', daily: 'Daily',
@@ -44,7 +52,7 @@ window.MBCO_I18N = {
     sys_ok: 'متصل', sys_fail: 'غير متصل', loading: 'جاري التحميل…', retry: 'إعادة المحاولة'
   },
   en: {
-    portal: 'Unified Operations Dashboard', systems_line: 'CDC · Inspections · Roster · Requests · Carlog',
+    portal: 'Unified Operations Dashboard', systems_line: 'Operations · Inspections · Roster · Requests · Carlog',
     op_day: 'Operating day', refresh: 'Refresh', lang_btn: 'ع', lang_label: 'Switch to Arabic',
     dark: 'Dark mode', light: 'Light mode', logout: 'Log out',
     g_ops: 'Operations', g_staff: 'Staff', g_analysis: 'Analysis', g_system: 'System',
@@ -68,7 +76,15 @@ window.MBCO_I18N = {
     people_title: 'Staff performance today', people_sub: 'across all systems', daily_report: 'Printable daily report',
     col_emp: 'Employee', col_team: 'Team · shift', col_post: 'Assigned post', col_cdc: 'CDC cases', col_ins: 'Inspections',
     col_vio: 'Violations', col_car: 'Vehicle', col_att: 'Attendance',
-    source: 'Source: 4 systems · CDC · Inspections · Roster & requests · Carlog', opday_note: 'Operating day starts 07:00 · Asia/Riyadh',
+    source: 'Source: 4 systems · Operations cases · Inspections · Roster & requests · Carlog', opday_note: 'Operating day starts 07:00 · Asia/Riyadh',
+    e_rst_old_api: 'The roster system needs an update: replace Api.gs in the roster project and deploy a new version (update guide 1.7).', e_badinput: 'Invalid input',
+    ctl_tab: 'Control panel', rec_tab: 'Records', ctl_loading: 'Opening the system panel…', ctl_newwin: 'Open in new window',
+    ctl_arabic: 'The control panel is the system\'s own page and is shown in Arabic.', ctl_demo: 'System panels are not shown in demo mode.',
+    ctl_role: 'This control panel is for admins and supervisors. You can view the records.',
+    ctl_nourl: 'The system panel link is not set in the Hub: add DASH_{sys} to Script Properties (see update guide 1.6).',
+    ctl_cdc_nouser: 'Your employee ID ({emp}) is not registered in the cases system. Add it to your account on the cases system Users page, then reopen this tab.',
+    ctl_cdc_oldapi: 'The cases system needs an update: replace Api.gs and add PortalSso.gs in the CDC project, then deploy a new version (update guide 1.6).',
+    ctl_cdc_err: 'Could not open the cases system from the portal', ctl_none: 'This section has no control panel.',
     from: 'From', to: 'To', apply: 'Show', search: 'Search table', export: 'Export CSV', open_dash: 'Full system dashboard',
     rows: 'records', no_rows: 'No records in this period', truncated: 'Showing first 2000 of',
     print: 'Print / save PDF', report_title: 'Daily report', daily: 'Daily',
@@ -94,7 +110,7 @@ window.MBCO_DATA_EN = {
     // مؤشرات الالتزام والأنظمة
     'الحضور': 'Attendance', 'التوزيع قبل بداية الوردية': 'Distribution before shift start',
     'طلبات عولجت قبل التصعيد': 'Requests handled before escalation', 'تسليم السيارة بنفسه': 'Vehicle returned by holder',
-    'الروستر': 'Roster', 'الإجازات': 'Leaves', 'الإجازات · 7 أيام': 'Leaves · 7 days', 'Carlog · 7 أيام': 'Carlog · 7 days', 'الربط': 'Link',
+    'الروستر': 'Roster', 'إدارة الأسطول': 'Carlog', 'بلاغات العمليات': 'Operations cases', 'الإجازات': 'Leaves', 'الإجازات · 7 أيام': 'Leaves · 7 days', 'Carlog · 7 أيام': 'Carlog · 7 days', 'الربط': 'Link',
     'الفحص': 'Inspections',
     // نتائج CDC
     'إنزال الراكب': 'Passenger offloaded', 'مخالفة': 'Fine issued', 'تحرير مخالفة': 'Fine issued', 'تذكرة فعالة': 'Valid ticket',
@@ -116,7 +132,7 @@ window.MBCO_DATA_EN = {
     // الإجازات والطلبات
     'بانتظار المشرف': 'Awaiting supervisor', 'موافقة المشرف – بانتظار Mena-Me': 'Approved – awaiting Mena-Me', 'مرفوض من المشرف': 'Rejected by supervisor',
     'معتمد نهائيا (Mena-Me)': 'Final approval (Mena-Me)', 'مرفوض إداريا': 'Rejected by admin', 'ملغى من الموظف': 'Cancelled by employee',
-    'بانتظار الإدارة': 'Awaiting admin', 'قيد التنفيذ': 'In progress', 'منفذ': 'Done', 'مرفوض': 'Rejected',
+    'بانتظار الإدارة': 'Awaiting admin', 'إجازة اضطرارية': 'Emergency leave', 'جديد': 'New', 'مشرف': 'Supervisor', 'مفتش': 'Inspector', 'قائد وردية': 'Shift lead', 'صباحي': 'Morning', 'مسائي': 'Evening', 'ليلي': 'Night', 'إجازة سنوية': 'Annual leave', 'إجازة مرضية': 'Sick leave', 'تعريف بالراتب': 'Salary certificate', 'تعديل بيانات': 'Data update', 'قيد التنفيذ': 'In progress', 'منفذ': 'Done', 'مرفوض': 'Rejected',
     'مرضية': 'Sick leave', 'سنوية': 'Annual leave', 'يوم بديل': 'Compensatory day', 'مولود': 'Newborn leave', 'وفاة': 'Bereavement leave',
     'إجازة مرضية': 'Sick leave', 'إجازة سنوية': 'Annual leave',
     'تعريف بالراتب': 'Salary certificate', 'تثبيت راتب': 'Salary transfer letter', 'إضافة فرد للتأمين': 'Add insurance member',
