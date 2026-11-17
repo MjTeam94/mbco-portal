@@ -58,6 +58,7 @@ window.MBCO_DEMO = (function () {
         { name: 'موظف تجريبي 4', id: '10004', team: 'المحطات · 2', post: 'قطار الحرمين', cdc: 0, ins: 7, vio: 0, car: '', att: 'حاضر', attTone: 'ok' },
         { name: 'موظف تجريبي 5', id: '10005', team: 'التذاكر · 2', post: 'دعم المحطات · التنعيم', cdc: 1, ins: 5, vio: 1, car: '', att: 'غائب', attTone: 'bad' }
       ],
+      dict: { 'صقر المجنوني': 'Saqer Almajnuni', 'سليمان الحازمي': 'Sulaiman Alhazmi', 'مخلد العتيبي': 'Mukhlid Alotaibi', 'موظف تجريبي 1': 'Demo employee 1', 'موظف تجريبي 2': 'Demo employee 2', 'موظف تجريبي 3': 'Demo employee 3', 'موظف تجريبي 4': 'Demo employee 4', 'موظف تجريبي 5': 'Demo employee 5' },
       badges: { cdc: 4, leaves: 5, requests: 4, car: 2 }
     };
   }
@@ -103,6 +104,7 @@ window.MBCO_DEMO = (function () {
         case 'setUser': return ok({ pin: p.resetPin ? '482913' : null });
         case 'ping': return ok({ systems: [{ code: 'CDC', name: 'بلاغات العمليات', ok: true, file: 'CDC cases passenger without ticket', ms: 820 }, { code: 'INS', name: 'الفحص والمخالفات', ok: true, file: 'Inspection and Violations', ms: 760 }, { code: 'RST', name: 'الروستر والطلبات', ok: true, file: 'MBCO Roster & Attendance', ms: 910 }, { code: 'CAR', name: 'السيارات Carlog', ok: true, file: 'Carlog – تسليم واستلام السيارات', ms: 700 }] });
         case 'dashLink': return ok({ url: null });
+        case 'sendReport': window.__sentReport = { filename: p.filename, size: (p.pdf || '').length, caption: p.caption }; return ok({});
         default: return fail('unknown');
       }
     }

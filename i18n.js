@@ -30,6 +30,10 @@ window.MBCO_I18N = {
     from: 'من', to: 'إلى', apply: 'عرض', search: 'بحث في الجدول', export: 'تصدير CSV', open_dash: 'اللوحة الكاملة للنظام',
     rows: 'سجل', no_rows: 'لا توجد سجلات في هذه الفترة', truncated: 'يُعرض أول 2000 سجل من',
     print: 'طباعة / حفظ PDF', report_title: 'التقرير اليومي', daily: 'Daily',
+    report_sub: 'ملخص الأداء اليومي · العمليات والفحص والروستر والسيارات', prepared: 'أُعد', rep_hint: 'هذا شكل الملف اللي ينحفظ وينرسل. غيّر اليوم التشغيلي من الأعلى عند الحاجة.',
+    rep_send: 'تحميل وإرسال للإدارة', rep_download: 'تحميل PDF فقط', rep_making: 'جاري تجهيز التقرير…', rep_sending: 'جاري الإرسال لقروب الإدارة…',
+    rep_sent: 'تم حفظ الملف وإرساله لقروب الإدارة ✓', rep_saved: 'تم حفظ الملف ✓', rep_fallback: 'المتصفح ما يدعم التحويل المباشر، استخدم «حفظ كـ PDF» من نافذة الطباعة',
+    e_noreportbot: 'الإرسال غير مضبوط: أضف REPORT_BOT_TOKEN و REPORT_CHAT_ID في إعدادات الـ Hub (الملف انحفظ على جهازك)', e_badfile: 'ملف التقرير غير صالح',
     login_title: 'تسجيل الدخول', emp_id: 'الرقم الوظيفي', pin: 'الرمز السري PIN', login: 'دخول',
     change_pin: 'تغيير الرمز السري', change_pin_note: 'أول دخول: اختر رمزاً جديداً من 4 إلى 8 أرقام.', old_pin: 'الرمز الحالي', new_pin: 'الرمز الجديد', confirm_pin: 'تأكيد الرمز الجديد', save: 'حفظ',
     pin_saved: 'تم حفظ الرمز الجديد', pin_mismatch: 'الرمزان غير متطابقين',
@@ -68,6 +72,10 @@ window.MBCO_I18N = {
     from: 'From', to: 'To', apply: 'Show', search: 'Search table', export: 'Export CSV', open_dash: 'Full system dashboard',
     rows: 'records', no_rows: 'No records in this period', truncated: 'Showing first 2000 of',
     print: 'Print / save PDF', report_title: 'Daily report', daily: 'Daily',
+    report_sub: 'Daily performance summary · Operations, inspections, roster and vehicles', prepared: 'Prepared', rep_hint: 'This is how the file will look. Change the operating day above if needed.',
+    rep_send: 'Download & send to management', rep_download: 'Download PDF only', rep_making: 'Preparing the report…', rep_sending: 'Sending to the management group…',
+    rep_sent: 'Saved and sent to the management group ✓', rep_saved: 'File saved ✓', rep_fallback: 'Your browser cannot convert directly; use "Save as PDF" in the print dialog',
+    e_noreportbot: 'Sending is not set up: add REPORT_BOT_TOKEN and REPORT_CHAT_ID in the Hub settings (the file was saved on your device)', e_badfile: 'Invalid report file',
     login_title: 'Sign in', emp_id: 'Employee ID', pin: 'PIN', login: 'Sign in',
     change_pin: 'Change PIN', change_pin_note: 'First sign-in: choose a new 4–8 digit PIN.', old_pin: 'Current PIN', new_pin: 'New PIN', confirm_pin: 'Confirm new PIN', save: 'Save',
     pin_saved: 'New PIN saved', pin_mismatch: 'PINs do not match',
@@ -77,4 +85,92 @@ window.MBCO_I18N = {
     pin_for: 'Initial PIN for employee', systems_status: 'System connections', test: 'Test', my_account: 'My account',
     sys_ok: 'Connected', sys_fail: 'Not connected', loading: 'Loading…', retry: 'Retry'
   }
+};
+
+/* ترجمة القيم اللي تجي من الأنظمة (عربي ← إنجليزي) في الوضع الإنجليزي.
+   أسماء المحطات والقيم الجديدة تُضاف من تبويب Translations في شيت الـ Hub بدون تعديل الكود. */
+window.MBCO_DATA_EN = {
+  exact: {
+    // مؤشرات الالتزام والأنظمة
+    'الحضور': 'Attendance', 'التوزيع قبل بداية الوردية': 'Distribution before shift start',
+    'طلبات عولجت قبل التصعيد': 'Requests handled before escalation', 'تسليم السيارة بنفسه': 'Vehicle returned by holder',
+    'الروستر': 'Roster', 'الإجازات': 'Leaves', 'الإجازات · 7 أيام': 'Leaves · 7 days', 'Carlog · 7 أيام': 'Carlog · 7 days', 'الربط': 'Link',
+    'الفحص': 'Inspections',
+    // نتائج CDC
+    'إنزال الراكب': 'Passenger offloaded', 'مخالفة': 'Fine issued', 'تحرير مخالفة': 'Fine issued', 'تذكرة فعالة': 'Valid ticket',
+    'شراء تذكرة': 'Ticket bought', 'شراء تذكرة / حل ودي': 'Ticket bought / settled', 'نزل قبل الوصول': 'Left before arrival',
+    'بلاغ غير صحيح': 'False report', 'نزل قبل الدوريات': 'Left before patrol', 'عدم تعاون الدوريات': 'Patrol did not cooperate',
+    'تعذر التواصل': 'Unreachable', 'أغلق دون استلام': 'Closed without pickup', 'أخرى': 'Other', 'بلاغ صحيح': 'Valid report',
+    'إنزال': 'Offloaded', 'غادر': 'Left', 'غادر قبل الدوريات': 'Left before patrol', 'عدم تعاون': 'No cooperation', 'لم يستلم': 'Not taken',
+    // حالات البلاغ والسجلات
+    'جديد': 'New', 'مستلم': 'Taken', 'تم التواصل': 'Contacted', 'في الطريق': 'On the way', 'تم الوصول': 'Arrived',
+    'بانتظار الدوريات': 'Waiting for patrol', 'وصلت الدوريات': 'Patrol arrived', 'مغلق': 'Closed', 'ملغى': 'Cancelled',
+    'مفتوحة': 'Open', 'مفتوح': 'Open', 'مغلقة': 'Closed', 'ملغاة': 'Void',
+    // الورديات والفرق
+    'معتمد': 'Approved', 'لم يوزع': 'Not distributed', 'لم يوزع بعد': 'Not distributed yet', 'بانتظار': 'Pending', 'قادمة': 'Upcoming',
+    'المحطات': 'Stations', 'التذاكر': 'Tickets', 'الإدارة': 'Admin', 'فريق المحطات': 'Stations team', 'فريق التذاكر': 'Tickets team',
+    'الأولى': 'Shift 1', 'الثانية': 'Shift 2', 'الثالثة': 'Shift 3', 'المكتبية 4': 'Office 4', 'المكتبية 5': 'Office 5', 'خارج الوردية': 'Off shift',
+    // الحضور
+    'حاضر': 'Present', 'غائب': 'Absent', 'إجازة': 'Leave', 'أوف': 'Off', 'استئذان': 'Permission', 'انسحاب': 'Withdrawal',
+    'متأخر عن بصمة الدخول': 'Late for check-in', 'متأخر بعد البريك': 'Late after break', 'متأخر عن موقع التوزيع': 'Late to assigned post',
+    // الإجازات والطلبات
+    'بانتظار المشرف': 'Awaiting supervisor', 'موافقة المشرف – بانتظار Mena-Me': 'Approved – awaiting Mena-Me', 'مرفوض من المشرف': 'Rejected by supervisor',
+    'معتمد نهائيا (Mena-Me)': 'Final approval (Mena-Me)', 'مرفوض إداريا': 'Rejected by admin', 'ملغى من الموظف': 'Cancelled by employee',
+    'بانتظار الإدارة': 'Awaiting admin', 'قيد التنفيذ': 'In progress', 'منفذ': 'Done', 'مرفوض': 'Rejected',
+    'مرضية': 'Sick leave', 'سنوية': 'Annual leave', 'يوم بديل': 'Compensatory day', 'مولود': 'Newborn leave', 'وفاة': 'Bereavement leave',
+    'إجازة مرضية': 'Sick leave', 'إجازة سنوية': 'Annual leave',
+    'تعريف بالراتب': 'Salary certificate', 'تثبيت راتب': 'Salary transfer letter', 'إضافة فرد للتأمين': 'Add insurance member',
+    'مسيرة راتب': 'Payslip', 'طلب آخر': 'Other request', 'يومان': '2 days', 'يوم': '1 day',
+    'موظف': 'Employee', 'دعم المحطات': 'Stations support', 'سجلات': 'Records', 'ملاحظات': 'Notes',
+    'موظف من المحطات': 'Stations team member', 'موظف من التذاكر': 'Tickets team member',
+    // Carlog
+    'في المكتب': 'At the office', 'في الورشة': 'In workshop', 'سجل يدوي': 'Manual log', 'سجل يدوي (واتساب)': 'Manual log (WhatsApp)',
+    'عهدة مركبة': 'Vehicle custody', 'بلاغ عطل': 'Fault report', 'صيانة': 'Maintenance', 'طلب صيانة': 'Maintenance request',
+    'تسليم للمكتب': 'Returned to office', 'استلام من زميل': 'Taken from colleague', 'إغلاق إداري': 'Admin close', 'تعمل': 'Running', 'متوقفة': 'Stopped',
+    'سليمة': 'OK', 'يوجد ملاحظة': 'Has a note',
+    // أنواع السجلات
+    'فحص تذاكر': 'Ticket inspection', 'فحص جاهزية': 'Readiness check', 'تغطية محطة': 'Station coverage', 'توزيع وردية': 'Shift distribution',
+    'بند توزيع': 'Distribution item', 'تحضير وردية': 'Shift roll call', 'بند تحضير': 'Roll call item', 'طلب إجازة': 'Leave request', 'طلب إداري': 'Admin request',
+    // الحافلات المتكررة
+    'بلاغات CDC': 'CDC cases', 'مخالفات': 'Violations', 'ملاحظات جاهزية': 'Readiness notes',
+    // مهام التوزيع
+    'TL مسؤول الوردية': 'TL – shift lead', 'مسؤول الوردية': 'Shift lead', 'استلام حالات العمليات CDC': 'CDC case response',
+    'تمركز محطة وسطية': 'Mid-route station post', 'فحص ميداني – تنقل بين الحافلات': 'Field inspection – bus hopping', 'فحص ميداني': 'Field inspection',
+    'دعم فريق المحطات': 'Stations team support', 'محطة أخرى': 'Other station',
+    // المحطات (أضف غيرها من تبويب Translations في الـ Hub)
+    'المروة': 'Al Marwah', 'قطار الحرمين': 'Haramain Train', 'جبل الكعبة': 'Jabal Al Kaaba', 'التنعيم': 'Al Taneem', 'الأحوال المدنية': 'Civil Affairs',
+    'الزاهر': 'Al Zaher', 'البحيرات': 'Al Buhairat', 'المنصور': 'Al Mansour', 'النوارية': 'Al Nawariyah', 'العزيزية': 'Al Aziziyah',
+    // مؤشرات صفحات الأقسام
+    'عدد البلاغات': 'Cases', 'متوسط الوصول (د)': 'Avg. arrival (min)', 'مخالفات محررة': 'Fines issued', 'فحوصات': 'Inspections',
+    'قيمة المخالفات (ر.س)': 'Fines value (SAR)', 'ساعات تغطية المحطات': 'Station coverage hours', 'عهدات (البوت + اليدوي)': 'Custodies (bot + manual)',
+    'عهدات': 'Custodies', 'كيلومترات': 'Kilometers', 'بلاغات أعطال مفتوحة': 'Open fault reports', 'لم يسلم بنفسه': 'Not returned by holder',
+    'ورديات موزعة': 'Distributed shifts', 'بنود توزيع': 'Distribution items', 'دعم المحطات من التذاكر': 'Station support from tickets',
+    'استلام حالات CDC': 'CDC case response', 'نسبة الحضور': 'Attendance rate', 'غياب': 'Absences', 'تأخير (مرات / دقائق)': 'Late (times / min)',
+    'استئذان أو انسحاب': 'Permission or withdrawal', 'لا توجد طلبات في الفترة': 'No requests in this period', 'موظفون لديهم نشاط': 'Active employees',
+    'أيام حضور': 'Attendance days', 'عمليات (بلاغات + فحص + مخالفات)': 'Operations (cases + inspections + violations)'
+  },
+  patterns: [
+    [/^استلام بلاغ CDC خلال (\d+) د$/, function (m) { return 'CDC case taken within ' + m[1] + ' min'; }],
+    [/^الوصول للبلاغ خلال (\d+) د$/, function (m) { return 'Arrival within ' + m[1] + ' min'; }],
+    [/^بلاغ(?: مسار (\S+))? بدون استلام منذ (\d+) دقيقة$/, function (m) { return (m[1] ? 'Route ' + m[1] + ' case' : 'Case') + ' not taken for ' + m[2] + ' minutes'; }],
+    [/^(.+) انتهت بدون تحضير$/, function (m, tr) { return tr(m[1]) + ' ended without roll call'; }],
+    [/^(.+) بدون توزيع$/, function (m, tr) { return tr(m[1]) + ' not distributed'; }],
+    [/^(.+) لم توزع بعد$/, function (m, tr) { return tr(m[1]) + ' not distributed yet'; }],
+    [/^طلب ?(.*) قارب التصعيد \((\d+) ساعة\)$/, function (m, tr) { return 'Request' + (m[1] ? ' of ' + tr(m[1]) : '') + ' close to escalation (' + m[2] + ' h)'; }],
+    [/^مركبة (\S+) مع (.*) منذ (\d+) ساعة$/, function (m, tr) { return 'Vehicle ' + m[1] + ' with ' + tr(m[2]) + ' for ' + m[3] + ' h'; }],
+    [/^مركبة (\S+) متوقفة ببلاغ عطل$/, function (m) { return 'Vehicle ' + m[1] + ' stopped by a fault report'; }],
+    [/^مركبة (\S+) تجاوزت موعد الزيت بـ (.+) كم$/, function (m) { return 'Vehicle ' + m[1] + ' is ' + m[2] + ' km past its oil change'; }],
+    [/^مركبة (\S+) باقي (\d+) كم على تغيير الزيت$/, function (m) { return 'Vehicle ' + m[1] + ' has ' + m[2] + ' km left to oil change'; }],
+    [/^تعذر الاتصال بنظام (.+?): (.*)$/, function (m, tr) { return 'Cannot reach ' + tr(m[1]) + ': ' + m[2]; }],
+    [/^مع (.+?)(?: · (\d+) س)?$/, function (m, tr) { return 'With ' + tr(m[1]) + (m[2] !== undefined ? ' · ' + m[2] + ' h' : ''); }],
+    [/^(.+) \(سجل يدوي\)$/, function (m, tr) { return tr(m[1]) + ' (manual log)'; }],
+    [/^متأخر (\d+) د$/, function (m) { return m[1] + ' min late'; }],
+    [/^مسارات (.+)$/, function (m) { return 'Routes ' + m[1].replace(/،/g, ','); }],
+    [/^(\S+) · (\d+) أيام$/, function (m, tr) { return tr(m[1]) + ' · ' + m[2] + ' days'; }],
+    [/^(المحطات|التذاكر|الإدارة) · (\d)$/, function (m, tr) { return tr(m[1]) + ' · ' + m[2]; }],
+    [/^الفحص والمخالفات$/, function () { return 'Inspections & violations'; }],
+    [/^الروستر والطلبات$/, function () { return 'Roster & requests'; }],
+    [/^السيارات Carlog$/, function () { return 'Vehicles (Carlog)'; }],
+    [/^بلاغات العمليات$/, function () { return 'CDC cases'; }]
+  ]
 };

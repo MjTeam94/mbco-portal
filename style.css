@@ -192,6 +192,22 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
   .vehicles{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 
+/* نصوص البيانات تأخذ اتجاهها من أول حرف (عربي داخل الواجهة الإنجليزية والعكس) */
+.alert .x,.ringbox .l,.ringbox .s,.list .it b,.list .it span,.legend span,.shift .t b,.tbl td{unicode-bidi:plaintext}
+
+/* التقرير اليومي */
+.reptool{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.sheet{display:flex;flex-direction:column;gap:18px}
+.rephead{background:var(--surface);border:1px solid var(--line);border-top:6px solid var(--accent);border-radius:12px;padding:16px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:14px}
+.reptitle b{display:block;font-size:22px;font-weight:800}
+.reptitle span{font-size:13px;color:var(--muted)}
+.repmeta{display:flex;flex-direction:column;align-items:flex-end;gap:6px;font-size:12px}
+[dir="ltr"] .repmeta{align-items:flex-end}
+.repfoot{display:flex;justify-content:space-between;gap:10px;font-size:11px;color:var(--muted);padding:4px 4px 0}
+.pdfsheet{background:var(--bg);color:var(--text);padding:28px;box-sizing:border-box;font-size:14px;line-height:1.5}
+.pdfsheet .noprint{display:none!important}
+.pdfsheet .grid3{grid-template-columns:repeat(3,minmax(0,1fr))}
+
 /* الطباعة: التقرير اليومي */
 @media print{
   @page{size:A4;margin:10mm}
