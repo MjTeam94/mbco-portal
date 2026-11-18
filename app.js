@@ -138,6 +138,7 @@
     alert: 'M12 9v4M12 17h.01M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
     print: 'M6 9V3h12v6M6 18H4v-7h16v7h-2M8 14h8v7H8z',
     download: 'M12 4v11M7 10l5 5 5-5M5 20h14',
+    upload: 'M12 16V5M7 10l5-5 5 5M5 20h14',
     external: 'M14 4h6v6M20 4l-9 9M18 14v6H4V6h6',
     send: 'M21 3L10 14M21 3l-7 18-4-7-7-4z'
   };
@@ -783,11 +784,11 @@
   function renderRst(key, wrap, force) {
     var R = rstState();
     if (!wrap.querySelector('#rstBody')) {
-      var subs = key === 'roster' ? [['overview', 'overview'], ['grid', 'grid'], ['emps', 'emps'], ['report', 'report']] : null;
+      var subs = key === 'roster' ? [['overview', 'overview'], ['grid', 'grid'], ['edit', 'manage'], ['emps', 'emps'], ['report', 'report']] : null;
       if (subs && !subs.some(function (s) { return s[0] === R.sub; })) R.sub = 'overview';
       var needMonth = key === 'roster', needDay = key === 'att' || key === 'roster';
       wrap.innerHTML = '<div class="card rsttools noprint">' +
-        (subs ? '<div class="seg sub">' + subs.map(function (s) { return '<button type="button" data-sub="' + s[0] + '" class="' + (R.sub === s[0] ? 'on' : '') + '">' + rt(s[1]) + '</button>'; }).join('') + '</div>' : '') +
+        (subs ? '<div class="seg sub">' + subs.map(function (s) { return '<button type="button" data-sub="' + s[0] + '" class="' + (R.sub === s[0] ? 'on' : '') + '">' + (s[0] === 'edit' ? '✏️ ' + ro(s[1]) : rt(s[1])) + '</button>'; }).join('') + '</div>' : '') +
         '<div class="rstctl">' +
         (needMonth ? '<label class="field">' + rt('month') + '<input class="input num" type="month" id="rMonth" value="' + esc(R.month) + '"></label>' : '') +
         (needDay ? '<label class="field">' + rt('day') + '<input class="input num" type="date" id="rDate" value="' + esc(R.date) + '"></label>' : '') +
@@ -822,6 +823,8 @@
     var b = document.getElementById('rstBody'), R = st.rst;
     if (!b || !R.d) return;
     var v = key === 'att' ? 'day' : key === 'leaves' ? 'leaves' : key === 'requests' ? 'reqs' : R.sub;
+    var tools = document.querySelector('.rsttools'); if (tools) tools.classList.toggle('editing', v === 'edit');
+    if (v === 'edit') { if (st.ros && st.ros.data && st.ros.month) return rosDraw(); return renderRos(); }
     b.innerHTML = ({ overview: rstOverview, grid: rstGrid, day: rstDay, leaves: rstLeaves, reqs: rstReqs, emps: rstEmps, report: rstReport }[v] || rstOverview)();
     rstBind(key, b);
   }
@@ -1037,11 +1040,431 @@
     });
   }
 
+
+  /* ================= إدارة الروستر: إنشاء / تعديل / رفع / تنزيل (v1.8) ================= */
+  var RO = {
+    ar: {
+      manage: 'إدارة الروستر', r_month: 'شهر الروستر', r_fill: 'تعبئة الشهر من النمط', r_upload: 'رفع ملف Excel', r_ops: 'تنزيل نسخة التشغيل', r_hr: 'تنزيل نسخة HR',
+      r_undo: 'استرجاع آخر نسخة', r_save: 'حفظ ونشر', r_discard: 'تجاهل التعديلات', r_unsaved: 'تعديل غير محفوظ', r_none: 'لا توجد تعديلات',
+      r_pen: 'اختر رمز ثم اضغط أو اسحب على الخانات', r_clear: 'مسح', r_sel: 'للموظفين المحددين:', r_replace: 'استبدل', r_with: 'بـ', r_apply: 'تطبيق',
+      r_add: 'إضافة موظف للروستر', r_new: 'جديد', r_readonly: 'عرض فقط: تعديل الروستر للإدارة.', r_loading: 'جارِ تحميل الروستر…',
+      r_filled: 'تمت التعبئة: {n} خانة. راجعها ثم اضغط «حفظ ونشر».', r_nopat: 'ما قدرت أستنتج نمط: {names}', r_loaded: 'تم قراءة الملف: {n} تعديل على {e} موظف ({d} يوم). راجع الخانات المظللة ثم اضغط «حفظ ونشر».',
+      r_newemps: 'موظفين غير موجودين في تبويب الموظفين بنظام الروستر (أضفهم هناك عشان البوت والتحضير): {names}', r_badcodes: 'رموز غير معروفة باللون الأحمر: {codes}. صححها قبل الحفظ.',
+      r_badfile: 'ما قدرت أقرأ الملف. تأكد إنه نفس شكل ملف الروستر الشهري (أعمدة ID و STAFF والتواريخ).', r_saved: 'تم الحفظ ✓ {n} خانة', r_undone: 'تم استرجاع النسخة السابقة ✓',
+      m_save: 'حفظ ونشر الروستر', m_save_b: '{n} خانة تتغير في الروستر، ويشوفها الموظفين في البوت فوراً. تنحفظ نسخة احتياطية قبل الحفظ.',
+      m_undo: 'استرجاع آخر نسخة', m_undo_b: 'يرجع الروستر مثل ما كان قبل آخر حفظ.', m_disc: 'تجاهل كل التعديلات غير المحفوظة؟',
+      r_fill_b: 'يكمّل خانات الشهر الفاضية لكل موظف حسب نمط دوامه (أيام العمل والأوف) وآخر وردية له. الخانات المعبأة ما تتغير.',
+      r_nosheet: 'أضف RST_SHEET_ID في Script Properties حق الـ Hub (دليل التحديث 1.8).', r_leave_warn: '',
+      r_unsaved_leave: 'عندك تعديلات غير محفوظة. تبغى تتركها؟', r_choose: '— اختر موظف —', r_hrmap: 'أكواد HR'
+    },
+    en: {
+      manage: 'Manage roster', r_month: 'Roster month', r_fill: 'Fill month from pattern', r_upload: 'Upload Excel', r_ops: 'Download ops version', r_hr: 'Download HR version',
+      r_undo: 'Restore previous version', r_save: 'Save & publish', r_discard: 'Discard changes', r_unsaved: 'unsaved changes', r_none: 'No changes',
+      r_pen: 'Pick a code, then click or drag over cells', r_clear: 'Clear', r_sel: 'For selected staff:', r_replace: 'replace', r_with: 'with', r_apply: 'Apply',
+      r_add: 'Add employee to roster', r_new: 'new', r_readonly: 'View only: roster editing is for admins.', r_loading: 'Loading roster…',
+      r_filled: 'Filled {n} cells. Review them, then press "Save & publish".', r_nopat: 'No pattern found for: {names}', r_loaded: 'File read: {n} changes for {e} staff ({d} days). Review the highlighted cells, then press "Save & publish".',
+      r_newemps: 'Staff not in the roster system Employees tab (add them there for the bot and attendance): {names}', r_badcodes: 'Unknown codes in red: {codes}. Fix them before saving.',
+      r_badfile: 'Could not read the file. Make sure it has the monthly roster layout (ID, STAFF and date columns).', r_saved: 'Saved ✓ {n} cells', r_undone: 'Previous version restored ✓',
+      m_save: 'Save & publish roster', m_save_b: '{n} cells change in the roster and staff see them on the bot right away. A backup is kept before saving.',
+      m_undo: 'Restore previous version', m_undo_b: 'Returns the roster to how it was before the last save.', m_disc: 'Discard all unsaved changes?',
+      r_fill_b: 'Fills each employee\'s empty cells for the month from their work/off pattern and latest shift. Filled cells are kept.',
+      r_nosheet: 'Add RST_SHEET_ID to the Hub Script Properties (update guide 1.8).', r_leave_warn: '',
+      r_unsaved_leave: 'You have unsaved changes. Leave anyway?', r_choose: '— choose employee —', r_hrmap: 'HR codes'
+    }
+  };
+  function ro(k) { return (RO[st.lang] && RO[st.lang][k]) || RO.ar[k] || k; }
+  var MON3 = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+  var MONF = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+  var DOW2 = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+  var TEAM_ORDER = ['ADM', 'ENF', 'STN'];
+  var TEAM_SHEET = { ADM: 'Office Team', ENF: 'Enforcement Team', STN: 'Station Team' };
+
+  function dAdd(d, n) { var p = d.split('-'); return new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n)).toISOString().slice(0, 10); }
+  function monthEnd(m) { var y = +m.slice(0, 4), mo = +m.slice(5, 7); return m + '-' + String(new Date(Date.UTC(y, mo, 0)).getUTCDate()).padStart(2, '0'); }
+  function prevMonth(m) { var y = +m.slice(0, 4), mo = +m.slice(5, 7) - 1; if (!mo) { mo = 12; y--; } return y + '-' + String(mo).padStart(2, '0'); }
+  function nextMonth(m) { var y = +m.slice(0, 4), mo = +m.slice(5, 7) + 1; if (mo > 12) { mo = 1; y++; } return y + '-' + String(mo).padStart(2, '0'); }
+  function rosRange(m) { return { from: prevMonth(m) + '-27', to: monthEnd(m), hist: dAdd(prevMonth(m) + '-27', -28) }; }
+  function rangeDates(a, b) { var out = []; for (var d = a; d <= b; d = dAdd(d, 1)) out.push(d); return out; }
+
+  function rosState() {
+    if (!st.ros) st.ros = { month: '', data: null, edits: {}, newEmps: {}, pen: '', sel: {}, msgs: [] };
+    return st.ros;
+  }
+  function rosDirty() { return Object.keys(st.ros ? st.ros.edits : {}).length; }
+  function rosVal(id, d) {
+    var R = st.ros, k = id + '|' + d;
+    if (k in R.edits) return R.edits[k];
+    var row = R.rowMap[id]; return row && row.codes[d] || '';
+  }
+  function rosShift(code) { return st.ros.shiftMap[code]; }
+  function rosEmp(id) { return st.ros.empMap[id] || {}; }
+  function rosName(id) {
+    var e = rosEmp(id), row = st.ros.rowMap[id], ne = st.ros.newEmps[id];
+    if (st.lang !== 'en' && e.ar) return e.ar;
+    return e.en || (row && row.name) || (ne && ne.name) || id;
+  }
+  function rosTeam(id) { var row = st.ros.rowMap[id], ne = st.ros.newEmps[id]; return (row && row.team) || (ne && ne.team) || rosEmp(id).team || ''; }
+  function rosIds() {
+    var R = st.ros, ids = R.data.rows.map(function (r) { return r.id; });
+    Object.keys(R.newEmps).forEach(function (id) { if (ids.indexOf(id) < 0) ids.push(id); });
+    return ids;
+  }
+
+  function renderRos(wrap) {
+    var R = rosState(), m = R.month || (st.rst && st.rst.month) || todayStr().slice(0, 7);
+    if (!R.month) R.month = m;
+    var b = document.getElementById('rstBody');
+    b.innerHTML = '<div class="loading"><div class="spin"></div>' + ro('r_loading') + '</div>';
+    var rg = rosRange(R.month);
+    api('rosterGet', { from: rg.hist, to: rg.to }).then(function (j) {
+      R.data = j; R.edits = {}; R.newEmps = {}; R.sel = {}; R.msgs = [];
+      R.rowMap = {}; j.rows.forEach(function (r) { R.rowMap[r.id] = r; });
+      R.empMap = {}; j.emps.forEach(function (e) { R.empMap[e.id] = e; });
+      R.shiftMap = {}; j.shifts.forEach(function (s) { R.shiftMap[s.code] = s; });
+      if (!R.pen || !R.shiftMap[R.pen]) R.pen = (j.shifts[0] || {}).code || '';
+      if (route() === 'roster' && st.rst.sub === 'edit') rosDraw();
+    }).catch(function (e) {
+      var msg = String(e && e.message || e);
+      if (msg === 'no_rst_sheet') { b.innerHTML = '<div class="ctlmsg"><p>' + esc(ro('r_nosheet')) + '</p></div>'; return; }
+      failBox(b, e, function () { renderRos(wrap); });
+    });
+  }
+
+  function rosDraw() {
+    var R = st.ros, J = R.data, b = document.getElementById('rstBody'); if (!b || !J) return;
+    var rg = rosRange(R.month), dates = rangeDates(rg.from, rg.to), L = st.lang === 'en', can = J.canEdit;
+    var n = rosDirty(), bad = rosBadCodes();
+    var h = '<div class="card rostools">' +
+      '<label class="field">' + ro('r_month') + '<input class="input num" type="month" id="roMonth" value="' + esc(R.month) + '"></label>' +
+      (can ? '<button type="button" class="btn sm" id="roFill">' + icon('roster') + ro('r_fill') + '</button>' +
+        '<label class="btn sm" for="roFile">' + icon('upload') + ro('r_upload') + '<input type="file" id="roFile" accept=".xlsx" class="hide"></label>' : '') +
+      '<button type="button" class="btn sm" id="roOps">' + icon('download') + ro('r_ops') + '</button>' +
+      '<button type="button" class="btn sm" id="roHr">' + icon('download') + ro('r_hr') + '</button>' +
+      (can && J.hasBackup ? '<button type="button" class="btn sm bad" id="roUndo">' + icon('refresh') + ro('r_undo') + '</button>' : '') + '</div>';
+    if (!can) h += '<p class="muted rmeta">' + ro('r_readonly') + '</p>';
+    R.msgs.forEach(function (m) { h += '<div class="romsg ' + (m[0] || '') + '">' + esc(m[1]) + '</div>'; });
+    if (bad.length) h += '<div class="romsg bad">' + esc(ro('r_badcodes').replace('{codes}', bad.join('، '))) + '</div>';
+    if (can) {
+      h += '<div class="card rosbar' + (n ? ' dirty' : '') + '"><div class="ropal">' + J.shifts.map(function (s) {
+        return '<button type="button" class="pal' + (R.pen === s.code ? ' on' : '') + '" data-pen="' + esc(s.code) + '" style="background:' + esc(s.color || '#fff') + '" title="' + esc(tr(s.name) + (s.start ? ' ' + s.start + '-' + s.end : '')) + '">' + esc(s.code) + '</button>';
+      }).join('') + '<button type="button" class="pal clr' + (R.pen === '' ? ' on' : '') + '" data-pen="">' + ro('r_clear') + '</button><span class="muted ropalh">' + ro('r_pen') + '</span></div>' +
+        '<div class="rosave"><b class="num">' + (n ? n + ' ' + ro('r_unsaved') : ro('r_none')) + '</b>' +
+        '<button type="button" class="btn sm" id="roDisc"' + (n ? '' : ' disabled') + '>' + ro('r_discard') + '</button>' +
+        '<button type="button" class="btn primary sm" id="roSave"' + (n && !bad.length ? '' : ' disabled') + '>' + ro('r_save') + '</button></div></div>';
+      var opts = J.shifts.map(function (s) { return '<option value="' + esc(s.code) + '">' + esc(s.code) + '</option>'; }).join('');
+      var notIn = J.emps.filter(function (e) { return e.active && !R.rowMap[e.id] && !R.newEmps[e.id]; });
+      h += '<div class="rosbulk muted">' + ro('r_sel') + ' ' + ro('r_replace') + ' <select class="input sm" id="roFrom"><option value="*">*</option>' + opts + '</select> ' + ro('r_with') +
+        ' <select class="input sm" id="roTo">' + opts + '<option value="">' + ro('r_clear') + '</option></select> <button type="button" class="btn sm" id="roBulk">' + ro('r_apply') + '</button>' +
+        (notIn.length ? '<span class="sp"></span><select class="input sm" id="roAdd"><option value="">' + ro('r_choose') + '</option>' + notIn.map(function (e) { return '<option value="' + e.id + '">' + esc((L ? e.en : e.ar) || e.en) + ' · ' + e.id + '</option>'; }).join('') + '</select><button type="button" class="btn sm" id="roAddB">' + ro('r_add') + '</button>' : '') + '</div>';
+    }
+    h += '<div class="rwrap"><table class="rt ros' + (can ? ' can' : '') + '"><thead><tr><th class="nm">' + (can ? '<input type="checkbox" id="roAll"> ' : '') + rt('emp') + '</th>' + dates.map(function (d) {
+      var w = rDow(d), out = d.slice(0, 7) !== R.month;
+      return '<th class="' + (w === 5 || w === 6 ? 'wk' : '') + (out ? ' out' : '') + '">' + RDAYS[L ? 'en' : 'ar'][w] + '<br><span class="num">' + d.slice(8) + '</span></th>';
+    }).join('') + '</tr></thead><tbody>';
+    var ids = rosIds(), groups = {};
+    ids.forEach(function (id) { var t = rosTeam(id); (groups[t] = groups[t] || []).push(id); });
+    TEAM_ORDER.concat(Object.keys(groups).filter(function (t) { return TEAM_ORDER.indexOf(t) < 0; })).forEach(function (tm) {
+      if (!groups[tm] || !rTeamOk(tm)) return;
+      h += '<tr class="tm"><td class="nm">' + esc(rTeam(tm) || '—') + '</td><td colspan="' + dates.length + '"></td></tr>';
+      groups[tm].forEach(function (id) {
+        h += '<tr data-id="' + id + '"><td class="nm">' + (can ? '<input type="checkbox" class="rosel" data-id="' + id + '"' + (R.sel[id] ? ' checked' : '') + '> ' : '') + '<b>' + esc(rosName(id)) + '</b> <span class="muted num">' + id + '</span>' + (R.newEmps[id] || !R.rowMap[id] ? ' <span class="tag b-warn">' + ro('r_new') + '</span>' : '') + '</td>';
+        dates.forEach(function (d) { h += '<td>' + rosCell(id, d) + '</td>'; });
+        h += '</tr>';
+      });
+    });
+    h += '</tbody></table></div>';
+    b.innerHTML = h;
+    rosBind(b);
+  }
+  function rosCell(id, d) {
+    var R = st.ros, code = rosVal(id, d), s = rosShift(code), k = id + '|' + d, cls = 'cell';
+    if (k in R.edits) cls += ' ed';
+    if (code && !s) cls += ' badc';
+    if (d.slice(0, 7) !== R.month) cls += ' out';
+    if (d === todayStr()) cls += ' today';
+    return '<div class="' + cls + '" data-c="' + k + '" style="background:' + esc(s && s.color || 'transparent') + '">' + esc(code) + '</div>';
+  }
+  function rosBadCodes() {
+    var R = st.ros, bad = {};
+    Object.keys(R.edits).forEach(function (k) { var c = R.edits[k]; if (c && !R.shiftMap[c]) bad[c] = 1; });
+    return Object.keys(bad);
+  }
+  function rosSet(id, d, code) {
+    var R = st.ros, k = id + '|' + d, row = R.rowMap[id], base = row && row.codes[d] || '';
+    if (code === base && row) delete R.edits[k]; else R.edits[k] = code;
+  }
+  function rosRefreshBar() {
+    var n = rosDirty(), bar = document.querySelector('.rosbar'); if (!bar) return;
+    bar.classList.toggle('dirty', !!n);
+    bar.querySelector('.rosave b').textContent = n ? n + ' ' + ro('r_unsaved') : ro('r_none');
+    document.getElementById('roDisc').disabled = !n;
+    document.getElementById('roSave').disabled = !n || rosBadCodes().length > 0;
+  }
+
+  function rosBind(b) {
+    var R = st.ros, J = R.data;
+    var mi = document.getElementById('roMonth');
+    mi.onchange = function () {
+      if (!mi.value) return;
+      if (rosDirty() && !window.confirm(ro('r_unsaved_leave'))) { mi.value = R.month; return; }
+      R.month = mi.value; renderRos();
+    };
+    var dl = function (id, fn) { var x = document.getElementById(id); if (x) x.onclick = fn; };
+    dl('roOps', function () { rosExport('ops'); });
+    dl('roHr', function () { rosExport('hr'); });
+    if (!J.canEdit) return;
+    Array.prototype.forEach.call(b.querySelectorAll('[data-pen]'), function (x) {
+      x.onclick = function () { R.pen = x.getAttribute('data-pen'); b.querySelectorAll('[data-pen]').forEach(function (y) { y.classList.toggle('on', y === x); }); };
+    });
+    var painting = false;
+    var paint = function (el) {
+      var k = el.getAttribute('data-c'); if (!k) return;
+      var p = k.split('|'); rosSet(p[0], p[1], R.pen);
+      el.outerHTML = rosCell(p[0], p[1]);
+      rosRefreshBar();
+    };
+    var tbl = b.querySelector('table.ros');
+    tbl.addEventListener('mousedown', function (e) { var c = e.target.closest('.cell'); if (!c) return; e.preventDefault(); painting = true; paint(c); });
+    tbl.addEventListener('mouseover', function (e) { if (!painting) return; var c = e.target.closest('.cell'); if (c) paint(c); });
+    document.addEventListener('mouseup', function () { painting = false; }, { once: false });
+    tbl.addEventListener('touchstart', function (e) { var c = e.target.closest('.cell'); if (c) { e.preventDefault(); paint(c); } }, { passive: false });
+    Array.prototype.forEach.call(b.querySelectorAll('.rosel'), function (x) { x.onchange = function () { R.sel[x.getAttribute('data-id')] = x.checked; }; });
+    var all = document.getElementById('roAll');
+    if (all) all.onchange = function () { b.querySelectorAll('.rosel').forEach(function (x) { x.checked = all.checked; R.sel[x.getAttribute('data-id')] = all.checked; }); };
+    dl('roBulk', function () {
+      var from = document.getElementById('roFrom').value, to = document.getElementById('roTo').value;
+      var dates = rangeDates(R.month + '-01', monthEnd(R.month)), n = 0;
+      Object.keys(R.sel).forEach(function (id) { if (!R.sel[id]) return; dates.forEach(function (d) { var v = rosVal(id, d); if (from === '*' ? true : v === from) { if (v !== to) { rosSet(id, d, to); n++; } } }); });
+      R.msgs = [['', ro('r_filled').replace('{n}', n)]]; rosDraw();
+    });
+    dl('roAddB', function () {
+      var id = document.getElementById('roAdd').value; if (!id) return;
+      var e = R.empMap[id]; R.newEmps[id] = { name: e.en || e.ar, team: e.team };
+      rosSet(id, R.month + '-01', rosVal(id, R.month + '-01') || '');
+      R.edits[id + '|' + R.month + '-01'] = R.edits[id + '|' + R.month + '-01'] || '';
+      rosDraw();
+    });
+    dl('roDisc', function () { if (window.confirm(ro('m_disc'))) { R.edits = {}; R.newEmps = {}; R.msgs = []; rosDraw(); } });
+    dl('roFill', function () { confirmBox(ro('r_fill'), ro('r_fill_b'), function (note, done) { done(); rosFill(); }, true); });
+    dl('roSave', function () {
+      confirmBox(ro('m_save'), ro('m_save_b').replace('{n}', rosDirty()), function (note, done) {
+        var cells = Object.keys(R.edits).map(function (k) { var p = k.split('|'); return [p[0], p[1], R.edits[k]]; });
+        var emps = Object.keys(R.newEmps).map(function (id) { return [id, R.newEmps[id].name, R.newEmps[id].team]; });
+        api('rosterSave', { cells: cells, emps: emps, note: note }).then(function (j) {
+          done(); toast(ro('r_saved').replace('{n}', j.changed || 0));
+          if (st.rst) st.rst.at = 0;
+          renderRos();
+        }).catch(function (e) { done(errText(e)); });
+      });
+    });
+    dl('roUndo', function () {
+      confirmBox(ro('m_undo'), ro('m_undo_b'), function (note, done) {
+        api('rosterUndo', {}).then(function () { done(); toast(ro('r_undone')); if (st.rst) st.rst.at = 0; renderRos(); }).catch(function (e) { done(errText(e)); });
+      }, true);
+    });
+    var fi = document.getElementById('roFile');
+    if (fi) fi.onchange = function () { var f = fi.files[0]; fi.value = ''; if (f) rosUpload(f); };
+  }
+
+  /* تعبئة الشهر من نمط كل موظف: يحدد طول الدورة (7–14 يوم) من آخر 4 أسابيع ويكمل */
+  function rosFill() {
+    var R = st.ros, J = R.data, rg = rosRange(R.month), mStart = R.month + '-01', end = monthEnd(R.month);
+    var histDates = rangeDates(dAdd(mStart, -28), dAdd(mStart, -1)), mDates = rangeDates(mStart, end), filled = 0, miss = [];
+    var kind = function (c) { if (!c) return null; var s = R.shiftMap[c]; if (!s) return null; var k = String(s.kind).toUpperCase(); return k === 'OFF' ? 'O' : k === 'LEAVE' ? null : 'W'; };
+    rosIds().forEach(function (id) {
+      var seq = histDates.map(function (d) { return kind(rosVal(id, d)); });
+      var known = seq.filter(function (x) { return x; }).length;
+      if (known < 10) { if (mDates.some(function (d) { return !rosVal(id, d); })) miss.push(rosName(id)); return; }
+      var best = 0, bestErr = 1e9;
+      for (var p = 7; p <= 14; p++) {
+        var err = 0, cmp = 0;
+        for (var i = p; i < seq.length; i++) if (seq[i] && seq[i - p]) { cmp++; if (seq[i] !== seq[i - p]) err++; }
+        if (cmp >= 8 && err < bestErr) { bestErr = err; best = p; }
+      }
+      if (!best || bestErr > 2) { miss.push(rosName(id)); return; }
+      var cnt = {}; histDates.slice(-14).forEach(function (d) { var c = rosVal(id, d), s = R.shiftMap[c]; if (s && String(s.kind).toUpperCase() === 'WORK') cnt[c] = (cnt[c] || 0) + 1; });
+      var work = Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; })[0] || rosEmp(id).def || '';
+      var offCode = (J.shifts.filter(function (s) { return String(s.kind).toUpperCase() === 'OFF'; })[0] || {}).code || 'X';
+      var full = seq.slice();
+      mDates.forEach(function (d) {
+        var t = full.length, k = full[t - best];
+        for (var back = 2; !k && t - back * best >= 0; back++) k = full[t - back * best];
+        var cur = rosVal(id, d);
+        full.push(kind(cur) || k || null);
+        if (!cur && k && work) { rosSet(id, d, k === 'O' ? offCode : work); filled++; }
+      });
+    });
+    R.msgs = [['ok', ro('r_filled').replace('{n}', filled)]];
+    if (miss.length) R.msgs.push(['warn', ro('r_nopat').replace('{names}', miss.join('، '))]);
+    rosDraw();
+  }
+
+  /* رفع ملف Excel: نفس شكل الروستر الشهري (أقسام Department: ، صف ID/STAFF/التواريخ) أو شكل تبويب Roster */
+  function rosUpload(file) {
+    var R = st.ros;
+    if (rosDirty() && !window.confirm(ro('r_unsaved_leave'))) return;
+    file.arrayBuffer().then(MBCO_XLSX.read).then(function (wb) {
+      var parsed = rosParse(wb.sheets[0].rows);
+      if (!parsed.rows.length || !parsed.dates.length) throw new Error('badfile');
+      var months = {}; parsed.dates.forEach(function (d) { months[d.slice(0, 7)] = (months[d.slice(0, 7)] || 0) + 1; });
+      var target = Object.keys(months).sort(function (a, b) { return months[b] - months[a]; })[0];
+      var go = function () {
+        var n = 0, emps = {}, newOnes = [];
+        parsed.rows.forEach(function (r) {
+          if (!R.rowMap[r.id]) { R.newEmps[r.id] = { name: r.name, team: r.team }; }
+          if (!R.empMap[r.id]) newOnes.push(r.name + ' (' + r.id + ')');
+          parsed.dates.forEach(function (d) {
+            if (!(d in r.codes)) return;
+            var v = r.codes[d];
+            if (v !== rosVal(r.id, d) || !R.rowMap[r.id]) { rosSet(r.id, d, v); n++; emps[r.id] = 1; }
+          });
+        });
+        R.msgs = [['ok', ro('r_loaded').replace('{n}', n).replace('{e}', Object.keys(emps).length).replace('{d}', parsed.dates.length) + ' · ' + file.name]];
+        if (newOnes.length) R.msgs.push(['warn', ro('r_newemps').replace('{names}', newOnes.join('، '))]);
+        rosDraw();
+      };
+      if (target !== R.month || parsed.dates[0] < rosRange(target).hist) {
+        R.month = target;
+        var rg = rosRange(target), from = parsed.dates[0] < rg.hist ? parsed.dates[0] : rg.hist;
+        return api('rosterGet', { from: from, to: rg.to }).then(function (j) {
+          R.data = j; R.edits = {}; R.newEmps = {};
+          R.rowMap = {}; j.rows.forEach(function (r) { R.rowMap[r.id] = r; });
+          R.empMap = {}; j.emps.forEach(function (e) { R.empMap[e.id] = e; });
+          R.shiftMap = {}; j.shifts.forEach(function (s) { R.shiftMap[s.code] = s; });
+          go();
+        });
+      }
+      go();
+    }).catch(function (e) {
+      R.msgs = [['bad', String(e && e.message) === 'badfile' || /xlsx|zip/.test(String(e && e.message)) ? ro('r_badfile') : errText(e)]];
+      rosDraw();
+    });
+  }
+  function rosParse(rows) {
+    var X = MBCO_XLSX, out = { dates: [], rows: [] }, dset = {}, team = '', cols = null;
+    var code = function (v) { if (v === null || v === undefined) return ''; if (typeof v === 'number') return String(Math.round(v)); return String(v).trim().toUpperCase(); };
+    var teamOf = function (s) { s = String(s || ''); return /office|admin|إدار/i.test(s) ? 'ADM' : /enforce|ticket|تذاكر|فحص/i.test(s) ? 'ENF' : /station|محط/i.test(s) ? 'STN' : (/^(ADM|ENF|STN)$/.test(s.trim()) ? s.trim() : ''); };
+    var asDate = function (v) {
+      if (typeof v === 'number' && v > 40000 && v < 80000) return X.fromSerial(v);
+      if (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v.trim())) return v.trim();
+      return '';
+    };
+    rows.forEach(function (r) {
+      if (!r) return;
+      var b = String(r[1] === undefined || r[1] === null ? '' : r[1]).trim(), a = String(r[0] === undefined || r[0] === null ? '' : r[0]).trim();
+      if (/^department/i.test(b)) { team = teamOf(r[3]) || team; return; }
+      if (/^id$/i.test(b) || /^emp_id$/i.test(a)) {         // صف العناوين: التواريخ
+        var start = /^emp_id$/i.test(a) ? 3 : 5; cols = [];
+        for (var c = start; c < r.length; c++) { var d = asDate(r[c]); if (d) { cols.push([c, d]); if (!dset[d]) { dset[d] = 1; out.dates.push(d); } } }
+        cols.idCol = /^emp_id$/i.test(a) ? 0 : 1; cols.nameCol = cols.idCol + 1; cols.teamCol = /^emp_id$/i.test(a) ? 2 : -1;
+        return;
+      }
+      if (!cols) return;
+      var idv = r[cols.idCol], id = String(idv === undefined || idv === null ? '' : idv).replace(/\.0+$/, '').replace(/\D/g, '');
+      if (!id || id.length < 3 || !String(r[cols.nameCol] || '').trim()) return;
+      var codes = {}; cols.forEach(function (p) { codes[p[1]] = code(r[p[0]]); });
+      out.rows.push({ id: id, name: String(r[cols.nameCol]).trim(), team: cols.teamCol >= 0 ? teamOf(r[cols.teamCol]) : team, codes: codes });
+    });
+    out.dates.sort();
+    return out;
+  }
+
+
+  /* نسخة HR بدون إجازات: يوم الإجازة يرجع لوردية الموظف أو الأوف حسب نمط دوامه (دورة 7–14 يوم) */
+  function rosHrCode(id, d, cache) {
+    var R = st.ros;
+    if (!cache[id]) {
+      var all = rangeDates(rosRange(R.month).hist, monthEnd(R.month));
+      var kindOf = function (c) { var s = R.shiftMap[c]; if (!c || !s) return null; var k = String(s.kind).toUpperCase(); return k === 'OFF' ? 'O' : k === 'LEAVE' ? null : 'W'; };
+      var seq = all.map(function (x) { return kindOf(rosVal(id, x)); });
+      var best = 0, bestErr = 1e9;
+      for (var p = 7; p <= 14; p++) {
+        var err = 0, cmp = 0;
+        for (var i = p; i < seq.length; i++) if (seq[i] && seq[i - p]) { cmp++; if (seq[i] !== seq[i - p]) err++; }
+        if (cmp >= 5 && err / cmp <= 0.25 && err / cmp < bestErr) { bestErr = err / cmp; best = p; }
+      }
+      var cnt = {}; all.forEach(function (x) { var c = rosVal(id, x), sh = R.shiftMap[c]; if (sh && String(sh.kind).toUpperCase() === 'WORK') cnt[c] = (cnt[c] || 0) + (x.slice(0, 7) === R.month ? 3 : 1); });
+      var work = Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; })[0] || rosEmp(id).def || '';
+      var off = (R.data.shifts.filter(function (x) { return String(x.kind).toUpperCase() === 'OFF'; })[0] || {}).code || 'X';
+      cache[id] = { all: all, seq: seq, p: best, work: work, off: off };
+    }
+    var C = cache[id], c = rosVal(id, d), sh = R.shiftMap[c];
+    if (!c || !sh || String(sh.kind).toUpperCase() !== 'LEAVE') return c;
+    var t = C.all.indexOf(d), k = null;
+    if (C.p && t >= 0) for (var n = 1; !k && n <= 6; n++) k = C.seq[t - n * C.p] || C.seq[t + n * C.p] || null;
+    // أقرب وردية عمل قبل الإجازة (لو تغيّرت الوردية خلال الشهر)
+    var w = C.work;
+    for (var b = t - 1; b >= 0; b--) { var cb = rosVal(id, C.all[b]), sb = R.shiftMap[cb]; if (sb && String(sb.kind).toUpperCase() === 'WORK') { w = cb; break; } }
+    return k === 'O' ? C.off : (w || C.off);
+  }
+
+  /* تنزيل: نسخة التشغيل (نفس شكل ملف الروستر الشهري) أو نسخة HR (أكواد HR والتقويم الميلادي للشهر) */
+  function rosExport(kind) {
+    var R = st.ros, J = R.data, m = R.month, y = m.slice(0, 4), mi = +m.slice(5, 7) - 1, X = MBCO_XLSX;
+    var ids = rosIds(), byTeam = {};
+    ids.forEach(function (id) { var t = rosTeam(id) || 'STN'; (byTeam[t] = byTeam[t] || []).push(id); });
+    var teams = TEAM_ORDER.filter(function (t) { return byTeam[t]; }).concat(Object.keys(byTeam).filter(function (t) { return TEAM_ORDER.indexOf(t) < 0; }));
+    var nameEn = function (id) { var e = rosEmp(id), row = R.rowMap[id], ne = R.newEmps[id]; return (row && row.name) || e.en || (ne && ne.name) || id; };
+    var P = '#7B1E8F', HEAD = { b: true, fill: P, color: '#FFFFFF', h: 'center', border: 1 }, CELL = { h: 'center', border: 1 };
+    var colorOf = function (c) { var s = R.shiftMap[c]; return s && s.color ? s.color : null; };
+    var blob, fname;
+    if (kind === 'ops') {
+      var dates = rangeDates(prevMonth(m) + '-27', monthEnd(m)), last = 4 + dates.length, L = X.colName(last);
+      var rows = [], merges = [], heights = { 1: 40 };
+      rows.push([{ v: 'ENFORCEMENT ' + MONF[mi] + ' ROSTER  ' + y, s: { b: true, sz: 24, fill: '#EDE3F3', color: P, h: 'center', border: 'medium' } }]);
+      merges.push('A1:' + L + '1');
+      teams.forEach(function (tm) {
+        var r0 = rows.length + 1;
+        var head = [{ v: 'SR', s: HEAD }, { v: 'Department:', s: HEAD }, { v: '', s: HEAD }, { v: TEAM_SHEET[tm] || tm, s: { b: true, sz: 14, fill: P, color: '#FFFFFF', h: 'center', border: 1 } }, { v: '', s: HEAD }, { v: MONF[mi], s: { b: true, sz: 14, fill: '#D9C6E8', color: P, h: 'center', border: 1 } }];
+        for (var c = 6; c <= last; c++) head.push({ v: '', s: HEAD });
+        rows.push(head); merges.push('B' + r0 + ':C' + r0, 'D' + r0 + ':E' + r0, 'F' + r0 + ':' + L + r0);
+        var dow = ['', '', '', '', ''].map(function () { return { v: '', s: HEAD }; });
+        dates.forEach(function (d) { var w = rDow(d); dow.push({ v: DOW2[w], s: { b: true, fill: w === 5 || w === 6 ? '#D9C6E8' : '#EDE3F3', color: P, h: 'center', border: 1 } }); });
+        rows.push(dow);
+        var hd = [{ v: '', s: HEAD }, { v: 'ID', s: HEAD }, { v: 'STAFF', s: HEAD }, { v: 'Position', s: HEAD }, { v: 'Note', s: HEAD }];
+        dates.forEach(function (d) { hd.push({ v: X.toSerial(d), s: { b: true, fill: d.slice(0, 7) === m ? P : '#9E7BB0', color: '#FFFFFF', h: 'center', border: 1, fmt: 'd' } }); });
+        rows.push(hd);
+        byTeam[tm].forEach(function (id, i) {
+          var e = rosEmp(id), line = [{ v: i + 1, s: CELL }, { v: Number(id), s: CELL }, { v: nameEn(id), s: { border: 1 } }, { v: e.position || '', s: { border: 1 } }, { v: e.task || '', s: { border: 1 } }];
+          dates.forEach(function (d) { var c = rosVal(id, d), col = colorOf(c); line.push({ v: /^\d+$/.test(c) ? Number(c) : c, s: col ? { h: 'center', border: 1, fill: col, b: c === 'AL' } : CELL }); });
+          rows.push(line);
+        });
+      });
+      rows.push([]);
+      var lg = rows.length + 1;
+      rows.push(['', { v: 'Code', s: HEAD }, { v: 'Shift', s: HEAD }, { v: 'From', s: HEAD }, { v: 'To', s: HEAD }]);
+      J.shifts.forEach(function (s) { rows.push(['', { v: /^\d+$/.test(s.code) ? Number(s.code) : s.code, s: { h: 'center', border: 1, fill: s.color || null, b: true } }, { v: s.name, s: { border: 1 } }, { v: s.start, s: CELL }, { v: s.end, s: CELL }]); });
+      var cols = [5, 9, 28, 30, 30]; dates.forEach(function () { cols.push(4.6); });
+      blob = X.write([{ name: MON3[mi] + ' Roster', cols: cols, rows: rows, merges: merges, heights: heights, freeze: 'F1' }]);
+      fname = MON3[mi] + '_' + y + '_Roster.xlsx';
+    } else {
+      var hd2 = rangeDates(m + '-01', monthEnd(m)), hr = J.hr || {}, hrCache = {};
+      var rows2 = [[{ v: 'SR', s: HEAD }, { v: 'ID', s: HEAD }, { v: 'STAFF', s: HEAD }].concat(hd2.map(function (d) { return { v: X.toSerial(d), s: { b: true, fill: P, color: '#FFFFFF', h: 'center', border: 1, fmt: 'dd/mm' } }; }))];
+      var sr = 0;
+      teams.forEach(function (tm) {
+        byTeam[tm].forEach(function (id) {
+          sr++;
+          var line = [{ v: sr, s: CELL }, { v: Number(id), s: CELL }, { v: nameEn(id), s: { border: 1 } }];
+          hd2.forEach(function (d) {
+            var c = rosHrCode(id, d, hrCache), v = hr[c] !== undefined ? hr[c] : c;
+            line.push({ v: /^\d+$/.test(String(v)) ? Number(v) : v, s: CELL });
+          });
+          rows2.push(line);
+        });
+      });
+      var cols2 = [5, 9, 28]; hd2.forEach(function () { cols2.push(6); });
+      blob = X.write([{ name: MON3[mi] + ' HR', cols: cols2, rows: rows2, freeze: 'D2' }]);
+      fname = MON3[mi] + '_' + y + '_HR_Roster.xlsx';
+    }
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fname;
+    document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  }
+
   /* نافذة تأكيد مع ملاحظة */
-  function confirmBox(title, body, onOk) {
+  function confirmBox(title, body, onOk, noNote) {
     var ov = document.createElement('div'); ov.className = 'mov';
     ov.innerHTML = '<div class="mbox" role="dialog" aria-modal="true"><h3>' + esc(title) + '</h3><p class="muted">' + esc(body) + '</p>' +
-      '<textarea class="input" id="mNote" rows="3" placeholder="' + esc(rt('note_ph')) + '"></textarea><div class="err hide" id="mErr"></div>' +
+      '<textarea class="input' + (noNote ? ' hide' : '') + '" id="mNote" rows="3" placeholder="' + esc(rt('note_ph')) + '"></textarea><div class="err hide" id="mErr"></div>' +
       '<div class="mrow"><button type="button" class="btn" id="mNo">' + rt('cancel') + '</button><button type="button" class="btn primary" id="mOk">' + rt('confirm') + '</button></div></div>';
     document.body.appendChild(ov);
     var close = function () { ov.remove(); };

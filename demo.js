@@ -93,6 +93,45 @@ window.MBCO_DEMO = (function () {
   }
 
 
+
+  /* بيانات تجريبية لمحرر الروستر */
+  var ROS_DEMO = null;
+  function rosDemoInit() {
+    if (ROS_DEMO) return ROS_DEMO;
+    var shifts = [['1', 'الوردية الأولى', '07:00', '16:00', 'WORK', '#EDE3F3'], ['2', 'الوردية الثانية', '15:00', '00:00', 'WORK', '#D9C6E8'], ['3', 'الوردية الثالثة', '23:00', '08:00', 'WORK', '#C3A5DB'],
+      ['4', 'دوام مكتبي', '09:00', '18:00', 'WORK', '#E9DDF0'], ['5', 'دوام مكتبي (2)', '10:00', '19:00', 'WORK', '#E9DDF0'], ['T', 'تدريب', '08:00', '17:00', 'OTHER', '#FDE7C8'],
+      ['X', 'أوف', '', '', 'OFF', '#E5E7EB'], ['AL', 'إجازة سنوية', '', '', 'LEAVE', '#F6D7B0'], ['SL', 'إجازة مرضية', '', '', 'LEAVE', '#F4C7C3']].map(function (x) { return { code: x[0], name: x[1], start: x[2], end: x[3], kind: x[4], color: x[5] }; });
+    var emps = [['10190', 'Majid N. Alhashmy', 'ماجد الهاشمي', 'ADM', 'Senior Enforcement Supervisor', 'Operation Management', '4', 7, 5], ['12166', 'Fahad A. AlMalki', 'فهد المالكي', 'ADM', 'Operation Adminstrator', 'Operation Adminstrator', '4', 7, 5],
+      ['10090', 'Sami A. Alhawsawi', 'سامي الهوساوي', 'ENF', 'Enforcement Officer', 'Team D1 Responsible', '1', 8, 6], ['10675', 'Emad A. Barnawi', 'عماد برناوي', 'ENF', 'Enforcement Officer', 'Backup Team D1 Responsible', '1', 8, 6],
+      ['10171', 'Sulaiman A. Alhazmi', 'سليمان الحازمي', 'ENF', 'Enforcement Officer', 'Team D2 Responsible', '2', 8, 6], ['10093', 'Anwar M. Allahyani', 'أنور اللحياني', 'STN', 'Driver Team Leader', 'Team A Responsible', '1', 8, 6],
+      ['10546', 'Saqer A. Almajnuni', 'صقر المجنوني', 'STN', 'Driver Team Leader', 'Team B Responsible', '2', 8, 6], ['10131', 'Mukhlid M. Alotaibi', 'مخلد العتيبي', 'STN', 'Driver Team Leader', 'Team C Responsible', '3', 8, 6],
+      ['12400', 'Abdulaziz M. Alzahrani', 'عبدالعزيز الزهراني', 'STN', 'Bus Operation Attendant', 'Station Team', '1', 8, 6]];
+    var codes = {}, start = '2026-10-01';
+    emps.forEach(function (e, k) {
+      var c = codes[e[0]] = {};
+      for (var i = 0; i < 61; i++) {
+        var d = new Date(Date.UTC(2026, 9, 1 + i)).toISOString().slice(0, 10);
+        c[d] = ((i + k * 3) % e[7]) < e[8] ? e[6] : 'X';
+      }
+      if (k === 3) ['2026-11-20', '2026-11-21', '2026-11-22'].forEach(function (d) { c[d] = 'AL'; });
+    });
+    ROS_DEMO = { shifts: shifts, emps: emps.map(function (e) { return { id: e[0], en: e[1], ar: e[2], team: e[3], position: e[4], task: e[5], def: e[6], active: true }; }), names: emps, codes: codes, backup: null };
+    ROS_DEMO.emps.push({ id: '12999', en: 'New K. Employee', ar: 'موظف جديد', team: 'STN', position: 'Bus Operation Attendant', task: 'Station Team', def: '2', active: true });
+    return ROS_DEMO;
+  }
+  function rosDemoGet(p) {
+    var D = rosDemoInit(), dates = Object.keys(D.codes['10190']).sort();
+    return { from: p.from, to: p.to, dates: dates.filter(function (d) { return d >= p.from && d <= p.to; }), rows: D.names.filter(function (e) { return D.codes[e[0]]; }).map(function (e) { var c = {}; Object.keys(D.codes[e[0]]).forEach(function (d) { if (d >= p.from && d <= p.to && D.codes[e[0]][d]) c[d] = D.codes[e[0]][d]; }); return { id: e[0], name: e[1], team: e[3], codes: c }; })
+      .concat(Object.keys(D.codes).filter(function (id) { return !D.names.some(function (e) { return e[0] === id; }); }).map(function (id) { var c = {}; Object.keys(D.codes[id]).forEach(function (d) { if (d >= p.from && d <= p.to && D.codes[id][d]) c[d] = D.codes[id][d]; }); return { id: id, name: (D.extra && D.extra[id] || {}).name || id, team: (D.extra && D.extra[id] || {}).team || '', codes: c }; })),
+      emps: D.emps, shifts: D.shifts, hr: { '1': 59, '2': 58, '3': 30, '4': 26, '5': 27, 'T': 22 }, canEdit: true, hasBackup: !!D.backup, range: [dates[0], dates[dates.length - 1]] };
+  }
+  function rosDemoSave(p) {
+    var D = rosDemoInit(), n = 0; D.backup = JSON.stringify(D.codes); D.extra = D.extra || {};
+    (p.emps || []).forEach(function (e) { D.extra[e[0]] = { name: e[1], team: e[2] }; });
+    (p.cells || []).forEach(function (c) { var m = D.codes[c[0]] = D.codes[c[0]] || {}; if ((m[c[1]] || '') !== c[2]) { m[c[1]] = c[2]; n++; } });
+    return { changed: n };
+  }
+
   /* بيانات تجريبية للوحة الروستر داخل البوابة */
   function rstDemo(month, date) {
     var D = date || opDay(), M = month || D.slice(0, 7);
@@ -159,6 +198,9 @@ window.MBCO_DEMO = (function () {
         case 'embed': return ok({ reason: 'demo' });
         case 'rstDash': return ok({ data: rstDemo(p.month, p.date), canLeave: true, canReq: true, by: USER.name });
         case 'rstAct': return ok({});
+        case 'rosterGet': return ok(rosDemoGet(p));
+        case 'rosterSave': return ok(rosDemoSave(p));
+        case 'rosterUndo': { var D0 = rosDemoInit(); if (D0.backup) { D0.codes = JSON.parse(D0.backup); D0.backup = null; } return ok({}); }
         case 'sendReport': window.__sentReport = { filename: p.filename, size: (p.pdf || '').length, caption: p.caption }; return ok({});
         default: return fail('unknown');
       }

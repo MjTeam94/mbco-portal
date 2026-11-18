@@ -310,3 +310,32 @@ table.tbl{width:100%;border-collapse:collapse;font-size:13px}
 .mrow{display:flex;justify-content:flex-end;gap:8px}
 @media (max-width:760px){.rminis{grid-template-columns:repeat(3,minmax(0,1fr))}.rstctl{margin-inline-start:0}}
 @media print{.rsttools,.pagehead .seg,#ctlNew{display:none!important}.rrep{border:0}}
+
+/* ---- v1.8 إدارة الروستر ---- */
+.rostools{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;padding:12px 14px}
+.rostools label.btn{cursor:pointer}
+.rosbar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;position:sticky;top:0;z-index:6}
+.rosbar.dirty{border-color:var(--accent);box-shadow:0 0 0 2px var(--tint)}
+.ropal{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.pal{min-width:34px;height:32px;border:1px solid var(--line);border-radius:8px;font:inherit;font-weight:800;color:#1A1F2E;cursor:pointer;padding:0 8px}
+.pal.on{outline:3px solid var(--accent);outline-offset:1px}
+.pal.clr{background:var(--surface);color:var(--text);font-weight:600}
+.ropalh{font-size:12px}
+.rosave{display:flex;align-items:center;gap:8px}
+.rosave b{font-size:13px}
+.rosbulk{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12.5px}
+.rosbulk .sp{flex:1}
+.input.sm{height:32px;padding:0 8px;font-size:13px}
+.romsg{border-radius:10px;padding:9px 12px;font-size:13px;background:var(--tint);color:var(--accent-text)}
+.romsg.ok{background:var(--ok-bg,#E6F4EC);color:var(--ok)}
+.romsg.warn{background:var(--warn-bg,#FFF4E0);color:var(--warn-ink)}
+.romsg.bad{background:var(--danger-bg);color:var(--danger-ink)}
+.rt.ros.can .cell{cursor:crosshair;user-select:none}
+.rt.ros .cell.ed{box-shadow:inset 0 0 0 2px var(--accent)}
+.rt.ros .cell.ed:after{content:'';position:absolute;top:2px;right:2px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.rt.ros .cell.badc{background:#F8E1DF!important;color:#B3261E;box-shadow:inset 0 0 0 2px #B3261E}
+.rt.ros .cell.out{opacity:.55}
+.rt.ros th.out{opacity:.6}
+.rt .nm input[type=checkbox]{vertical-align:middle;margin-inline-end:4px}
+.card.rostools,.card.rosbar{flex-direction:row}
+.rsttools.editing .rstctl .field{display:none}
