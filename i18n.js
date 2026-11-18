@@ -28,6 +28,7 @@ window.MBCO_I18N = {
     col_vio: 'مخالفات', col_car: 'عهدة سيارة', col_att: 'الحضور',
     source: 'المصدر: 4 أنظمة · بلاغات العمليات · الفحص والمخالفات · الروستر والطلبات · إدارة الأسطول', opday_note: 'اليوم التشغيلي يبدأ 07:00 ص · Asia/Riyadh',
     e_rst_old_api: 'نظام الروستر يحتاج تحديث: استبدل Api.gs في مشروع الروستر وانشر نسخة جديدة (دليل التحديث 1.7).', e_badinput: 'بيانات غير صحيحة',
+    att_filter: 'الحالة', att_all: 'الكل', att_late: 'تأخير',
     ctl_tab: 'لوحة التحكم', rec_tab: 'السجلات', ctl_loading: 'جارِ فتح لوحة النظام…', ctl_newwin: 'نافذة مستقلة',
     ctl_arabic: '', ctl_demo: 'في وضع التجربة لا تُعرض لوحات الأنظمة الحقيقية.',
     ctl_role: 'لوحة التحكم لهذا القسم متاحة للإدارة والمشرفين فقط. تقدر تشوف السجلات.',
@@ -78,6 +79,7 @@ window.MBCO_I18N = {
     col_vio: 'Violations', col_car: 'Vehicle', col_att: 'Attendance',
     source: 'Source: 4 systems · Operations cases · Inspections · Roster & requests · Carlog', opday_note: 'Operating day starts 07:00 · Asia/Riyadh',
     e_rst_old_api: 'The roster system needs an update: replace Api.gs in the roster project and deploy a new version (update guide 1.7).', e_badinput: 'Invalid input',
+    att_filter: 'Status', att_all: 'All', att_late: 'Late',
     ctl_tab: 'Control panel', rec_tab: 'Records', ctl_loading: 'Opening the system panel…', ctl_newwin: 'Open in new window',
     ctl_arabic: 'The control panel is the system\'s own page and is shown in Arabic.', ctl_demo: 'System panels are not shown in demo mode.',
     ctl_role: 'This control panel is for admins and supervisors. You can view the records.',
@@ -110,7 +112,7 @@ window.MBCO_DATA_EN = {
     // مؤشرات الالتزام والأنظمة
     'الحضور': 'Attendance', 'التوزيع قبل بداية الوردية': 'Distribution before shift start',
     'طلبات عولجت قبل التصعيد': 'Requests handled before escalation', 'تسليم السيارة بنفسه': 'Vehicle returned by holder',
-    'الروستر': 'Roster', 'إدارة الأسطول': 'Carlog', 'بلاغات العمليات': 'Operations cases', 'الإجازات': 'Leaves', 'الإجازات · 7 أيام': 'Leaves · 7 days', 'Carlog · 7 أيام': 'Carlog · 7 days', 'الربط': 'Link',
+    'الروستر': 'Roster', 'إدارة الأسطول': 'Carlog', 'جدول الشفتات': 'Roster', 'توزيع الموظفين': 'Staff distribution', 'الحضور والغياب': 'Attendance', 'مسؤول الوردية (TL)': 'Shift lead (TL)', 'موظفين موزعين': 'Staff distributed', 'ثابتين في نفس الموقع': 'Fixed at one location', 'يتنقلون بين المواقع': 'Rotating', 'بنود توزيع': 'Distribution items', 'قطار الحرمين': 'Haramain train', 'جبل الكعبة': 'Jabal Al-Kaaba', 'التنعيم': 'Al-Tanaeem', 'المروة': 'Al-Marwah', 'انسحاب': 'Withdrawal', 'استئذان': 'Permission', 'أوف': 'Off', 'غائب': 'Absent', 'حاضر': 'Present', 'إجازة': 'Leave', 'بلاغات العمليات': 'Operations cases', 'الإجازات': 'Leaves', 'الإجازات · 7 أيام': 'Leaves · 7 days', 'Carlog · 7 أيام': 'Carlog · 7 days', 'الربط': 'Link',
     'الفحص': 'Inspections',
     // نتائج CDC
     'إنزال الراكب': 'Passenger offloaded', 'مخالفة': 'Fine issued', 'تحرير مخالفة': 'Fine issued', 'تذكرة فعالة': 'Valid ticket',

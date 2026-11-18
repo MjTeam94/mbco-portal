@@ -599,8 +599,10 @@
   /* ---------------- لوحات التحكم المضمّنة (v1.6) ----------------
      كل قسم نظام له وضعان: «لوحة التحكم» = صفحة النظام نفسها بكل إجراءاتها داخل البوابة،
      و«السجلات» = الجدول الموحد. CDC يدخل تلقائياً بحساب الموظف في نظام البلاغات. */
-  var EMBED_KEYS = { cdc: 1, ins: 1, car: 1, roster: 1, att: 1, leaves: 1, requests: 1 };
+  var EMBED_KEYS = { cdc: 1, ins: 1, car: 1, att: 1, leaves: 1, requests: 1 };
+  var NATIVE_ONLY = { roster: 1, dist: 1 };   // صفحات مبنية بالكامل في البوابة بدون «السجلات»
   function secMode(key) {
+    if (NATIVE_ONLY[key]) return 'ctl';
     if (!EMBED_KEYS[key]) return 'rec';
     var m = ls.get('mbco_mode_' + key);
     if (m === 'ctl' || m === 'rec') return m;
@@ -1460,6 +1462,93 @@
     document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
   }
 
+
+  /* ================= توزيع الموظفين (v1.9) =================
+     هل الموظف ثابت في نفس الموقع ولا يتنقل؟ المطلوب إنهم يتنقلون. */
+  var DT = {
+    ar: { d7: 'آخر 7 أيام', d14: 'آخر 14 يوم', dm: 'هذا الشهر', custom: 'فترة مخصصة', fixed: 'ثابت', rotating: 'يتنقل', few: 'ورديات قليلة',
+      all_states: 'كل الحالات', places: 'المواقع في الفترة', emp: 'الموظف', shifts: 'الورديات', locs: 'المواقع واستلاماته', top: 'أكثر موقع', last: 'آخر الاستلامات (الأقدم ← الأحدث)',
+      state: 'الحالة', streak: 'متتالي', items: 'بنود التوزيع', show_items: 'عرض كل بنود التوزيع', hide_items: 'إخفاء بنود التوزيع',
+      hint: '«ثابت» = أكثر من 70% من وردياته في نفس الموقع، أو آخر 3 ورديات متتالية بنفس الموقع. مسؤول الوردية (TL) ما يُحسب ثابت.', none: 'لا توجد توزيعات في هذه الفترة', times: 'مرة' },
+    en: { d7: 'Last 7 days', d14: 'Last 14 days', dm: 'This month', custom: 'Custom', fixed: 'Fixed', rotating: 'Rotating', few: 'Few shifts',
+      all_states: 'All states', places: 'Locations in period', emp: 'Employee', shifts: 'Shifts', locs: 'Locations & count', top: 'Top location', last: 'Recent assignments (oldest → newest)',
+      state: 'State', streak: 'in a row', items: 'Distribution items', show_items: 'Show all distribution items', hide_items: 'Hide distribution items',
+      hint: '"Fixed" = over 70% of shifts at one location, or the last 3 shifts in a row at the same location. Shift lead (TL) is not counted as fixed.', none: 'No distributions in this period', times: 'x' }
+  };
+  function dt(k) { return (DT[st.lang] && DT[st.lang][k]) || DT.ar[k] || k; }
+  var PLACE_COLORS = ['#EDE3F3', '#FBE3D3', '#D7EDE3', '#DCE8F7', '#F6E7B8', '#F4D3DC', '#E3E7EC', '#D9C6E8', '#CDEBDD', '#FDE7C8'];
+
+  function renderDist(wrap) {
+    var D = st.dist || (st.dist = { per: 'd7', team: 'ALL', state: '', q: '', items: false, from: '', to: '' });
+    var td = todayStr();
+    if (D.per === 'd7') { D.from = dAdd(td, -6); D.to = td; }
+    else if (D.per === 'd14') { D.from = dAdd(td, -13); D.to = td; }
+    else if (D.per === 'dm') { D.from = td.slice(0, 8) + '01'; D.to = td; }
+    wrap.innerHTML = '<div class="card rsttools noprint"><div class="seg sub">' + ['d7', 'd14', 'dm', 'custom'].map(function (p) { return '<button type="button" data-per="' + p + '" class="' + (D.per === p ? 'on' : '') + '">' + dt(p) + '</button>'; }).join('') + '</div>' +
+      '<div class="rstctl">' + (D.per === 'custom' ? '<label class="field">' + t('from') + '<input class="input num" type="date" id="dFrom" value="' + D.from + '"></label><label class="field">' + t('to') + '<input class="input num" type="date" id="dTo" value="' + D.to + '"></label>' : '') +
+      '<div class="seg teams">' + [['ALL', 'all'], ['STN', 'stn'], ['ENF', 'enf']].map(function (x) { return '<button type="button" data-dteam="' + x[0] + '" class="' + (D.team === x[0] ? 'on' : '') + '">' + rt(x[1]) + '</button>'; }).join('') + '</div>' +
+      '<button type="button" class="btn sm" id="dRef">' + icon('refresh') + rt('refresh') + '</button></div></div><div id="distBody"><div class="loading"><div class="spin"></div>' + t('loading') + '</div></div>';
+    wrap.querySelectorAll('[data-per]').forEach(function (b) { b.onclick = function () { D.per = b.getAttribute('data-per'); renderDist(wrap); }; });
+    wrap.querySelectorAll('[data-dteam]').forEach(function (b) { b.onclick = function () { D.team = b.getAttribute('data-dteam'); wrap.querySelectorAll('[data-dteam]').forEach(function (x) { x.classList.toggle('on', x === b); }); distDraw(); }; });
+    var f = document.getElementById('dFrom'), tt = document.getElementById('dTo');
+    if (f) f.onchange = tt.onchange = function () { if (f.value && tt.value) { D.from = f.value; D.to = tt.value; distLoad(true); } };
+    document.getElementById('dRef').onclick = function () { distLoad(true); };
+    distLoad(false);
+  }
+  function distLoad(force) {
+    var D = st.dist, ck = D.from + '|' + D.to;
+    if (D.data && D.key === ck && !force) return distDraw();
+    setSync(true);
+    api('section', { key: 'dist', from: D.from, to: D.to, fresh: !!force }).then(function (j) {
+      D.data = j.data; D.key = ck; addDict(j.data.dict);
+      if (route() === 'dist') distDraw();
+    }).catch(function (e) { var b = document.getElementById('distBody'); if (b) failBox(b, e, function () { distLoad(true); }); }).then(function () { setSync(false); });
+  }
+  function distDraw() {
+    var D = st.dist, b = document.getElementById('distBody'); if (!b || !D.data) return;
+    var A = D.data.dist || { emps: [], places: [] }, L = st.lang === 'en', q = (D.q || '').toLowerCase();
+    var colorMap = {}; A.places.forEach(function (p, i) { colorMap[p.p] = PLACE_COLORS[i % PLACE_COLORS.length]; });
+    var chip = function (p, extra) { return '<span class="pchip" style="background:' + (colorMap[p] || '#eee') + '">' + esc(tr(p)) + (extra || '') + '</span>'; };
+    var emps = A.emps.filter(function (e) {
+      return (D.team === 'ALL' || e.team === D.team) && (!D.state || e.state === D.state) && (!q || (e.name + ' ' + e.name_en + ' ' + e.emp_id).toLowerCase().indexOf(q) >= 0);
+    });
+    var tm = function (e) { return D.team === 'ALL' || e.team === D.team; };
+    var mx = A.places.length ? A.places[0].n : 1;
+    var h = '<p class="muted rmeta">' + rDmy(D.data.from) + ' ← ' + rDmy(D.data.to) + ' · ' + esc(dt('hint')) + '</p>' +
+      '<div class="kpis k4">' + D.data.kpis.map(function (k) { return '<div class="kpi ' + (k.tone || '') + '"><span class="l">' + esc(tr(k.label)) + '</span><span class="v num">' + fmtN(k.value) + '</span></div>'; }).join('') + '</div>';
+    if (!A.emps.length) return (b.innerHTML = h + '<div class="card muted">' + dt('none') + '</div>');
+    h += '<section class="card"><div class="chead"><span class="bar4"></span><h2>' + dt('places') + '</h2></div><div class="pbars">' +
+      A.places.map(function (p) { return '<div class="rbar"><span class="lb">' + chip(p.p) + '</span><span class="tr"><i style="width:' + Math.round(p.n / mx * 100) + '%;background:var(--accent)"></i></span><b class="num">' + p.n + '</b></div>'; }).join('') + '</div></section>';
+    h += '<div class="toolbar"><select class="input" id="dState"><option value="">' + dt('all_states') + '</option><option value="fixed"' + (D.state === 'fixed' ? ' selected' : '') + '>⚠️ ' + dt('fixed') + '</option><option value="rotating"' + (D.state === 'rotating' ? ' selected' : '') + '>🔄 ' + dt('rotating') + '</option><option value="few"' + (D.state === 'few' ? ' selected' : '') + '>' + dt('few') + '</option></select>' +
+      '<input class="input" type="search" id="dQ" placeholder="' + esc(rt('search')) + '" value="' + esc(D.q) + '"><span class="muted"><span class="num">' + emps.length + '</span> / ' + A.emps.filter(tm).length + '</span></div>';
+    h += '<div class="tblwrap rtbl"><table class="tbl twrap"><thead><tr><th>' + dt('emp') + '</th><th>' + dt('shifts') + '</th><th>' + dt('locs') + '</th><th>' + dt('top') + '</th><th>' + dt('last') + '</th><th>' + dt('state') + '</th></tr></thead><tbody>' +
+      (emps.map(function (e) {
+        var badge = e.state === 'fixed' ? '<span class="tag b-warn">⚠️ ' + dt('fixed') + '</span>' : e.state === 'rotating' ? '<span class="tag b-ok">🔄 ' + dt('rotating') + '</span>' : '<span class="tag b-mu">' + dt('few') + '</span>';
+        return '<tr' + (e.state === 'fixed' ? ' class="dfix"' : '') + '><td><b>' + esc(L && e.name_en ? e.name_en : e.name) + '</b> <span class="muted num">' + esc(e.emp_id) + '</span><div class="muted">' + esc(rTeam(e.team)) + '</div></td>' +
+          '<td class="num b">' + e.shifts + '</td><td><div class="pchips">' + e.locs.map(function (l) { return chip(l.p, ' <b class="num">×' + l.n + '</b>'); }).join('') + '</div></td>' +
+          '<td>' + esc(tr(e.top)) + '<div class="sharebar"><i style="width:' + e.share + '%"></i></div><span class="muted num">' + e.share + '%' + (e.streak >= 2 ? ' · ' + e.streak + ' ' + dt('streak') : '') + '</span></td>' +
+          '<td><div class="tline">' + e.timeline.slice(-7).map(function (x) { return '<span class="tdot" style="background:' + (colorMap[x.p] || '#eee') + '" title="' + esc(x.d + ' · ' + rt('shift') + ' ' + x.s + ' · ' + tr(x.p)) + '"><small class="num">' + x.d.slice(8) + '</small>' + esc(tr(x.p)) + '</span>'; }).join('') + '</div></td><td>' + badge + '</td></tr>';
+      }).join('') || '<tr><td colspan="6" class="empty">' + t('no_rows') + '</td></tr>') + '</tbody></table></div>';
+    h += '<div><button type="button" class="btn sm" id="dItems">' + (D.items ? dt('hide_items') : dt('show_items')) + '</button> <button type="button" class="btn sm" id="dCsv">' + icon('download') + t('export') + '</button></div>';
+    if (D.items) {
+      var rows = D.data.rows.filter(function (r) { return D.team === 'ALL' || r.team_code === D.team; });
+      h += '<div class="tblwrap rtbl"><table class="tbl"><thead><tr>' + D.data.columns.map(function (c) { return '<th>' + esc(L ? c.en : c.ar) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+        rows.slice(0, 600).map(function (r) { return '<tr>' + D.data.columns.map(function (c) { var v = r[c.key]; return '<td>' + (v === '' || v === undefined ? '<span class="muted">—</span>' : /^\d{4}-\d{2}-\d{2}/.test(String(v)) ? '<span class="ltr">' + esc(v) + '</span>' : esc(tr(v))) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+    }
+    b.innerHTML = h;
+    var s = document.getElementById('dState'); s.onchange = function () { D.state = s.value; distDraw(); };
+    var qq = document.getElementById('dQ'); qq.oninput = function () { D.q = qq.value; var pos = qq.selectionStart; distDraw(); var n = document.getElementById('dQ'); n.focus(); n.setSelectionRange(pos, pos); };
+    document.getElementById('dItems').onclick = function () { D.items = !D.items; distDraw(); };
+    document.getElementById('dCsv').onclick = function () {
+      var qv = function (v) { v = String(v === null || v === undefined ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+      var out = [[dt('emp'), 'ID', rt('team'), dt('shifts'), dt('top'), '%', dt('state'), dt('locs')].map(qv).join(',')].concat(emps.map(function (e) {
+        return [L && e.name_en ? e.name_en : e.name, e.emp_id, rTeam(e.team), e.shifts, tr(e.top), e.share, dt(e.state), e.locs.map(function (l) { return tr(l.p) + ' ×' + l.n; }).join(' | ')].map(qv).join(',');
+      })).join('\r\n');
+      var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + out], { type: 'text/csv;charset=utf-8' }));
+      a.download = 'MBCO_distribution_' + D.data.from + '_' + D.data.to + '.csv'; document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); }, 500);
+    };
+  }
+
   /* نافذة تأكيد مع ملاحظة */
   function confirmBox(title, body, onOk, noNote) {
     var ov = document.createElement('div'); ov.className = 'mov';
@@ -1491,6 +1580,11 @@
       (mode === 'ctl' ? '<button type="button" class="btn sm hide noprint" id="ctlNew">' + icon('external') + t('ctl_newwin') + '</button>' : '') +
       (DEMO ? '<span class="notice">' + t('demo') + '</span>' : '') + '</div>';
     if (mode === 'ctl') {
+      if (key === 'dist') {
+        main.innerHTML = title + '<div class="ctlnative" id="ctlWrap"></div>';
+        renderDist(document.getElementById('ctlWrap'));
+        return;
+      }
       if (RST_NATIVE[key]) {
         main.innerHTML = title + '<div class="ctlnative" id="ctlWrap"></div>';
         bindModeSwitch(key);
@@ -1508,6 +1602,7 @@
       '<label class="field">' + t('from') + '<input class="input num" type="date" id="sFrom" value="' + esc(s.from) + '"></label>' +
       '<label class="field">' + t('to') + '<input class="input num" type="date" id="sTo" value="' + esc(s.to) + '"></label>' +
       '<button type="button" class="btn primary" id="sGo">' + t('apply') + '</button>' +
+      (key === 'att' ? '<label class="field">' + t('att_filter') + '<select class="input" id="sF">' + [['', 'att_all'], ['حاضر'], ['غائب'], ['late', 'att_late'], ['انسحاب'], ['استئذان'], ['إجازة'], ['أوف']].map(function (o) { return '<option value="' + o[0] + '"' + ((s.f || '') === o[0] ? ' selected' : '') + '>' + esc(o[1] ? t(o[1]) : tr(o[0])) + '</option>'; }).join('') + '</select></label>' : '') +
       '<label class="field search">' + t('search') + '<input class="input" type="search" id="sQ" value="' + esc(s.q) + '"></label>' +
       '<button type="button" class="btn" id="sCsv">' + icon('download') + t('export') + '</button>' +
       '<button type="button" class="btn hide" id="sDash">' + icon('external') + t('open_dash') + '</button></div><div id="sBody"><div class="loading"><div class="spin"></div>' + t('loading') + '</div></div></div>';
@@ -1539,6 +1634,7 @@
     };
     document.getElementById('sGo').onclick = function () { s.from = document.getElementById('sFrom').value; s.to = document.getElementById('sTo').value; fetchIt(true); };
     document.getElementById('sQ').oninput = function () { s.q = this.value; if (s.data) drawTable(key); };
+    var sF = document.getElementById('sF'); if (sF) sF.onchange = function () { s.f = sF.value; if (s.data) drawTable(key); };
     document.getElementById('sCsv').onclick = function () { if (s.data) csv(key); };
     document.getElementById('sDash').onclick = function () {
       api('dashLink', { key: key }).then(function (j) { if (j.url) window.open(j.url, '_blank', 'noopener'); });
@@ -1559,8 +1655,13 @@
   }
 
   function filtered(key) {
-    var s = st.sec[key], d = s.data, q = (s.q || '').trim().toLowerCase();
-    return q ? d.rows.filter(function (r) { return d.columns.some(function (c) { return String(r[c.key]).toLowerCase().indexOf(q) >= 0 || String(tr(r[c.key])).toLowerCase().indexOf(q) >= 0; }); }) : d.rows;
+    var s = st.sec[key], d = s.data, q = (s.q || '').trim().toLowerCase(), f = key === 'att' ? s.f || '' : '';
+    var rows = !f ? d.rows : d.rows.filter(function (r) {
+      if (f === 'late') return Number(r.late_min) > 0;
+      if (f === 'انسحاب' || f === 'استئذان') return r.att_status === f || (r.exit_time && String(r.exit_type || r.att_note || '').indexOf(f) >= 0);
+      return r.att_status === f;
+    });
+    return q ? rows.filter(function (r) { return d.columns.some(function (c) { return String(r[c.key]).toLowerCase().indexOf(q) >= 0 || String(tr(r[c.key])).toLowerCase().indexOf(q) >= 0; }); }) : rows;
   }
 
   function drawTable(key) {

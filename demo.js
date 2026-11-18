@@ -2,7 +2,7 @@
 window.MBCO_DEMO = (function () {
   var SECTIONS = [
     ['home', 'الرئيسية', 'Home', ''], ['cdc', 'بلاغات العمليات', 'Operations cases', 'ops'], ['ins', 'الفحص والمخالفات', 'Inspections & violations', 'ops'],
-    ['car', 'إدارة الأسطول', 'Carlog', 'ops'], ['roster', 'الروستر والتوزيع', 'Roster & distribution', 'staff'], ['att', 'التحضير والغياب', 'Attendance', 'staff'],
+    ['car', 'إدارة الأسطول', 'Carlog', 'ops'], ['roster', 'جدول الشفتات', 'Roster', 'staff'], ['dist', 'توزيع الموظفين', 'Staff distribution', 'staff'], ['att', 'الحضور والغياب', 'Attendance', 'staff'],
     ['leaves', 'الإجازات', 'Leaves', 'staff'], ['requests', 'الطلبات الإدارية', 'Admin requests', 'staff'], ['people', 'أداء الموظفين', 'Staff performance', 'analysis'],
     ['reports', 'التقرير اليومي', 'Daily report', 'analysis'], ['settings', 'الإعدادات والمستخدمين', 'Settings & users', 'system']
   ].map(function (s) { return { key: s[0], ar: s[1], en: s[2], group: s[3] }; });
@@ -70,6 +70,38 @@ window.MBCO_DEMO = (function () {
     var day = function (i) { return add(to, -(i % 7)); };
     var res = { key: key, from: from, to: to, systems: [], canOpenDashboard: true };
     var routes = ['3', '7A', '7B', '11', '5', '1'], sts = ['المروة', 'قطار الحرمين', 'جبل الكعبة', 'التنعيم'];
+    if (key === 'dist') {
+      var people = [['10131', 'مخلد العتيبي', 'Mukhlid Alotaibi', 'STN', 'fixedTL'], ['12271', 'علي سلامي', 'Ali Salami', 'STN', 'fixed'], ['12279', 'نزار الحربي', 'Nezar Alharbi', 'STN', 'rot'], ['12310', 'زياد المالكي', 'Ziyad Almalki', 'STN', 'rot'], ['12400', 'عبدالعزيز الزهراني', 'Abdulaziz Alzahrani', 'STN', 'fixed2'],
+        ['10171', 'سليمان الحازمي', 'Sulaiman Alhazmi', 'ENF', 'rot'], ['10675', 'عماد برناوي', 'Emad Barnawi', 'ENF', 'fixedCDC'], ['11686', 'عمر رمضان', 'Omar Ramadan', 'ENF', 'rot']];
+      var enf = ['CDC Route Calls +(Violations)', 'Field Inspection (Bus Hopping)', 'تمركز: الزاهر', 'Station Support: المروة'];
+      var nd = Math.round((Date.parse(to) - Date.parse(from)) / 864e5) + 1, items = [];
+      people.forEach(function (pp, k) {
+        for (var i = 0; i < nd; i++) {
+          if ((i + k) % 8 >= 6) continue;
+          var d = add(from, i), place;
+          if (pp[4] === 'fixedTL') place = 'TL';
+          else if (pp[4] === 'fixed') place = 'المروة';
+          else if (pp[4] === 'fixed2') place = i % 5 === 0 ? 'التنعيم' : 'قطار الحرمين';
+          else if (pp[4] === 'fixedCDC') place = enf[0];
+          else place = pp[3] === 'STN' ? sts[(i + k) % 4] : enf[(i + k) % 4];
+          items.push({ shift_date: d, shift: String(1 + k % 3), team: pp[3], emp_id: pp[0], emp_name: pp[2], report_label: place, location_type: pp[3] === 'STN' ? 'محطة' : 'ميداني', route: '', break_start: '' });
+        }
+      });
+      var by = {}, places = {};
+      items.forEach(function (r) { var pl = /^TL/.test(r.report_label) ? 'مسؤول الوردية (TL)' : r.report_label; r.place = pl; (by[r.emp_id] = by[r.emp_id] || []).push(r); places[pl] = (places[pl] || 0) + 1; });
+      var emps = people.filter(function (pp) { return by[pp[0]]; }).map(function (pp) {
+        var l = by[pp[0]], cnt = {}; l.forEach(function (x) { cnt[x.place] = (cnt[x.place] || 0) + 1; });
+        var locs = Object.keys(cnt).map(function (k2) { return { p: k2, n: cnt[k2] }; }).sort(function (a, b) { return b.n - a.n; });
+        var last = l[l.length - 1].place, streak = 0; for (var j = l.length - 1; j >= 0 && l[j].place === last; j--) streak++;
+        var share = Math.round(locs[0].n / l.length * 100), isTL = /TL/.test(locs[0].p);
+        return { emp_id: pp[0], name: pp[1], name_en: pp[2], team: pp[3], shifts: l.length, distinct: locs.length, top: locs[0].p, topN: locs[0].n, share: share, streak: streak, lastPlace: last, state: l.length < 3 ? 'few' : (!isTL && (share >= 70 || (streak >= 3 && !/TL/.test(last)))) ? 'fixed' : 'rotating', locs: locs, timeline: l.slice(-14).map(function (x) { return { d: x.shift_date, s: x.shift, p: x.place }; }) };
+      }).sort(function (a, b) { var o = { fixed: 0, rotating: 1, few: 2 }; return o[a.state] - o[b.state] || b.share - a.share; });
+      res.dist = { emps: emps, places: Object.keys(places).map(function (k2) { return { p: k2, n: places[k2] }; }).sort(function (a, b) { return b.n - a.n; }) };
+      res.kpis = [{ label: 'موظفين موزعين', value: emps.length }, { label: 'ثابتين في نفس الموقع', value: emps.filter(function (e) { return e.state === 'fixed'; }).length, tone: 'warn' }, { label: 'يتنقلون بين المواقع', value: emps.filter(function (e) { return e.state === 'rotating'; }).length, tone: 'ok' }, { label: 'بنود توزيع', value: items.length }];
+      res.columns = cols([['shift_date', 'التاريخ', 'Date'], ['shift', 'الوردية', 'Shift'], ['team', 'الفريق', 'Team'], ['emp_name', 'الموظف', 'Employee'], ['place', 'الموقع', 'Location'], ['location_type', 'نوع الموقع', 'Location type']]);
+      res.rows = items.map(function (r) { return Object.assign({}, r, { team_code: r.team, team: r.team === 'STN' ? 'فريق المحطات' : 'فريق التذاكر' }); }).reverse();
+      return res;
+    }
     if (key === 'cdc') {
       res.kpis = [{ label: 'عدد البلاغات', value: 168 }, { label: 'مفتوحة', value: 4, tone: 'bad' }, { label: 'متوسط الوصول (د)', value: 19 }, { label: 'مخالفات محررة', value: 31 }];
       res.columns = cols([['id', 'رقم البلاغ', 'Case'], ['time', 'الوقت', 'Time'], ['route', 'المسار', 'Route'], ['station', 'المحطة', 'Station'], ['bus', 'الحافلة', 'Bus'], ['empName', 'المفتش', 'Inspector'], ['status', 'الحالة', 'Status'], ['outcome', 'النتيجة', 'Outcome']]);
@@ -83,7 +115,7 @@ window.MBCO_DEMO = (function () {
     } else if (key === 'att') {
       res.kpis = [{ label: 'نسبة الحضور', value: '94%' }, { label: 'غياب', value: 6, tone: 'bad' }, { label: 'تأخير (مرات / دقائق)', value: '11 / 164', tone: 'warn' }, { label: 'استئذان أو انسحاب', value: 3 }];
       res.columns = cols([['shift_date', 'التاريخ', 'Date'], ['shift', 'الوردية', 'Shift'], ['team', 'الفريق', 'Team'], ['emp_name', 'الموظف', 'Employee'], ['att_status', 'الحالة', 'Status'], ['late_min', 'التأخير (د)', 'Late (min)'], ['late_type', 'نوع التأخير', 'Late type'], ['exit_time', 'استئذان/انسحاب', 'Exit']]);
-      res.rows = R(30, function (i) { return { shift_date: day(i), shift: String(1 + i % 2), team: i % 2 ? 'التذاكر' : 'المحطات', emp_name: 'موظف تجريبي ' + (1 + i % 5), att_status: i % 9 === 3 ? 'غائب' : 'حاضر', late_min: i % 7 === 2 ? 15 : '', late_type: i % 7 === 2 ? 'متأخر عن بصمة الدخول' : '', exit_time: '' }; });
+      res.rows = R(30, function (i) { return { shift_date: day(i), shift: String(1 + i % 2), team: i % 2 ? 'التذاكر' : 'المحطات', emp_name: 'موظف تجريبي ' + (1 + i % 5), att_status: i % 9 === 3 ? 'غائب' : i % 11 === 5 ? 'انسحاب' : i % 13 === 6 ? 'استئذان' : i % 10 === 8 ? 'إجازة' : 'حاضر', late_min: i % 7 === 2 ? 15 : '', late_type: i % 7 === 2 ? 'متأخر عن بصمة الدخول' : '', exit_time: i % 11 === 5 || i % 13 === 6 ? '13:20' : '' }; });
     } else {
       res.kpis = [{ label: 'سجلات', value: 24 }, { label: 'مفتوحة', value: 3, tone: 'warn' }, { label: 'مغلقة', value: 21 }, { label: 'ملاحظات', value: 2 }];
       res.columns = cols([['case_id', 'الرقم', 'ID'], ['shift_date', 'التاريخ', 'Date'], ['team', 'الفريق', 'Team'], ['emp_name', 'الموظف', 'Employee'], ['station', 'المحطة', 'Station'], ['route', 'المسار', 'Route'], ['status', 'الحالة', 'Status']]);
