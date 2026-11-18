@@ -126,6 +126,53 @@ window.MBCO_DEMO = (function () {
 
 
 
+
+  /* بيانات تجريبية لإدارة الأسطول */
+  var CAR_DEMO = null;
+  function carDemo(from, to) {
+    var today = opDay(), F = from || today, T = to || today;
+    var ms = function (d, hm) { return Date.parse(d + 'T' + hm + ':00+03:00'); };
+    if (!CAR_DEMO) {
+      var y = add(today, -1);
+      CAR_DEMO = {
+        handovers: [
+          { case_id: 'VEH-HND-' + y.replace(/-/g, '') + '-0001', vehicle_id: '6768', plate: 'DSR 6768', emp_id: '10093', emp_name: 'Anwar M. Allahyani', team: 'STN', shift: 'الأولى', start_time: ms(y, '07:30'), end_time: ms(y, '15:41'), duration_min: 491, start_odometer: 223552, end_odometer: 223714, distance_km: 162, start_condition: 'سليمة', end_condition: 'سليمة', close_method: 'تسليم للمكتب', start_photo_url: 'https://example.com/a', end_photo_url: 'https://example.com/b' },
+          { case_id: 'VEH-HND-' + y.replace(/-/g, '') + '-0002', vehicle_id: '6755', plate: 'DSR 6755', emp_id: '10090', emp_name: 'Sami A. Alhawsawi', team: 'ENF', shift: 'الأولى', start_time: ms(y, '07:55'), end_time: ms(y, '14:56'), duration_min: 421, start_odometer: 195533, end_odometer: 195654, distance_km: 121, start_condition: 'سليمة', end_condition: 'سليمة', close_method: 'تسليم للمكتب' },
+          { case_id: 'VEH-HND-' + y.replace(/-/g, '') + '-0003', vehicle_id: '6765', plate: 'DSR 6765', emp_id: '11935', emp_name: 'Ali A. Alshahrani', team: 'ADM', shift: 'الإدارية', start_time: ms(y, '10:05'), end_time: ms(y, '11:19'), duration_min: 73, start_odometer: 198860, end_odometer: 198888, distance_km: 28, start_condition: 'سليمة', end_condition: 'يوجد ملاحظة', end_note: 'المكيف ضعيف', close_method: 'تسليم للمكتب' },
+          { case_id: 'VEH-HND-' + today.replace(/-/g, '') + '-0001', vehicle_id: '6755', plate: 'DSR 6755', emp_id: '11687', emp_name: 'Turki K. Bakhashwin', team: 'ENF', shift: 'الأولى', start_time: ms(today, '07:40'), end_time: ms(today, '09:10'), duration_min: 90, start_odometer: 195654, end_odometer: 195700, distance_km: 46, start_condition: 'سليمة', end_condition: 'سليمة', close_method: 'استلام من زميل', end_emp_name: 'Muteb S. Alharbi', next_case_id: 'VEH-HND-' + today.replace(/-/g, '') + '-0002' },
+          { case_id: 'VEH-HND-' + today.replace(/-/g, '') + '-0002', vehicle_id: '6755', plate: 'DSR 6755', emp_id: '12293', emp_name: 'Muteb S. Alharbi', team: 'STN', shift: 'الأولى', start_time: ms(today, '09:10'), start_odometer: 223790, start_condition: 'سليمة', prev_case_id: 'VEH-HND-' + today.replace(/-/g, '') + '-0001' }
+        ],
+        faults: [{ case_id: 'VEH-FLT-' + today.replace(/-/g, '') + '-0001', vehicle_id: '6765', plate: 'DSR 6765', fault_type: 'المكيف', severity: 'تعمل', description: 'التكييف لا يبرد', emp_id: '11935', emp_name: 'Ali A. Alshahrani', team: 'ADM', start_time: ms(today, '08:20'), status: 'مفتوحة' }],
+        maint: [{ case_id: 'VEH-MNT-' + y.replace(/-/g, '') + '-0001', vehicle_id: '6765', plate: 'DSR 6765', maint_type: 'Engine Oil and Filter Change / تغيير زيت المحرك والفلتر', status: 'مغلقة', start_time: ms(y, '12:00'), end_time: ms(y, '16:30'), duration_min: 270, start_odometer: 188888, end_odometer: 188888, interval_km: 10000, next_due_km: 198888, start_note: 'ورشة الشركة', end_note: 'تم تغيير الزيت والفلتر', closed_by_name: 'Ali A. Alshahrani' }]
+      };
+    }
+    var Dm = CAR_DEMO, now = Date.now(), ws = ms(F, '07:00'), we = ms(add(T, 1), '07:00');
+    var hs = Dm.handovers.filter(function (r) { return r.start_time < we && (!r.end_time || r.end_time >= ws); });
+    var open = function (vid) { return Dm.handovers.filter(function (r) { return r.vehicle_id === vid && !r.end_time; })[0]; };
+    var lastOdo = function (vid) { var m = 0; Dm.handovers.forEach(function (r) { if (r.vehicle_id === vid) m = Math.max(m, r.end_odometer || 0, r.start_odometer || 0); }); return m; };
+    var veh = [['6765', 'DSR 6765', 'NC-4002'], ['6768', 'DSR 6768', 'NC-0003'], ['6755', 'DSR 6755', 'NC-0002']].map(function (v) {
+      var o = open(v[0]), lo = lastOdo(v[0]), fl = Dm.faults.filter(function (f) { return f.vehicle_id === v[0] && f.status === 'مفتوحة'; });
+      var due = v[0] === '6765' ? 198888 + 10000 : v[0] === '6768' ? 231881 : 200898, rem = due - lo;
+      return { vehicle_id: v[0], plate: v[1], vehicle_code: v[2], state: o ? 'out' : 'in', cond: fl.length ? 'warn' : 'ok', holder: o ? { case_id: o.case_id, emp_name: o.emp_name, team: o.team, start_time: o.start_time } : null, lastOdo: lo, faults: fl, maint: null,
+        dues: [{ name: 'Engine Oil and Filter Change / تغيير زيت المحرك والفلتر', due: due, rem: rem, level: rem <= 0 ? 'over' : rem < 500 ? 'warn' : 'ok', interval: 10000 }], maintAlert: rem <= 0 ? 'over' : rem < 500 ? 'warn' : '' };
+    });
+    return { vehicles: veh, handovers: hs, faults: Dm.faults, maint: Dm.maint, requests: [], labels: { note: 'يوجد ملاحظة', peer: 'استلام من زميل', stop: 'متوقفة', open: 'مفتوحة' }, teams: { ENF: 'التذاكر', STN: 'المحطات', ADM: 'الإدارة' },
+      ws: ws, we: we, now: now, today: today, from: F, to: T, templateReady: true, admins: [{ id: '10190', name: 'Majid N. Alhashmy', phone: '0540000000' }, { id: '11935', name: 'Ali A. Alshahrani', phone: '0547000000' }],
+      maintTypes: [{ code: 'PM', name: 'Preventive Maintenance / الصيانة الوقائية' }, { code: 'OIL', name: 'Engine Oil and Filter Change / تغيير زيت المحرك والفلتر' }, { code: 'BRK_INS', name: 'Brake System Inspection / فحص نظام الفرامل' }, { code: 'AC', name: 'Air Conditioning Service / صيانة نظام تكييف الهواء' }], warnKm: 500 };
+  }
+  function carDemoAct(p) {
+    var Dm = CAR_DEMO, now = Date.now();
+    if (p.kind === 'cancel') {
+      var i = Dm.handovers.findIndex(function (r) { return r.case_id === p.id; }), r = Dm.handovers[i], restored = '', to = '';
+      if (r.prev_case_id) { var pr = Dm.handovers.filter(function (x) { return x.case_id === r.prev_case_id; })[0]; if (pr) { ['end_time', 'end_odometer', 'distance_km', 'close_method', 'end_emp_name', 'next_case_id', 'duration_min', 'end_condition'].forEach(function (k) { delete pr[k]; }); restored = pr.case_id; to = pr.emp_name; } }
+      Dm.handovers.splice(i, 1);
+      return { id: p.id, restored: restored, restored_to: to };
+    }
+    if (p.kind === 'fault') { Dm.faults.forEach(function (f) { if (f.case_id === p.id) { f.status = 'مغلقة'; f.end_time = now; f.duration_min = Math.round((now - f.start_time) / 60000); f.resolution_note = p.note; f.resolved_by_name = USER.name; } }); return {}; }
+    if (p.kind === 'close') { Dm.handovers.forEach(function (r) { if (r.case_id === p.id) { r.end_time = now; r.end_odometer = +p.odo || r.start_odometer; r.distance_km = r.end_odometer - r.start_odometer; r.close_method = 'إغلاق إداري'; r.duration_min = Math.round((now - r.start_time) / 60000); } }); return {}; }
+    return { id: 'VEH-REQ-DEMO', pdf: null, xlsx: null };
+  }
+
   /* بيانات تجريبية لمحرر الروستر */
   var ROS_DEMO = null;
   function rosDemoInit() {
@@ -220,6 +267,7 @@ window.MBCO_DEMO = (function () {
       if (p.action === 'login') return p.emp_id === '10190' && p.pin === '1234' ? ok({ token: 'demo', user: USER, mustChange: false, sections: SECTIONS }) : fail('badpin');
       if (!p.token) return fail('auth');
       switch (p.action) {
+        case 'me': return ok({ user: USER, sections: SECTIONS });
         case 'home': return ok({ data: home(p.date, Number(p.heatDays) === 30 ? 30 : 7) });
         case 'section': return ok({ data: section(p.key, p.from, p.to) });
         case 'changePin': return p.old === '1234' ? ok({ token: 'demo' }) : fail('badpin');
@@ -230,6 +278,8 @@ window.MBCO_DEMO = (function () {
         case 'embed': return ok({ reason: 'demo' });
         case 'rstDash': return ok({ data: rstDemo(p.month, p.date), canLeave: true, canReq: true, by: USER.name });
         case 'rstAct': return ok({});
+        case 'carDash': return ok({ data: carDemo(p.from, p.to), canAct: true, me: { id: '10190', name: USER.name } });
+        case 'carAct': return ok({ result: carDemoAct(p) });
         case 'rosterGet': return ok(rosDemoGet(p));
         case 'rosterSave': return ok(rosDemoSave(p));
         case 'rosterUndo': { var D0 = rosDemoInit(); if (D0.backup) { D0.codes = JSON.parse(D0.backup); D0.backup = null; } return ok({}); }

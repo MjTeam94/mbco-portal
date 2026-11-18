@@ -361,7 +361,7 @@
     var c = d.cdc;
     var outTotal = c.outcomes.reduce(function (a, b) { return a + b.n; }, 0);
     var oc = ['var(--c1)', 'var(--c2)', 'var(--c3)', 'var(--c4)'];
-    h += '<section class="card"><div class="chead"><span class="numtag">1</span><h2>' + t('cdc_title') + ' <small>CDC</small></h2>' + openLink('cdc') + '</div>' +
+    h += '<section class="card"><div class="chead"><span class="numtag">1</span><h2>' + t('cdc_title') + '</h2>' + openLink('cdc') + '</div>' +
       '<div class="kpis"><div class="kpi"><span class="l">' + t('cdc_today') + '</span><span class="v num">' + fmtN(c.today) + '</span></div>' +
       '<div class="kpi ' + (c.open ? 'bad' : '') + '"><span class="l">' + t('cdc_open') + '</span><span class="v num">' + fmtN(c.open) + '</span></div>' +
       '<div class="kpi"><span class="l">' + t('cdc_avg') + '</span><span class="v num">' + fmtN(c.avgArrive) + ' <small>' + t('min') + '</small></span></div></div>' +
@@ -407,7 +407,7 @@
 
     // السيارات
     var car = d.car;
-    h += '<section class="card"><div class="chead"><span class="numtag">5</span><h2>' + t('car_title') + ' <small>Carlog</small></h2>' + openLink('car') + '</div>' +
+    h += '<section class="card"><div class="chead"><span class="numtag">5</span><h2>' + t('car_title') + '</h2>' + openLink('car') + '</div>' +
       vehiclesHTML(car.vehicles) +
       '<div class="cfoot"><span class="muted">' + t('km_today') + '</span><b class="num">' + fmtN(car.kmToday) + ' ' + t('km') + ' · ' + car.handoversToday + '</b></div></section>';
 
@@ -1549,6 +1549,396 @@
     };
   }
 
+
+  /* ================= إدارة الأسطول (Carlog) داخل البوابة (v2.0) ================= */
+  var CT = {
+    ar: {
+      overview: 'نظرة عامة', log: 'السجل', faults: 'الأعطال', maint: 'الصيانة', emps: 'أداء الموظفين', daily: 'التقرير اليومي',
+      from: 'من', to: 'إلى', rec: 'استلام', hnd: 'تسليم', km: 'كيلومتر', usage: 'ساعات الاستخدام', peer: 'استلام من زميل بدون تسليم', fnew: 'بلاغات أعطال جديدة', fopen: 'بلاغات مفتوحة الآن',
+      now: 'حالة المركبات الآن', with: 'مع', since: 'منذ', lastodo: 'آخر عداد', kmp: 'كم في الفترة', usep: 'الاستخدام في الفترة', uses: 'عدد العهدات', openf: 'بلاغات مفتوحة',
+      dues: 'الصيانات القادمة', nodues: 'لا توجد مواعيد مسجلة', over_by: 'تجاوزت الموعد بـ {n} كم', left: 'باقي {n} كم', at: 'عند {n}',
+      inmaint: '🔧 في الصيانة', down: '🔴 متوقفة', warnf: '🟡 بلاغ قائم', okc: '🟢 سليمة', inuse: 'مستخدمة', office: 'في المكتب',
+      km_by_v: 'الكيلومترات حسب المركبة', use_by_t: 'ساعات الاستخدام حسب الفريق',
+      id: 'الرقم', veh: 'المركبة', emp: 'الموظف', team: 'الفريق', shift: 'الوردية', recv: 'الاستلام', handv: 'التسليم', dur: 'المدة', odo: 'العداد', kmc: 'كم', cond: 'الحالة', method: 'طريقة الإغلاق', act: 'إجراء',
+      open: 'مفتوحة', manual: 'سجل يدوي', to_peer: 'إلى {n}', all_v: 'كل المركبات', all_t: 'كل الفرق', search: 'بحث بالاسم أو الرقم',
+      cancel: 'إلغاء استلام خاطئ', close_adm: 'إغلاق إداري', close_f: 'إغلاق البلاغ',
+      m_cancel: 'إلغاء استلام خاطئ', m_cancel_b: 'العهدة {id} ({plate} – {emp}، عداد {odo}) تنحذف، وتنحفظ نسخة منها في تبويب CancelledHandovers. لو انقفلت عهدة قبلها بسبب هذا الاستلام، ترجع مفتوحة عند صاحبها مثل ما كانت. العداد ومواعيد الزيت ترجع تنحسب صح.',
+      m_close: 'إغلاق العهدة إدارياً', m_close_b: '{plate} مع {emp} من {since}. اكتب عداد التسليم إذا تعرفه (اختياري).', odo_ph: 'عداد التسليم (اختياري)',
+      m_fault: 'إغلاق بلاغ العطل', m_fault_b: '{id} · {plate} · {type}. اكتب الإجراء المتخذ.', note_req: 'الإجراء المتخذ',
+      reason_ph: 'السبب (مثلاً: اختار 6755 بدل 6768)', done_cancel: 'تم الإلغاء ✓', restored: 'ورجعت العهدة {id} مفتوحة عند {emp}',
+      fault: 'العطل', sev: 'الخطورة', reporter: 'المبلّغ', time: 'الوقت', fdur: 'مدة البلاغ', fact: 'الإجراء', run: '🟡 تعمل', stop: '🔴 متوقفة', fo: 'مفتوح', fc: 'مغلق',
+      f_new: 'بلاغات جديدة في الفترة', f_closed: 'أُغلقت في الفترة', f_by_v: 'البلاغات حسب المركبة', f_down: 'مدة التوقف (بلاغات متوقفة)',
+      mtype: 'نوع الصيانة', mstate: 'الحالة', min: 'الدخول', mout: 'الخروج', mdown: 'مدة التوقف', mnext: 'الصيانة القادمة', mnote: 'الورشة / ما تم', mby: 'بواسطة',
+      m_in: '🔧 في الصيانة', m_past: 'مسجلة سابقاً', m_done: 'انتهت', nodown: 'بدون توقف', after: 'بعد {n} كم',
+      m_range: 'صيانات في الفترة', m_downr: 'توقف بسبب الصيانة في الفترة', m_now: 'في الصيانة الآن', m_over: 'صيانات متجاوزة', m_warn: 'باقي أقل من {n} كم',
+      m_sum: 'ملخص كل مركبة (كل السجل)', m_cur: 'العداد الحالي', m_cnt: 'عدد الصيانات', m_tot: 'إجمالي التوقف للصيانة', m_last: 'آخر صيانة', m_log: 'سجل الصيانات (كل الفترات)', dl_log: 'تحميل الكارلوق',
+      rq_t: 'طلب صيانة رسمي (نموذج NRV + كارلوق)', rq_v: 'المركبة', rq_m: 'العداد', rq_e: 'الطالب', rq_p: 'الجوال', rq_items: 'اختر حتى 9 بنود:', rq_btn: 'تجهيز النموذج والكارلوق', rq_wait: 'جارٍ التجهيز… (ممكن ياخذ نص دقيقة)',
+      rq_max: 'الحد الأقصى 9 بنود', rq_none: 'اختر بند واحد على الأقل', rq_last: 'آخر الطلبات:', rq_wait_s: 'بانتظار الموعد', rq_in: 'دخلت الصيانة', rq_tpl: 'لتفعيل طلب الصيانة الرسمي: اربط ملف القوالب (TEMPLATE_ID) في نظام Carlog.',
+      e_name: 'الموظف', e_id: 'الرقم', e_uses: 'العهدات', e_avg: 'متوسط العهدة', e_notes: 'ملاحظات عند الاستلام', e_faults: 'بلاغات أعطال', e_peer: 'لم يسلّم بنفسه',
+      e_hint: '«لم يسلّم بنفسه» = عهدات انقفلت لأن زميل استلم المركبة منه مباشرة بدون ما يسجل هو التسليم.',
+      d_title: 'التقرير اليومي – تسليم واستلام السيارات', d_sub: 'اليوم التشغيلي {d} من 07:00 حتى 07:00 اليوم التالي', d_day: 'التاريخ', d_show: 'عرض', print: 'طباعة / PDF',
+      d_sum: 'ملخص المركبات', d_rate: 'نسبة الاستخدام', d_kmt: 'الكيلومترات حسب الفريق', d_use: 'نسبة استخدام المركبات', d_log: 'سجل العهدات', d_notes: 'الملاحظات', d_foot: 'MBCO – نظام تسليم واستلام السيارات', none: 'لا توجد بيانات',
+      a_maint: '🔧 {p} في الصيانة الآن ({t}) منذ {s}', a_due: '{p} – {n}: {txt} (الموعد {d} كم)', h: 'س', m: 'د', ok: 'سليمة', note_k: 'استلام', note_h: 'تسليم'
+    },
+    en: {
+      overview: 'Overview', log: 'Log', faults: 'Faults', maint: 'Maintenance', emps: 'Staff performance', daily: 'Daily report',
+      from: 'From', to: 'To', rec: 'Pick-ups', hnd: 'Returns', km: 'Kilometres', usage: 'Usage hours', peer: 'Taken from colleague without return', fnew: 'New fault reports', fopen: 'Open faults now',
+      now: 'Vehicles now', with: 'With', since: 'Since', lastodo: 'Last odometer', kmp: 'km in period', usep: 'Usage in period', uses: 'Custodies', openf: 'Open faults',
+      dues: 'Upcoming maintenance', nodues: 'No schedules recorded', over_by: 'Overdue by {n} km', left: '{n} km left', at: 'at {n}',
+      inmaint: '🔧 In maintenance', down: '🔴 Stopped', warnf: '🟡 Open report', okc: '🟢 OK', inuse: 'In use', office: 'At office',
+      km_by_v: 'Kilometres by vehicle', use_by_t: 'Usage hours by team',
+      id: 'No.', veh: 'Vehicle', emp: 'Employee', team: 'Team', shift: 'Shift', recv: 'Pick-up', handv: 'Return', dur: 'Duration', odo: 'Odometer', kmc: 'km', cond: 'Condition', method: 'Close method', act: 'Action',
+      open: 'Open', manual: 'Manual record', to_peer: 'to {n}', all_v: 'All vehicles', all_t: 'All teams', search: 'Search name or ID',
+      cancel: 'Cancel wrong pick-up', close_adm: 'Admin close', close_f: 'Close report',
+      m_cancel: 'Cancel wrong pick-up', m_cancel_b: 'Custody {id} ({plate} – {emp}, odometer {odo}) is removed and a copy is kept in the CancelledHandovers tab. If an earlier custody was closed because of it, it is reopened with its holder as it was. Odometer and oil schedules are recalculated.',
+      m_close: 'Close custody (admin)', m_close_b: '{plate} with {emp} since {since}. Enter the return odometer if known (optional).', odo_ph: 'Return odometer (optional)',
+      m_fault: 'Close fault report', m_fault_b: '{id} · {plate} · {type}. Write the action taken.', note_req: 'Action taken',
+      reason_ph: 'Reason (e.g. picked 6755 instead of 6768)', done_cancel: 'Cancelled ✓', restored: 'and custody {id} is open again with {emp}',
+      fault: 'Fault', sev: 'Severity', reporter: 'Reported by', time: 'Time', fdur: 'Open for', fact: 'Action', run: '🟡 Running', stop: '🔴 Stopped', fo: 'Open', fc: 'Closed',
+      f_new: 'New reports in period', f_closed: 'Closed in period', f_by_v: 'Reports by vehicle', f_down: 'Downtime (stopped reports)',
+      mtype: 'Maintenance type', mstate: 'State', min: 'In', mout: 'Out', mdown: 'Downtime', mnext: 'Next maintenance', mnote: 'Workshop / work done', mby: 'By',
+      m_in: '🔧 In maintenance', m_past: 'Recorded earlier', m_done: 'Done', nodown: 'No downtime', after: 'after {n} km',
+      m_range: 'Maintenance in period', m_downr: 'Maintenance downtime in period', m_now: 'In maintenance now', m_over: 'Overdue', m_warn: 'Less than {n} km left',
+      m_sum: 'Per-vehicle summary (all records)', m_cur: 'Current odometer', m_cnt: 'Maintenance count', m_tot: 'Total maintenance downtime', m_last: 'Last maintenance', m_log: 'Maintenance log (all periods)', dl_log: 'Download carlog',
+      rq_t: 'Official maintenance request (NRV form + carlog)', rq_v: 'Vehicle', rq_m: 'Odometer', rq_e: 'Requested by', rq_p: 'Mobile', rq_items: 'Choose up to 9 items:', rq_btn: 'Prepare form & carlog', rq_wait: 'Preparing… (may take half a minute)',
+      rq_max: 'Maximum 9 items', rq_none: 'Choose at least one item', rq_last: 'Recent requests:', rq_wait_s: 'Awaiting appointment', rq_in: 'Entered maintenance', rq_tpl: 'To enable the official request: link the templates file (TEMPLATE_ID) in the Carlog system.',
+      e_name: 'Employee', e_id: 'ID', e_uses: 'Custodies', e_avg: 'Avg. custody', e_notes: 'Notes at pick-up', e_faults: 'Fault reports', e_peer: 'Did not return himself',
+      e_hint: '"Did not return himself" = custodies closed because a colleague took the vehicle directly without the holder recording the return.',
+      d_title: 'Daily report – vehicle handover', d_sub: 'Operating day {d} from 07:00 to 07:00 next day', d_day: 'Date', d_show: 'Show', print: 'Print / PDF',
+      d_sum: 'Vehicle summary', d_rate: 'Usage rate', d_kmt: 'Kilometres by team', d_use: 'Vehicle usage rate', d_log: 'Custody log', d_notes: 'Notes', d_foot: 'MBCO – Vehicle handover system', none: 'No data',
+      a_maint: '🔧 {p} in maintenance now ({t}) since {s}', a_due: '{p} – {n}: {txt} (due {d} km)', h: 'h', m: 'm', ok: 'OK', note_k: 'Pick-up', note_h: 'Return'
+    }
+  };
+  function ct(k) { return (CT[st.lang] && CT[st.lang][k]) || CT.ar[k] || k; }
+  var CAR_COL = ['#7B1E8F', '#eb6834', '#1baf7a'];
+  var fCT = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Riyadh', hour: '2-digit', minute: '2-digit', hour12: false });
+  var fCD = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Riyadh', year: 'numeric', month: '2-digit', day: '2-digit' });
+  function cTm(ms) { return ms ? fCT.format(new Date(ms)) : '—'; }
+  function cDt(ms) { return ms ? '<span class="ltr">' + fCD.format(new Date(ms)).slice(5) + ' ' + cTm(ms) + '</span>' : '—'; }
+  function cNum(n) { return Math.round(+n || 0).toLocaleString('en-US'); }
+  function cDur(min) { min = Math.max(0, Math.round(min || 0)); var hh = Math.floor(min / 60), mm = min % 60; return hh ? hh + ct('h') + ' ' + mm + ct('m') : mm + ct('m'); }
+  function cTeam(c) { return rTeam(c) || (st.car.d.teams || {})[c] || c || '—'; }
+  function cPhoto(u) { return u ? '<a class="ph" href="' + esc(u) + '" target="_blank" rel="noopener">📷</a>' : ''; }
+  function cName(n) { return st.lang === 'en' ? n : tr(n); }
+
+  function renderCar(wrap, force) {
+    var C = st.car || (st.car = { tab: ls.get('mbco_car_tab') || 'overview', from: '', to: '', fv: '', ft: '', q: '', mv: '', day: '' });
+    if (!wrap.querySelector('#carBody')) {
+      wrap.innerHTML = '<div class="card rsttools noprint"><div class="seg sub">' + ['overview', 'log', 'faults', 'maint', 'emps', 'daily'].map(function (k) { return '<button type="button" data-ctab="' + k + '" class="' + (C.tab === k ? 'on' : '') + '">' + ct(k) + '</button>'; }).join('') + '</div>' +
+        '<div class="rstctl"><label class="field">' + ct('from') + '<input class="input num" type="date" id="cFrom" value="' + esc(C.from) + '"></label><label class="field">' + ct('to') + '<input class="input num" type="date" id="cTo" value="' + esc(C.to) + '"></label>' +
+        '<button type="button" class="btn sm" id="cRef">' + icon('refresh') + rt('refresh') + '</button></div></div><div id="carBody"><div class="loading"><div class="spin"></div>' + t('loading') + '</div></div>';
+      wrap.querySelectorAll('[data-ctab]').forEach(function (b) { b.onclick = function () { C.tab = b.getAttribute('data-ctab'); ls.set('mbco_car_tab', C.tab); wrap.querySelectorAll('[data-ctab]').forEach(function (x) { x.classList.toggle('on', x === b); }); carDraw(); }; });
+      var f = document.getElementById('cFrom'), tt = document.getElementById('cTo');
+      f.onchange = tt.onchange = function () { C.from = f.value; C.to = tt.value; renderCar(wrap, true); };
+      document.getElementById('cRef').onclick = function () { renderCar(wrap, true); };
+    }
+    var ck = C.from + '|' + C.to;
+    if (C.d && C.key === ck && !force && Date.now() - C.at < 60000) return carDraw();
+    setSync(true);
+    return api('carDash', { from: C.from, to: C.to, fresh: !!force }).then(function (j) {
+      C.d = j.data; C.canAct = j.canAct; C.me = j.me; C.at = Date.now();
+      C.from = C.d.from; C.to = C.d.to; C.key = C.from + '|' + C.to;
+      var f = document.getElementById('cFrom'), tt = document.getElementById('cTo'); if (f) { f.value = C.from; tt.value = C.to; }
+      if (route() === 'car') carDraw();
+    }).catch(function (e) { var b = document.getElementById('carBody'); if (b && route() === 'car') failBox(b, e, function () { renderCar(wrap, true); }); })
+      .then(function () { setSync(false); });
+  }
+  function carDraw() {
+    var C = st.car, b = document.getElementById('carBody'); if (!b || !C.d) return;
+    b.innerHTML = ({ overview: carOverview, log: carLog, faults: carFaults, maint: carMaint, emps: carEmps, daily: carDaily }[C.tab] || carOverview)();
+    carBind(b);
+  }
+
+  /* التجميع (نفس حسابات لوحة Carlog) */
+  function carAgg(d) {
+    var ws = d.ws, we = d.we, now = d.now, L = d.labels, V = {}, T = {}, E = {}, notes = [], rec = 0, hnd = 0, km = 0, min = 0, peer = 0;
+    var inW = function (x) { return x && x >= ws && x < we; };
+    var clip = function (r) { return Math.max(0, (Math.min(r.end_time || now, we) - Math.max(r.start_time, ws)) / 60000); };
+    d.vehicles.forEach(function (v) { V[v.vehicle_id] = { v: v, uses: 0, km: 0, min: 0 }; });
+    d.handovers.forEach(function (r) {
+      var vid = String(r.vehicle_id), x = V[vid] || (V[vid] = { v: { vehicle_id: vid, plate: r.plate || vid, state: 'in', cond: 'ok', faults: [], dues: [] }, uses: 0, km: 0, min: 0 });
+      var k = inW(r.end_time) ? (+r.distance_km || 0) : 0, m = clip(r);
+      x.uses++; x.km += k; x.min += m; km += k; min += m;
+      if (inW(r.start_time)) rec++;
+      if (inW(r.end_time)) { hnd++; if (r.close_method === L.peer) peer++; }
+      var tm = r.team || '—'; T[tm] = T[tm] || { km: 0, min: 0, uses: 0 }; T[tm].km += k; T[tm].min += m; T[tm].uses++;
+      var id = String(r.emp_id || r.emp_name), e = E[id] || (E[id] = { id: r.emp_id || '—', name: r.emp_name, team: r.team, uses: 0, km: 0, min: 0, notes: 0, peer: 0, faults: 0 });
+      e.uses++; e.km += k; e.min += m;
+      if (r.start_condition === L.note && inW(r.start_time)) { e.notes++; notes.push({ t: r.start_time, plate: r.plate, who: r.emp_name, kind: ct('note_k'), note: r.start_note }); }
+      if (r.end_condition === L.note && inW(r.end_time)) notes.push({ t: r.end_time, plate: r.plate, who: r.end_emp_name, kind: ct('note_h'), note: r.end_note });
+      if (r.close_method === L.peer && inW(r.end_time)) e.peer++;
+    });
+    var fNew = d.faults.filter(function (f) { return inW(f.start_time); });
+    fNew.forEach(function (f) { var id = String(f.emp_id); (E[id] || (E[id] = { id: id, name: f.emp_name, team: f.team, uses: 0, km: 0, min: 0, notes: 0, peer: 0, faults: 0 })).faults++; });
+    return { V: Object.keys(V).map(function (k) { return V[k]; }), T: T, E: Object.keys(E).map(function (k) { return E[k]; }), notes: notes.sort(function (a, b) { return a.t - b.t; }), rec: rec, hnd: hnd, km: km, min: min, peer: peer,
+      fNew: fNew, fOpen: d.faults.filter(function (f) { return f.status === L.open; }), fClosed: d.faults.filter(function (f) { return inW(f.end_time); }), winMin: Math.max(1, (Math.min(we, now) - ws) / 60000) };
+  }
+  function cBars(items, fmt) {
+    var mx = Math.max.apply(null, [1].concat(items.map(function (i) { return i.v; })));
+    return items.map(function (i, n) { return '<div class="rbar"><span class="lb">' + esc(i.l) + '</span><span class="tr"><i style="width:' + (i.v / mx * 100).toFixed(1) + '%;background:' + CAR_COL[n % 3] + '"></i></span><b class="num">' + fmt(i.v) + '</b></div>'; }).join('') || '<p class="muted">' + ct('none') + '</p>';
+  }
+  function cKpis(A) {
+    return '<div class="kpis k6">' + [[A.rec, 'rec'], [A.hnd, 'hnd'], [cNum(A.km), 'km'], [cDur(A.min), 'usage'], [A.peer, 'peer'], [A.fNew.length, 'fnew'], [A.fOpen.length, 'fopen', A.fOpen.length ? 'bad' : '']]
+      .map(function (k) { return rKpi(ct(k[1]), k[0], k[2]); }).join('') + '</div>';
+  }
+  function cCond(v) {
+    if (v.maint) return '<span class="tag b-bad">' + ct('inmaint') + '</span>';
+    return (v.cond === 'down' ? '<span class="tag b-bad">' + ct('down') + '</span>' : v.cond === 'warn' ? '<span class="tag b-warn">' + ct('warnf') + '</span>' : '<span class="tag b-ok">' + ct('okc') + '</span>') +
+      ' <span class="tag ' + (v.state === 'out' ? 'b-acc' : 'b-mu') + '">' + ct(v.state === 'out' ? 'inuse' : 'office') + '</span>';
+  }
+  function cDueTxt(x) { return x.rem <= 0 ? '⛔ ' + ct('over_by').replace('{n}', cNum(-x.rem)) : (x.level === 'warn' ? '⚠️ ' : '') + ct('left').replace('{n}', cNum(x.rem)); }
+  function cDues(v) {
+    if (!v.dues || !v.dues.length) return '<div class="cdues"><b>' + ct('dues') + '</b><p class="muted">' + ct('nodues') + '</p></div>';
+    return '<div class="cdues"><b>' + ct('dues') + '</b>' + v.dues.map(function (x) { return '<div class="cdue ' + x.level + '"><span>' + esc(cName(x.name)) + '</span><span>' + cDueTxt(x) + ' · ' + ct('at').replace('{n}', cNum(x.due)) + '</span></div>'; }).join('') + '</div>';
+  }
+  function cAlerts(d) {
+    var a = '';
+    d.vehicles.forEach(function (v) {
+      if (v.maint) a += '<div class="romsg">' + esc(ct('a_maint').replace('{p}', v.plate).replace('{t}', cName(v.maint.maint_type)).replace('{s}', fCD.format(new Date(v.maint.start_time)).slice(5) + ' ' + cTm(v.maint.start_time))) + ' – ' + cDur((d.now - v.maint.start_time) / 60000) + '</div>';
+      (v.dues || []).filter(function (x) { return x.level !== 'ok'; }).forEach(function (x) {
+        a += '<div class="romsg ' + (x.level === 'over' ? 'bad' : 'warn') + '">' + (x.level === 'over' ? '⛔ ' : '⚠️ ') + esc(ct('a_due').replace('{p}', v.plate).replace('{n}', cName(x.name)).replace('{txt}', x.rem <= 0 ? ct('over_by').replace('{n}', cNum(-x.rem)) : ct('left').replace('{n}', cNum(x.rem))).replace('{d}', cNum(x.due))) + '</div>';
+      });
+    });
+    return a;
+  }
+
+  function carOverview() {
+    var C = st.car, D = C.d, A = carAgg(D), h = cAlerts(D) + cKpis(A) + '<h3 class="rh3">' + ct('now') + '</h3><div class="cgrid">';
+    D.vehicles.forEach(function (v) {
+      var x = A.V.filter(function (a) { return a.v.vehicle_id === v.vehicle_id; })[0] || { uses: 0, km: 0, min: 0 };
+      var row = function (l, val, cls) { return '<div class="crow"><span>' + l + '</span><b class="' + (cls || '') + '">' + val + '</b></div>'; };
+      h += '<section class="card ccard' + (v.maintAlert === 'over' ? ' over' : '') + '"><div class="cvh"><h3>🚗 ' + esc(v.plate) + '</h3><div>' + cCond(v) + '</div></div>' +
+        (v.holder ? row(ct('with'), esc(cName(v.holder.emp_name)) + ' (' + esc(cTeam(v.holder.team)) + ')') + row(ct('since'), cDt(v.holder.start_time) + ' · ' + cDur((D.now - v.holder.start_time) / 60000)) : '') +
+        row(ct('lastodo'), v.lastOdo ? cNum(v.lastOdo) + ' ' + t('km') : '—') + row(ct('kmp'), cNum(x.km)) + row(ct('usep'), cDur(x.min) + ' (' + Math.round(x.min / A.winMin * 100) + '%)') + row(ct('uses'), x.uses) +
+        (v.faults && v.faults.length ? row(ct('openf'), v.faults.map(function (f) { return esc(cName(f.fault_type)); }).join('، '), 'tbad') : '') + cDues(v) +
+        (C.canAct && v.holder && v.holder.case_id ? '<div class="cacts"><button type="button" class="btn sm bad" data-cact="cancel" data-id="' + esc(v.holder.case_id) + '">' + ct('cancel') + '</button><button type="button" class="btn sm" data-cact="close" data-id="' + esc(v.holder.case_id) + '">' + ct('close_adm') + '</button></div>' : '') + '</section>';
+    });
+    h += '</div><div class="row2 r2eq"><section class="card"><div class="chead"><span class="bar4"></span><h2>' + ct('km_by_v') + '</h2></div>' + cBars(A.V.map(function (x) { return { l: x.v.plate, v: x.km }; }), function (v) { return cNum(v) + ' ' + t('km'); }) + '</section>' +
+      '<section class="card"><div class="chead"><span class="bar4"></span><h2>' + ct('use_by_t') + '</h2></div>' + cBars(Object.keys(A.T).map(function (k) { return { l: cTeam(k), v: A.T[k].min }; }).sort(function (a, b) { return b.v - a.v; }), cDur) + '</section></div>';
+    return h;
+  }
+
+  /* آخر عهدة لكل مركبة (هذي بس اللي ينفع تنلغي) */
+  function carLatest() {
+    var last = {};
+    st.car.d.handovers.forEach(function (r) { if (r.source === 'manual') return; var v = String(r.vehicle_id); if (!last[v] || r.start_time > last[v].start_time) last[v] = r; });
+    var ids = {}; Object.keys(last).forEach(function (k) { ids[last[k].case_id] = 1; }); return ids;
+  }
+  function carLogRows(rows, withAct) {
+    var D = st.car.d, L = D.labels, latest = withAct ? carLatest() : {};
+    return rows.map(function (r) {
+      var cond = r.source === 'manual' ? '<span class="muted">' + ct('manual') + '</span>' : r.start_condition === L.note ? '<span class="twarn">⚠️ ' + esc(r.start_note) + '</span>' : '<span class="tok">' + ct('ok') + '</span>';
+      if (r.end_time && r.source !== 'manual') cond += ' / ' + (r.end_condition === L.note ? '<span class="twarn">⚠️ ' + esc(r.end_note) + '</span>' : '<span class="tok">' + ct('ok') + '</span>');
+      var acts = '';
+      if (withAct && st.car.canAct && r.source !== 'manual') {
+        if (latest[r.case_id]) acts += '<button type="button" class="btn sm bad" data-cact="cancel" data-id="' + esc(r.case_id) + '">' + ct('cancel') + '</button>';
+        if (!r.end_time) acts += '<button type="button" class="btn sm" data-cact="close" data-id="' + esc(r.case_id) + '">' + ct('close_adm') + '</button>';
+      }
+      return '<tr><td><span class="ltr">' + esc(r.case_id || '') + '</span></td><td><b>' + esc(r.plate || r.vehicle_id) + '</b></td><td>' + esc(cName(r.emp_name)) + '<div class="muted num">' + esc(r.emp_id || '') + '</div></td><td>' + esc(cTeam(r.team)) + '</td><td>' + esc(tr(r.shift || '')) + '</td>' +
+        '<td>' + cDt(r.start_time) + ' ' + cPhoto(r.start_photo_url) + '</td><td>' + (r.end_time ? cDt(r.end_time) + ' ' + cPhoto(r.end_photo_url) : '<span class="twarn">' + ct('open') + '</span>') + '</td>' +
+        '<td>' + (r.end_time ? cDur(r.duration_min) : cDur((D.now - r.start_time) / 60000) + '…') + '</td><td class="num">' + cNum(r.start_odometer) + (r.end_odometer ? ' ← ' + cNum(r.end_odometer) : '') + '</td><td class="num"><b>' + (r.end_time ? cNum(r.distance_km) : '—') + '</b></td>' +
+        '<td>' + cond + '</td><td>' + esc(tr(r.close_method || '')) + (r.close_method === L.peer ? '<div class="muted">' + esc(ct('to_peer').replace('{n}', cName(r.end_emp_name))) + '</div>' : '') + '</td>' + (withAct ? '<td class="racts">' + acts + '</td>' : '') + '</tr>';
+    }).join('');
+  }
+  function carLogHead(withAct) { return '<tr>' + ['id', 'veh', 'emp', 'team', 'shift', 'recv', 'handv', 'dur', 'odo', 'kmc', 'cond', 'method'].concat(withAct ? ['act'] : []).map(function (k) { return '<th>' + ct(k) + '</th>'; }).join('') + '</tr>'; }
+  function carLog() {
+    var C = st.car, D = C.d, q = (C.q || '').trim();
+    var vs = D.vehicles.map(function (v) { return v.plate; }), ts = [];
+    D.handovers.forEach(function (r) { if (ts.indexOf(r.team) < 0) ts.push(r.team); });
+    var rows = D.handovers.filter(function (r) { return (!C.fv || (r.plate || r.vehicle_id) === C.fv) && (!C.ft || r.team === C.ft) && (!q || (String(r.emp_name) + r.emp_id + r.case_id + r.end_emp_name).indexOf(q) >= 0); })
+      .sort(function (a, b) { return b.start_time - a.start_time; });
+    return '<div class="toolbar"><select class="input" id="cFv"><option value="">' + ct('all_v') + '</option>' + vs.map(function (v) { return '<option' + (C.fv === v ? ' selected' : '') + '>' + esc(v) + '</option>'; }).join('') + '</select>' +
+      '<select class="input" id="cFt"><option value="">' + ct('all_t') + '</option>' + ts.map(function (x) { return '<option value="' + esc(x) + '"' + (C.ft === x ? ' selected' : '') + '>' + esc(cTeam(x)) + '</option>'; }).join('') + '</select>' +
+      '<input class="input" type="search" id="cQ" placeholder="' + esc(ct('search')) + '" value="' + esc(C.q) + '"><span class="muted"><span class="num">' + rows.length + '</span></span></div>' +
+      '<div class="tblwrap rtbl"><table class="tbl twrap"><thead>' + carLogHead(true) + '</thead><tbody>' + (carLogRows(rows, true) || '<tr><td colspan="13" class="empty">' + t('no_rows') + '</td></tr>') + '</tbody></table></div>';
+  }
+  function carFaultRows(rows, withAct) {
+    var D = st.car.d, L = D.labels;
+    return rows.map(function (f) {
+      var open = f.status === L.open;
+      return '<tr><td><span class="ltr">' + esc(f.case_id) + '</span></td><td><b>' + esc(f.plate || f.vehicle_id) + '</b></td><td>' + esc(cName(f.fault_type)) + (f.description ? '<div class="muted">' + esc(f.description) + '</div>' : '') + '</td>' +
+        '<td>' + (f.severity === L.stop ? ct('stop') : ct('run')) + '</td><td>' + esc(cName(f.emp_name)) + '</td><td>' + cDt(f.start_time) + ' ' + cPhoto(f.photo_url) + '</td>' +
+        '<td>' + (open ? '<span class="tbad">' + ct('fo') + '</span>' : '<span class="tok">' + ct('fc') + '</span>') + '</td><td>' + (f.end_time ? cDur(f.duration_min) : cDur((D.now - f.start_time) / 60000) + '…') + '</td>' +
+        '<td>' + esc(f.resolution_note || '') + (f.resolved_by_name ? '<div class="muted">' + esc(cName(f.resolved_by_name)) + '</div>' : '') + '</td>' +
+        (withAct ? '<td class="racts">' + (open && st.car.canAct ? '<button type="button" class="btn sm ok" data-cact="fault" data-id="' + esc(f.case_id) + '">' + ct('close_f') + '</button>' : '') + '</td>' : '') + '</tr>';
+    }).join('');
+  }
+  function carFaultHead(withAct) { return '<tr>' + ['id', 'veh', 'fault', 'sev', 'reporter', 'time', 'cond', 'fdur', 'fact'].concat(withAct ? ['act'] : []).map(function (k) { return '<th>' + ct(k) + '</th>'; }).join('') + '</tr>'; }
+  function carFaults() {
+    var D = st.car.d, L = D.labels, A = carAgg(D), byV = {}, downMin = {};
+    var rows = D.faults.slice().sort(function (a, b) { return (a.status === L.open ? 0 : 1) - (b.status === L.open ? 0 : 1) || b.start_time - a.start_time; });
+    D.faults.forEach(function (f) { var k = f.plate || f.vehicle_id; byV[k] = (byV[k] || 0) + 1; });
+    D.faults.filter(function (f) { return f.severity === L.stop; }).forEach(function (f) { var k = f.plate || f.vehicle_id; downMin[k] = (downMin[k] || 0) + Math.max(0, (Math.min(f.end_time || D.now, D.we) - Math.max(f.start_time, D.ws)) / 60000); });
+    return '<div class="kpis k4">' + rKpi(ct('f_new'), A.fNew.length) + rKpi(ct('f_closed'), A.fClosed.length, 'ok') + rKpi(ct('fopen'), A.fOpen.length, A.fOpen.length ? 'bad' : '') + '</div>' +
+      '<div class="row2 r2eq"><section class="card"><div class="chead"><span class="bar4"></span><h2>' + ct('f_by_v') + '</h2></div>' + cBars(Object.keys(byV).map(function (k) { return { l: k, v: byV[k] }; }), function (v) { return v; }) + '</section>' +
+      '<section class="card"><div class="chead"><span class="bar4"></span><h2>' + ct('f_down') + '</h2></div>' + cBars(Object.keys(downMin).map(function (k) { return { l: k, v: downMin[k] }; }), cDur) + '</section></div>' +
+      '<div class="tblwrap rtbl"><table class="tbl twrap"><thead>' + carFaultHead(true) + '</thead><tbody>' + (carFaultRows(rows, true) || '<tr><td colspan="10" class="empty">' + t('no_rows') + '</td></tr>') + '</tbody></table></div>';
+  }
+
+  function cMntDown(r, ws, we) { var D = st.car.d, e = r.status === D.labels.open ? D.now : r.end_time; return Math.max(0, (Math.min(e, we) - Math.max(r.start_time, ws)) / 60000); }
+  function carMntRows(rows) {
+    var D = st.car.d;
+    return rows.map(function (r) {
+      var open = r.status === D.labels.open, past = r.entry_mode === 'تسجيل صيانة سابقة';
+      return '<tr><td><span class="ltr">' + esc(r.case_id) + '</span></td><td><b>' + esc(r.plate || r.vehicle_id) + '</b></td><td>' + esc(cName(r.maint_type)) + '</td><td>' + (open ? '<span class="tbad">' + ct('m_in') + '</span>' : past ? '<span class="muted">' + ct('m_past') + '</span>' : '<span class="tok">' + ct('m_done') + '</span>') + '</td>' +
+        '<td>' + (past ? '—' : cDt(r.start_time)) + '</td><td>' + (open ? '—' : cDt(r.end_time)) + '</td><td><b>' + (open ? cDur((D.now - r.start_time) / 60000) + '…' : (+r.duration_min ? cDur(r.duration_min) : ct('nodown'))) + '</b></td>' +
+        '<td class="num">' + cNum(r.start_odometer) + (r.end_odometer && +r.end_odometer !== +r.start_odometer ? ' ← ' + cNum(r.end_odometer) : '') + '</td><td>' + (+r.next_due_km ? cNum(r.next_due_km) + '<div class="muted">' + ct('after').replace('{n}', cNum(r.interval_km)) + '</div>' : '—') + '</td>' +
+        '<td>' + esc(r.start_note || '') + (r.end_note ? '<div>' + esc(r.end_note) + '</div>' : '') + '</td><td>' + esc(cName(r.closed_by_name || r.emp_name)) + '</td></tr>';
+    }).join('');
+  }
+  function carMaint() {
+    var C = st.car, D = C.d, L = D.labels;
+    var all = (D.maint || []).slice().sort(function (a, b) { return (b.end_time || b.start_time || 0) - (a.end_time || a.start_time || 0); });
+    var inRange = all.filter(function (r) { return cMntDown(r, D.ws, D.we) > 0 || (r.end_time >= D.ws && r.end_time < D.we); });
+    var downRange = inRange.reduce(function (a, r) { return a + cMntDown(r, D.ws, D.we); }, 0), inNow = D.vehicles.filter(function (v) { return v.maint; }).length;
+    var over = 0, warn = 0; D.vehicles.forEach(function (v) { (v.dues || []).forEach(function (x) { if (x.level === 'over') over++; if (x.level === 'warn') warn++; }); });
+    var h = '<div class="kpis k6">' + rKpi(ct('m_range'), inRange.length) + rKpi(ct('m_downr'), cDur(downRange)) + rKpi(ct('m_now'), inNow, inNow ? 'bad' : '') + rKpi(ct('m_over'), over, over ? 'bad' : '') + rKpi(ct('m_warn').replace('{n}', cNum(D.warnKm)), warn, warn ? 'warn' : '') + '</div>' + cAlerts(D);
+    // نموذج طلب الصيانة الرسمي
+    if (!D.templateReady) h += '<div class="romsg warn">' + ct('rq_tpl') + '</div>';
+    else {
+      h += '<section class="card noprint"><div class="chead"><span class="bar4"></span><h2>📄 ' + ct('rq_t') + '</h2></div><div class="toolbar">' +
+        '<label class="field">' + ct('rq_v') + '<select class="input" id="rqV">' + D.vehicles.map(function (v) { return '<option value="' + esc(v.vehicle_id) + '">' + esc(v.plate) + ' · ' + esc(v.vehicle_code || '') + '</option>'; }).join('') + '</select></label>' +
+        '<label class="field">' + ct('rq_m') + '<input class="input num" id="rqM" type="number"></label>' +
+        '<label class="field">' + ct('rq_e') + '<select class="input" id="rqE">' + (D.admins || []).map(function (a) { return '<option value="' + esc(a.id) + '"' + (C.me && a.id === C.me.id ? ' selected' : '') + '>' + esc(cName(a.name)) + ' – ' + esc(a.id) + '</option>'; }).join('') + '</select></label>' +
+        '<label class="field">' + ct('rq_p') + '<input class="input num" id="rqP" placeholder="05XXXXXXXX"></label></div>' +
+        '<p class="muted">' + ct('rq_items') + '</p><div class="ctypes" id="rqT">' + (D.maintTypes || []).map(function (x) { return '<label><input type="checkbox" value="' + esc(x.code) + '"> ' + esc(x.name) + '</label>'; }).join('') + '</div>' +
+        '<div class="toolbar"><button type="button" class="btn primary" id="rqBtn">📄 ' + ct('rq_btn') + '</button><span id="rqOut" class="muted"></span></div>' +
+        (D.requests && D.requests.length ? '<p class="muted">' + ct('rq_last') + '</p>' + D.requests.slice().reverse().slice(0, 5).map(function (r) {
+          return '<div class="crow"><span>' + esc(r.case_id) + ' · ' + esc(r.plate) + ' · ' + cDt(r.start_time) + ' · ' + ct(r.status === L.open ? 'rq_wait_s' : 'rq_in') + '</span><b>' + (r.pdf_url ? '<a class="dl" target="_blank" rel="noopener" href="' + esc(r.pdf_url) + '">PDF</a> ' : '') + (r.xlsx_url ? '<a class="dl" target="_blank" rel="noopener" href="' + esc(r.xlsx_url) + '">Excel</a>' : '') + '</b></div>';
+        }).join('') : '') + '</section>';
+    }
+    h += '<div class="toolbar"><select class="input" id="cMv"><option value="">' + ct('all_v') + '</option>' + D.vehicles.map(function (v) { return '<option' + (C.mv === v.plate ? ' selected' : '') + '>' + esc(v.plate) + '</option>'; }).join('') + '</select></div>';
+    h += '<h3 class="rh3">' + ct('m_sum') + '</h3><div class="cgrid">';
+    D.vehicles.filter(function (v) { return !C.mv || v.plate === C.mv; }).forEach(function (v) {
+      var mine = all.filter(function (r) { return String(r.vehicle_id) === v.vehicle_id; });
+      var tot = mine.reduce(function (a, r) { return a + (r.status === L.open ? (D.now - r.start_time) / 60000 : (+r.duration_min || 0)); }, 0);
+      var last = mine.filter(function (r) { return r.status !== L.open; })[0];
+      var row = function (l, val) { return '<div class="crow"><span>' + l + '</span><b>' + val + '</b></div>'; };
+      h += '<section class="card ccard' + (v.maintAlert === 'over' ? ' over' : '') + '"><div class="cvh"><h3>🚗 ' + esc(v.plate) + '</h3><div>' + cCond(v) + '</div></div>' +
+        row(ct('m_cur'), v.lastOdo ? cNum(v.lastOdo) + ' ' + t('km') : '—') + row(ct('m_cnt'), mine.length) + row(ct('m_tot'), cDur(tot)) +
+        row(ct('m_last'), last ? esc(cName(last.maint_type)) + ' · ' + cDt(last.end_time) : '—') + cDues(v) +
+        '<div class="cacts"><button type="button" class="btn sm" data-clog="' + esc(v.vehicle_id) + '">' + icon('download') + ct('dl_log') + '</button></div></section>';
+    });
+    var mrows = all.filter(function (r) { return !C.mv || (r.plate || r.vehicle_id) === C.mv; });
+    h += '</div><h3 class="rh3">' + ct('m_log') + '</h3><div class="tblwrap rtbl"><table class="tbl twrap"><thead><tr>' + ['id', 'veh', 'mtype', 'mstate', 'min', 'mout', 'mdown', 'odo', 'mnext', 'mnote', 'mby'].map(function (k) { return '<th>' + ct(k) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      (carMntRows(mrows) || '<tr><td colspan="11" class="empty">' + t('no_rows') + '</td></tr>') + '</tbody></table></div>';
+    return h;
+  }
+
+  function carEmps() {
+    var A = carAgg(st.car.d), rows = A.E.sort(function (a, b) { return b.uses - a.uses || b.km - a.km; });
+    return '<div class="tblwrap rtbl"><table class="tbl"><thead><tr>' + ['e_name', 'e_id', 'team', 'e_uses', 'kmc', 'usage', 'e_avg', 'e_notes', 'e_faults', 'e_peer'].map(function (k) { return '<th>' + ct(k) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      (rows.map(function (e) { return '<tr><td><b>' + esc(cName(e.name)) + '</b></td><td class="num">' + esc(e.id) + '</td><td>' + esc(cTeam(e.team)) + '</td><td class="num">' + e.uses + '</td><td class="num">' + cNum(e.km) + '</td><td>' + cDur(e.min) + '</td><td>' + (e.uses ? cDur(e.min / e.uses) : '—') + '</td><td class="num">' + e.notes + '</td><td class="num">' + e.faults + '</td><td class="num' + (e.peer ? ' twarn' : '') + '">' + e.peer + '</td></tr>'; }).join('') ||
+        '<tr><td colspan="10" class="empty">' + t('no_rows') + '</td></tr>') + '</tbody></table></div><p class="muted rmeta">' + ct('e_hint') + '</p>';
+  }
+
+  function carDaily() {
+    var C = st.car;
+    if (!C.day) C.day = dAdd(C.d.today, -1);
+    var h = '<div class="toolbar noprint"><label class="field">' + ct('d_day') + '<input class="input num" type="date" id="cDay" value="' + esc(C.day) + '"></label><button type="button" class="btn sm" id="cDayGo">' + ct('d_show') + '</button><button type="button" class="btn primary sm" id="cPrint">' + icon('print') + ct('print') + '</button></div>';
+    if (!C.dd || C.ddKey !== C.day) { setTimeout(carLoadDay, 0); return h + '<div class="loading"><div class="spin"></div>' + t('loading') + '</div>'; }
+    var keep = C.d; C.d = C.dd; var d = C.dd, A = carAgg(d);
+    var html = h + '<div class="card rrep"><div class="rrh"><div><b class="rlogo">MBCO</b><div class="muted">Modern Bus Company Limited</div></div><span class="tag b-acc">Daily · ' + rDmy(d.from) + '</span></div>' +
+      '<h2 class="rrt">' + ct('d_title') + '</h2><p class="muted rmeta">' + ct('d_sub').replace('{d}', d.from) + '</p>' + cKpis(A) +
+      '<h3 class="rh3">' + ct('d_sum') + '</h3><div class="tblwrap"><table class="tbl"><thead><tr>' + ['veh', 'uses', 'kmc', 'usage', 'd_rate', 'lastodo', 'cond'].map(function (k) { return '<th>' + ct(k) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      A.V.map(function (x) { return '<tr><td><b>' + esc(x.v.plate) + '</b></td><td class="num">' + x.uses + '</td><td class="num">' + cNum(x.km) + '</td><td>' + cDur(x.min) + '</td><td class="num">' + Math.round(x.min / A.winMin * 100) + '%</td><td class="num">' + cNum(x.v.lastOdo) + '</td><td>' + cCond(x.v) + '</td></tr>'; }).join('') + '</tbody></table></div>' +
+      '<div class="row2 r2eq"><section class="card"><div class="chead"><span class="bar4"></span><h2>' + ct('d_kmt') + '</h2></div>' + cBars(Object.keys(A.T).map(function (k) { return { l: cTeam(k), v: A.T[k].km }; }).sort(function (a, b) { return b.v - a.v; }), function (v) { return cNum(v) + ' ' + t('km'); }) + '</section>' +
+      '<section class="card"><div class="chead"><span class="bar4"></span><h2>' + ct('d_use') + '</h2></div>' + cBars(A.V.map(function (x) { return { l: x.v.plate, v: Math.round(x.min / A.winMin * 100) }; }), function (v) { return v + '%'; }) + '</section></div>' +
+      '<h3 class="rh3">' + ct('d_log') + '</h3><div class="tblwrap"><table class="tbl twrap"><thead>' + carLogHead(false) + '</thead><tbody>' + (carLogRows(d.handovers.slice().sort(function (a, b) { return a.start_time - b.start_time; }), false) || '<tr><td colspan="12" class="empty">' + t('no_rows') + '</td></tr>') + '</tbody></table></div>' +
+      '<h3 class="rh3">' + ct('faults') + '</h3><div class="tblwrap"><table class="tbl twrap"><thead>' + carFaultHead(false) + '</thead><tbody>' + (carFaultRows(d.faults, false) || '<tr><td colspan="9" class="empty">' + t('no_rows') + '</td></tr>') + '</tbody></table></div>' +
+      (A.notes.length ? '<h3 class="rh3">' + ct('d_notes') + '</h3><section class="card">' + A.notes.map(function (n) { return '<div class="crow"><span>' + cTm(n.t) + ' · ' + esc(n.plate) + ' · ' + n.kind + ' – ' + esc(cName(n.who)) + '</span><b>' + esc(n.note) + '</b></div>'; }).join('') + '</section>' : '') +
+      '<div class="rfoot muted"><span>' + ct('d_foot') + '</span><span>' + t('prepared') + ' ' + cDt(d.now) + '</span></div></div>';
+    C.d = keep;
+    return html;
+  }
+  function carLoadDay() {
+    var C = st.car;
+    api('carDash', { from: C.day, to: C.day }).then(function (j) { C.dd = j.data; C.ddKey = C.day; if (route() === 'car' && C.tab === 'daily') carDraw(); })
+      .catch(function (e) { var b = document.getElementById('carBody'); if (b) failBox(b, e, carLoadDay); });
+  }
+
+  function carBind(b) {
+    var C = st.car, D = C.d, re = function () { carDraw(); };
+    var sel = function (id, k) { var x = b.querySelector('#' + id); if (x) x.onchange = function () { C[k] = x.value; re(); }; };
+    sel('cFv', 'fv'); sel('cFt', 'ft'); sel('cMv', 'mv');
+    var q = b.querySelector('#cQ'); if (q) q.oninput = function () { C.q = q.value; var pos = q.selectionStart; re(); var n = document.getElementById('cQ'); n.focus(); n.setSelectionRange(pos, pos); };
+    var day = b.querySelector('#cDay'); if (day) { b.querySelector('#cDayGo').onclick = function () { C.day = day.value; C.dd = null; re(); }; }
+    var pr = b.querySelector('#cPrint'); if (pr) pr.onclick = function () { window.print(); };
+    // نموذج الطلب الرسمي
+    var vSel = b.querySelector('#rqV');
+    if (vSel) {
+      var m = b.querySelector('#rqM'), e = b.querySelector('#rqE'), p = b.querySelector('#rqP');
+      var setOdo = function () { var v = D.vehicles.filter(function (x) { return x.vehicle_id === vSel.value; })[0]; m.value = v ? v.lastOdo : ''; };
+      var setPh = function () { var a = (D.admins || []).filter(function (x) { return x.id === e.value; })[0]; p.value = a ? (a.phone || '') : ''; };
+      vSel.onchange = setOdo; e.onchange = setPh; setOdo(); setPh();
+      b.querySelectorAll('#rqT input').forEach(function (cb) { cb.onchange = function () { if (b.querySelectorAll('#rqT input:checked').length > 9) { cb.checked = false; toast(ct('rq_max')); } cb.parentNode.classList.toggle('on', cb.checked); }; });
+      b.querySelector('#rqBtn').onclick = function () {
+        var codes = Array.prototype.map.call(b.querySelectorAll('#rqT input:checked'), function (x) { return x.value; });
+        if (!codes.length) return toast(ct('rq_none'));
+        var btn = this, out = b.querySelector('#rqOut'); btn.disabled = true; out.textContent = '⏳ ' + ct('rq_wait');
+        api('carAct', { kind: 'req', vid: vSel.value, codes: codes, mileage: m.value, emp: e.value, phone: p.value }).then(function (j) {
+          var r = j.result || {}; btn.disabled = false;
+          out.innerHTML = '✅ ' + esc(r.id || '') + ' ' + [r.pdf, r.xlsx].filter(Boolean).map(function (f) { return '<a class="dl" target="_blank" rel="noopener" href="' + esc(f.url) + '">' + esc(f.name) + '</a>'; }).join(' ');
+          if (r.pdf) carDownload(r.pdf); if (r.xlsx) setTimeout(function () { carDownload(r.xlsx); }, 800);
+          C.at = 0;
+        }).catch(function (er) { btn.disabled = false; out.textContent = '⚠️ ' + errText(er); });
+      };
+    }
+    b.querySelectorAll('[data-clog]').forEach(function (btn) {
+      btn.onclick = function () {
+        var txt = btn.innerHTML; btn.disabled = true; btn.textContent = '⏳';
+        api('carAct', { kind: 'carlog', vid: btn.getAttribute('data-clog') }).then(function (j) { btn.disabled = false; btn.innerHTML = txt; if (j.result && j.result.xlsx) carDownload(j.result.xlsx); })
+          .catch(function (er) { btn.disabled = false; btn.innerHTML = txt; toast(errText(er)); });
+      };
+    });
+    // الإجراءات
+    b.querySelectorAll('[data-cact]').forEach(function (btn) {
+      btn.onclick = function () {
+        var kind = btn.getAttribute('data-cact'), id = btn.getAttribute('data-id');
+        var hr = D.handovers.filter(function (r) { return r.case_id === id; })[0] || {}, fl = D.faults.filter(function (f) { return f.case_id === id; })[0] || {};
+        var title, body, ph, opts = {};
+        if (kind === 'cancel' && !hr.case_id) { var vh = D.vehicles.filter(function (x) { return x.holder && x.holder.case_id === id; })[0]; if (vh) hr = Object.assign({ plate: vh.plate, start_odometer: vh.holder.start_odometer || vh.lastOdo }, vh.holder); }
+        if (kind === 'cancel') { title = ct('m_cancel'); body = ct('m_cancel_b').replace('{id}', id).replace('{plate}', hr.plate || '').replace('{emp}', cName(hr.emp_name || '')).replace('{odo}', cNum(hr.start_odometer)); ph = ct('reason_ph'); }
+        else if (kind === 'close') { var v = D.vehicles.filter(function (x) { return x.holder && x.holder.case_id === id; })[0]; var src = hr.case_id ? hr : (v ? Object.assign({ plate: v.plate }, v.holder) : {}); title = ct('m_close'); body = ct('m_close_b').replace('{plate}', src.plate || '').replace('{emp}', cName(src.emp_name || '')).replace('{since}', src.start_time ? fCD.format(new Date(src.start_time)).slice(5) + ' ' + cTm(src.start_time) : ''); ph = rt('note_ph'); opts.odo = true; }
+        else { title = ct('m_fault'); body = ct('m_fault_b').replace('{id}', id).replace('{plate}', fl.plate || '').replace('{type}', cName(fl.fault_type || '')); ph = ct('note_req'); opts.req = true; }
+        carConfirm(title, body, ph, opts, function (note, odo, done) {
+          api('carAct', { kind: kind, id: id, note: note, odo: odo }).then(function (j) {
+            done();
+            var r = j.result || {};
+            toast(kind === 'cancel' ? ct('done_cancel') + (r.restored ? ' ' + ct('restored').replace('{id}', r.restored).replace('{emp}', cName(r.restored_to || '')) : '') : rt('done'));
+            var w = document.getElementById('ctlWrap'); if (w) renderCar(w, true);
+          }).catch(function (er) { done(errText(er)); });
+        });
+      };
+    });
+  }
+  function carConfirm(title, body, ph, opts, onOk) {
+    var ov = document.createElement('div'); ov.className = 'mov';
+    ov.innerHTML = '<div class="mbox" role="dialog" aria-modal="true"><h3>' + esc(title) + '</h3><p class="muted">' + esc(body) + '</p>' +
+      (opts.odo ? '<input class="input num" id="mOdo" type="number" placeholder="' + esc(ct('odo_ph')) + '">' : '') +
+      '<textarea class="input" id="mNote" rows="3" placeholder="' + esc(ph) + '"></textarea><div class="err hide" id="mErr"></div>' +
+      '<div class="mrow"><button type="button" class="btn" id="mNo">' + rt('cancel') + '</button><button type="button" class="btn primary" id="mOk">' + rt('confirm') + '</button></div></div>';
+    document.body.appendChild(ov);
+    var close = function () { ov.remove(); };
+    ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+    ov.querySelector('#mNo').onclick = close;
+    var ok = ov.querySelector('#mOk'), err = ov.querySelector('#mErr');
+    ok.onclick = function () {
+      var note = ov.querySelector('#mNote').value.trim(), odoEl = ov.querySelector('#mOdo');
+      if (opts.req && !note) { err.textContent = ct('note_req'); err.classList.remove('hide'); return; }
+      ok.disabled = true;
+      onOk(note, odoEl ? odoEl.value : '', function (e) { if (!e) return close(); ok.disabled = false; err.textContent = e; err.classList.remove('hide'); });
+    };
+  }
+  function carDownload(f) {
+    try {
+      var bin = atob(f.b64), arr = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([arr], { type: f.mime })); a.download = f.name;
+      document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); }, 800);
+    } catch (e) { if (f.url) window.open(f.url, '_blank'); }
+  }
+
   /* نافذة تأكيد مع ملاحظة */
   function confirmBox(title, body, onOk, noNote) {
     var ov = document.createElement('div'); ov.className = 'mov';
@@ -1580,6 +1970,13 @@
       (mode === 'ctl' ? '<button type="button" class="btn sm hide noprint" id="ctlNew">' + icon('external') + t('ctl_newwin') + '</button>' : '') +
       (DEMO ? '<span class="notice">' + t('demo') + '</span>' : '') + '</div>';
     if (mode === 'ctl') {
+      if (key === 'car') {
+        main.innerHTML = title + '<div class="ctlnative" id="ctlWrap"></div>';
+        bindModeSwitch(key);
+        if (st.user.role === 'Officer') { document.getElementById('ctlWrap').innerHTML = '<div class="ctlmsg"><p>' + esc(t('ctl_role')) + '</p></div>'; return; }
+        renderCar(document.getElementById('ctlWrap'), false);
+        return;
+      }
       if (key === 'dist') {
         main.innerHTML = title + '<div class="ctlnative" id="ctlWrap"></div>';
         renderDist(document.getElementById('ctlWrap'));
@@ -1730,7 +2127,17 @@
 
   /* ---------------- التشغيل ---------------- */
   window.addEventListener('hashchange', function () { if (st.token && !st.mustChange) render(); });
+  /* عند فتح البوابة: تحديث القائمة الجانبية والصلاحيات من الـ Hub بصمت
+     (أسماء الأقسام الجديدة تظهر بدون تسجيل خروج) */
+  function refreshMe() {
+    if (!st.token || st.mustChange) return;
+    var before = JSON.stringify(st.sections) + JSON.stringify(st.user);
+    api('me', {}).then(function (j) {
+      saveSession({ user: j.user, sections: j.sections });
+      if (JSON.stringify(st.sections) + JSON.stringify(st.user) !== before) render();
+    }).catch(function () {});
+  }
   if (DEMO && !window.MBCO_DEMO) {
-    var s = document.createElement('script'); s.src = 'demo.js'; s.onload = render; document.head.appendChild(s);
-  } else render();
+    var s = document.createElement('script'); s.src = 'demo.js'; s.onload = function () { render(); refreshMe(); }; document.head.appendChild(s);
+  } else { render(); refreshMe(); }
 })();
