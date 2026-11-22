@@ -1960,6 +1960,411 @@
     };
   }
 
+  /* ================= الفحص والمخالفات داخل البوابة (v2.1 – المرحلة 2) =================
+     ثلاث صفحات منفصلة: فحص المحطات (STN-RDY) · فحص التذاكر (ENF-INS + التغطية) · المخالفات (ENF-VIO)
+     + نظرة عامة + أداء الموظفين (مؤشرات insKpi_ من الـ Hub بمفاتيح ثابتة لصفحة KPI لاحقاً) + التقرير. */
+  var IT = {
+    ar: {
+      overview: 'نظرة عامة', stn: 'فحص المحطات', enf: 'فحص التذاكر', vio: 'المخالفات', emps: 'أداء الموظفين', daily: 'التقرير',
+      from: 'من', to: 'إلى', today: 'اليوم', yday: 'أمس', d7: 'آخر 7 أيام', d30: 'آخر 30 يوم', shift: 'الوردية', emp: 'الموظف', all: 'الكل',
+      sh1: 'الأولى', sh2: 'الثانية', sh3: 'الثالثة', updated: 'آخر تحديث', none: 'لا توجد بيانات', search: 'بحث: رقم حافلة، موظف، محطة…', rows: 'سجل', csv: 'تصدير CSV',
+      // مؤشرات
+      k_rdy: 'فحوصات المحطات', k_ok: 'مطابقة بالكامل', k_fail: 'عليها ملاحظات', k_buses: 'حافلات مختلفة', k_stations: 'مواقع مختلفة', k_okr: 'نسبة المطابقة',
+      k_ins: 'فحوصات التذاكر', k_cdc: 'منها بلاغات عمليات', k_pax: 'الركاب المفحوصون', k_not: 'بدون تذاكر', k_rate: 'نسبة بدون تذاكر', k_dur: 'متوسط مدة الفحص', k_invio: 'مخالفات داخل الفحص',
+      k_cov: 'تغطية المحطات', k_vio: 'المخالفات المحررة', k_fines: 'قيمة المخالفات', k_911: 'إبلاغ 911', k_inbus: 'داخل الحافلات', k_atstn: 'في المحطات', k_pol: 'متوسط وصول الدوريات',
+      sar: 'ريال', min: 'د', h: 'س', times: 'مرة',
+      // رسوم
+      c_trend: 'العمليات اليومية', c_hour: 'العمليات حسب ساعة اليوم', c_items: 'البنود غير المطابقة', c_buses: 'أكثر الحافلات ملاحظات', c_byst: 'الفحوصات حسب الموقع',
+      c_bysh: 'حسب الوردية', c_byemp: 'حسب الموظف', c_route: 'نسبة الركاب بدون تذاكر حسب المسار', c_src: 'مصدر الفحوصات', c_busnot: 'أكثر الحافلات ركاباً بدون تذاكر',
+      c_type: 'المخالفات حسب النوع', c_loc: 'المخالفات حسب الموقع', c_vroute: 'المخالفات حسب المسار', c_covst: 'التغطية حسب المحطة',
+      s_rdy: 'فحص الجاهزية', s_ins: 'فحص الحافلات', s_vio: 'المخالفات', inbus: 'داخل الحافلات', station: 'محطة', bus_l: 'حافلة',
+      // جداول
+      t_time: 'الوقت', t_id: 'رقم الحالة', t_loc: 'الموقع', t_bus: 'الحافلة', t_route: 'المسار', t_emp: 'الموظف', t_items: 'البنود غير المطابقة', t_res: 'النتيجة',
+      t_notes: 'ملاحظات', t_att: 'المرفقات', t_src: 'المصدر', t_valid: 'بتذاكر', t_not: 'بدون تذاكر', t_pax: 'الركاب', t_vc: 'مخالفات', t_dur: 'المدة',
+      t_type: 'نوع المخالفة', t_amt: 'القيمة', t_vno: 'رقم المحضر', t_911: '911', t_parent: 'ضمن فحص', t_reason: 'السبب', t_start: 'البدء', t_end: 'الانتهاء', t_status: 'الحالة',
+      t_driver: 'السائق', t_entry: 'الإدخال', paper: '📄 ورقي', bot: '📱 البوت', okall: '✔ مطابق', rec_rdy: 'سجل فحص المحطات', rec_ins: 'سجل فحص التذاكر', rec_vio: 'سجل المخالفات', rec_cov: 'سجل تغطية المحطات',
+      call: 'تبليغ', arrive: 'وصول',
+      // الموظفون
+      e_id: 'الرقم الوظيفي', e_team: 'الفريق', e_days: 'أيام العمل', e_total: 'إجمالي العمليات', e_pd: 'عمليات/يوم', g_stn: 'فحص المحطات', g_enf: 'فحص التذاكر', g_vio: 'المخالفات', g_cov: 'التغطية',
+      e_n: 'العدد', e_okr: 'مطابقة %', e_fail: 'بملاحظات', e_pax: 'ركاب', e_rate: 'بدون تذاكر %', e_avg: 'متوسط المدة', e_cdc: 'من CDC', e_amt: 'القيمة', e_hrs: 'الساعات',
+      e_note: 'أيام العمل = الأيام التشغيلية اللي سجّل فيها الموظف عملية واحدة على الأقل. اضغط على العنوان للترتيب. هذي المؤشرات نفسها راح تنربط بصفحة KPI.',
+      e_shift: 'فلتر الوردية ما ينطبق على جدول الموظفين (المؤشرات للفترة كاملة).', t_all: 'كل الفرق', t_enf: 'فريق التذاكر', t_stn: 'فريق المحطات',
+      // التقرير
+      r_daily: 'التقرير اليومي: الفحص والمخالفات', r_period: 'تقرير الفترة: الفحص والمخالفات', r_made: 'أُنشئ', r_foot: 'MBCO · فريق التذاكر · فريق المحطات', print: 'طباعة / حفظ PDF',
+      r_rdyn: 'ملاحظات فحص الجاهزية', r_byshemp: 'حسب الوردية', r_emps: 'حسب الموظف', r_nonotes: 'لا توجد ملاحظات', r_novio: 'لا توجد مخالفات'
+    },
+    en: {
+      overview: 'Overview', stn: 'Station inspections', enf: 'Ticket inspections', vio: 'Violations', emps: 'Staff performance', daily: 'Report',
+      from: 'From', to: 'To', today: 'Today', yday: 'Yesterday', d7: 'Last 7 days', d30: 'Last 30 days', shift: 'Shift', emp: 'Employee', all: 'All',
+      sh1: 'First', sh2: 'Second', sh3: 'Third', updated: 'Updated', none: 'No data', search: 'Search: bus, employee, station…', rows: 'records', csv: 'Export CSV',
+      k_rdy: 'Station inspections', k_ok: 'Fully compliant', k_fail: 'With findings', k_buses: 'Distinct buses', k_stations: 'Distinct locations', k_okr: 'Compliance rate',
+      k_ins: 'Ticket inspections', k_cdc: 'From operations cases', k_pax: 'Passengers checked', k_not: 'Without tickets', k_rate: 'No-ticket rate', k_dur: 'Avg. inspection time', k_invio: 'Violations within inspections',
+      k_cov: 'Station coverage', k_vio: 'Violations issued', k_fines: 'Fines value', k_911: '911 calls', k_inbus: 'On buses', k_atstn: 'At stations', k_pol: 'Avg. patrol arrival',
+      sar: 'SAR', min: 'm', h: 'h', times: 'times',
+      c_trend: 'Daily operations', c_hour: 'Operations by hour', c_items: 'Non-compliant items', c_buses: 'Buses with most findings', c_byst: 'Inspections by location',
+      c_bysh: 'By shift', c_byemp: 'By employee', c_route: 'No-ticket rate by route', c_src: 'Inspection source', c_busnot: 'Buses with most passengers without tickets',
+      c_type: 'Violations by type', c_loc: 'Violations by location', c_vroute: 'Violations by route', c_covst: 'Coverage by station',
+      s_rdy: 'Readiness check', s_ins: 'Bus inspection', s_vio: 'Violations', inbus: 'On buses', station: 'Station', bus_l: 'Bus',
+      t_time: 'Time', t_id: 'Case', t_loc: 'Location', t_bus: 'Bus', t_route: 'Route', t_emp: 'Employee', t_items: 'Non-compliant items', t_res: 'Result',
+      t_notes: 'Notes', t_att: 'Attachments', t_src: 'Source', t_valid: 'Valid', t_not: 'No ticket', t_pax: 'Passengers', t_vc: 'Violations', t_dur: 'Duration',
+      t_type: 'Violation type', t_amt: 'Amount', t_vno: 'Ticket no.', t_911: '911', t_parent: 'Within inspection', t_reason: 'Reason', t_start: 'Start', t_end: 'End', t_status: 'Status',
+      t_driver: 'Driver', t_entry: 'Entry', paper: '📄 Paper', bot: '📱 Bot', okall: '✔ Compliant', rec_rdy: 'Station inspections log', rec_ins: 'Ticket inspections log', rec_vio: 'Violations log', rec_cov: 'Station coverage log',
+      call: 'call', arrive: 'arrival',
+      e_id: 'Employee ID', e_team: 'Team', e_days: 'Work days', e_total: 'Total ops', e_pd: 'Ops/day', g_stn: 'Station inspections', g_enf: 'Ticket inspections', g_vio: 'Violations', g_cov: 'Coverage',
+      e_n: 'Count', e_okr: 'Compliant %', e_fail: 'With findings', e_pax: 'Pax', e_rate: 'No-ticket %', e_avg: 'Avg. time', e_cdc: 'From CDC', e_amt: 'Amount', e_hrs: 'Hours',
+      e_note: 'Work days = operating days with at least one recorded operation. Click a header to sort. These same indicators will feed the KPI page.',
+      e_shift: 'The shift filter does not apply to the staff table (whole period).', t_all: 'All teams', t_enf: 'Tickets team', t_stn: 'Stations team',
+      r_daily: 'Daily report: inspections & violations', r_period: 'Period report: inspections & violations', r_made: 'Generated', r_foot: 'MBCO · Tickets team · Stations team', print: 'Print / save PDF',
+      r_rdyn: 'Readiness findings', r_byshemp: 'By shift', r_emps: 'By employee', r_nonotes: 'No findings', r_novio: 'No violations'
+    }
+  };
+  function it(k) { return (IT[st.lang] && IT[st.lang][k]) || IT.ar[k] || k; }
+  var I_COL = ['#7B1E8F', '#eb6834', '#1baf7a'];
+
+  function insState() {
+    if (!st.ins) st.ins = { tab: ls.get('mbco_ins_tab') || 'overview', from: '', to: '', sh: '', emp: '', team: '', q: { rdy: '', ins: '', vio: '', cov: '' }, sort: { k: 'total', d: -1 }, d: null, at: 0, key: '' };
+    return st.ins;
+  }
+  function renderIns(wrap, force) {
+    var I = insState();
+    if (!wrap.querySelector('#insBody')) {
+      wrap.innerHTML = '<div class="card rsttools noprint"><div class="seg sub">' + ['overview', 'stn', 'enf', 'vio', 'emps', 'daily'].map(function (k) {
+        return '<button type="button" data-itab="' + k + '" class="' + (I.tab === k ? 'on' : '') + '">' + it(k) + '</button>'; }).join('') + '</div>' +
+        '<div class="rstctl"><label class="field">' + it('from') + '<input class="input num" type="date" id="iFrom" value="' + esc(I.from) + '"></label>' +
+        '<label class="field">' + it('to') + '<input class="input num" type="date" id="iTo" value="' + esc(I.to) + '"></label>' +
+        '<div class="ichips">' + [['0', 'today'], ['1', 'yday'], ['7', 'd7'], ['30', 'd30']].map(function (q) { return '<button type="button" class="ichip" data-iq="' + q[0] + '">' + it(q[1]) + '</button>'; }).join('') + '</div>' +
+        '<label class="field">' + it('shift') + '<select class="input" id="iSh"></select></label>' +
+        '<label class="field">' + it('emp') + '<select class="input" id="iEmp"></select></label>' +
+        '<button type="button" class="btn sm" id="iRef">' + icon('refresh') + rt('refresh') + '</button></div></div>' +
+        '<div id="insBody"><div class="loading"><div class="spin"></div>' + t('loading') + '</div></div>';
+      wrap.querySelectorAll('[data-itab]').forEach(function (b) {
+        b.onclick = function () { I.tab = b.getAttribute('data-itab'); ls.set('mbco_ins_tab', I.tab); wrap.querySelectorAll('[data-itab]').forEach(function (x) { x.classList.toggle('on', x === b); }); insDraw(); };
+      });
+      var f = document.getElementById('iFrom'), tt = document.getElementById('iTo');
+      f.onchange = tt.onchange = function () { I.from = f.value; I.to = tt.value; renderIns(wrap, true); };
+      wrap.querySelectorAll('[data-iq]').forEach(function (b) {
+        b.onclick = function () {
+          var n = +b.getAttribute('data-iq'), td = (I.d && I.d.today) || todayStr();
+          if (n === 0) { I.from = I.to = td; } else if (n === 1) { I.from = I.to = dAdd(td, -1); } else { I.from = dAdd(td, -(n - 1)); I.to = td; }
+          renderIns(wrap, false);
+        };
+      });
+      document.getElementById('iSh').onchange = function () { I.sh = this.value; insDraw(); };
+      document.getElementById('iEmp').onchange = function () { I.emp = this.value; insDraw(); };
+      document.getElementById('iRef').onclick = function () { renderIns(wrap, true); };
+    }
+    var ck = I.from + '|' + I.to;
+    if (I.d && I.key === ck && !force && Date.now() - I.at < 60000) return insDraw();
+    setSync(true);
+    return api('insDash', { from: I.from, to: I.to, fresh: !!force }).then(function (j) {
+      I.d = j.data; I.at = Date.now(); addDict(I.d.dict);
+      I.from = I.d.from; I.to = I.d.to; I.key = I.from + '|' + I.to;
+      var f = document.getElementById('iFrom'), tt = document.getElementById('iTo'); if (f) { f.value = I.from; tt.value = I.to; }
+      if (route() === 'ins') insDraw();
+    }).catch(function (e) { var b = document.getElementById('insBody'); if (b && route() === 'ins') failBox(b, e, function () { renderIns(wrap, true); }); })
+      .then(function () { setSync(false); });
+  }
+
+  /* القوائم بعد فلتر الوردية والموظف */
+  function insF() {
+    var I = st.ins, D = I.d;
+    var ok = function (r) { return (!I.sh || String(r.shift) === I.sh) && (!I.emp || String(r.emp_id) === I.emp); };
+    return { rdy: D.rdy.filter(ok), ins: D.ins.filter(ok), vio: D.vio.filter(ok), cov: D.cov.filter(ok) };
+  }
+  function insFilters() {
+    var I = st.ins, D = I.d, sh = document.getElementById('iSh'), em = document.getElementById('iEmp'); if (!sh) return;
+    sh.innerHTML = '<option value="">' + it('all') + '</option>' + ['1', '2', '3'].map(function (c) { return '<option value="' + c + '"' + (I.sh === c ? ' selected' : '') + '>' + c + ' · ' + it('sh' + c) + '</option>'; }).join('');
+    var seen = {}, list = [];
+    D.rdy.concat(D.ins, D.vio, D.cov).forEach(function (r) { var id = String(r.emp_id || ''); if (id && !seen[id]) { seen[id] = 1; list.push({ id: id, n: iName(r) }); } });
+    list.sort(function (a, b) { return String(a.n).localeCompare(String(b.n), 'ar'); });
+    em.innerHTML = '<option value="">' + it('all') + '</option>' + list.map(function (e) { return '<option value="' + esc(e.id) + '"' + (I.emp === e.id ? ' selected' : '') + '>' + esc(e.n) + ' (' + esc(e.id) + ')</option>'; }).join('');
+  }
+  function insDraw() {
+    var I = st.ins, b = document.getElementById('insBody'); if (!b || !I.d) return;
+    insFilters();
+    b.innerHTML = ({ overview: insOverview, stn: insStn, enf: insEnf, vio: insVio, emps: insEmps, daily: insDaily }[I.tab] || insOverview)() +
+      '<p class="muted rmeta noprint">' + it('updated') + ' <span class="ltr">' + esc(String(I.d.generated).slice(11)) + '</span></p>';
+    insBind(b);
+  }
+
+  /* ---------- أدوات ---------- */
+  function iName(r) { var n = r.emp_name || r.name || r.emp_id || ''; return st.lang === 'en' ? tr(n) : n; }
+  function iSum(a, k) { return a.reduce(function (x, r) { return x + (+r[k] || 0); }, 0); }
+  function iPct(a, b) { return b ? Math.round(a / b * 1000) / 10 + '%' : '—'; }
+  function iDur(min) { min = Math.max(0, Math.round(+min || 0)); var h = Math.floor(min / 60), s = h ? h + ' ' + it('h') + ' ' + (min % 60) + ' ' + it('min') : min + ' ' + it('min'); return '<bdi dir="' + (st.lang === 'en' ? 'ltr' : 'rtl') + '">' + s + '</bdi>'; }
+  function iMoney(n) { return Math.round(+n || 0).toLocaleString('en-US'); }
+  function iCount(rows, fn) { var m = {}; rows.forEach(function (r) { var k = fn(r); if (k === '' || k === null || k === undefined) return; m[k] = (m[k] || 0) + 1; }); return Object.keys(m).map(function (k) { return { l: k, v: m[k] }; }).sort(function (a, b) { return b.v - a.v; }); }
+  function iBars(items, fmt, max) {
+    items = items.slice(0, max || 10);
+    var mx = Math.max.apply(null, [1].concat(items.map(function (i) { return i.v; })));
+    return items.length ? '<div class="ibw">' + items.map(function (i, n) { return '<div class="rbar"><span class="lb" title="' + esc(i.l) + '">' + esc(tr(i.l)) + '</span><span class="tr"><i style="width:' + (i.v / mx * 100).toFixed(1) + '%;background:' + (i.c || I_COL[n % 3]) + '"></i></span><b class="num">' + (fmt ? fmt(i.v, i) : i.v) + '</b></div>'; }).join('') + '</div>' : '<p class="muted">' + it('none') + '</p>';
+  }
+  function iCard(title, body) { return '<section class="card"><div class="chead"><span class="bar4"></span><h2>' + esc(title) + '</h2></div>' + body + '</section>'; }
+  function iTime(ts) { if (!ts) return '—'; var I = st.ins, one = I.from === I.to; return '<span class="ltr">' + esc(one ? String(ts).slice(11, 16) : String(ts).slice(5, 16)) + '</span>'; }
+  function iLoc(r) { return r.location_type === 'محطة' || (!r.bus_no && r.station) ? it('station') + ' ' + tr(r.station || '') : (r.station ? tr(r.station) : it('bus_l')); }
+  function iShName(c) { return c ? c + (it('sh' + c) !== 'sh' + c ? ' · ' + it('sh' + c) : '') : '—'; }
+  function iLinks(r) {
+    var a = '';
+    if (r.photo_url) a += '<a class="ph" href="' + esc(r.photo_url) + '" target="_blank" rel="noopener" title="photo">📷</a> ';
+    if (r.form_photo_url) a += '<a class="ph" href="' + esc(r.form_photo_url) + '" target="_blank" rel="noopener" title="form">📄</a> ';
+    if (r.map_link) a += '<a class="ph" href="' + esc(r.map_link) + '" target="_blank" rel="noopener" title="map">📍</a>';
+    return a || '<span class="muted">—</span>';
+  }
+  function iEntry(v) { return v ? (/ورق/.test(v) ? it('paper') : it('bot')) : ''; }
+  function iDays() { var I = st.ins, out = []; for (var x = I.from; x && x <= I.to && out.length < 120; x = dAdd(x, 1)) out.push(x); return out; }
+  /* أعمدة يومية (3 سلاسل بنفس ألوان الهوية) */
+  function iTrend(F) {
+    var days = iDays(), ser = [['s_rdy', F.rdy], ['s_ins', F.ins], ['s_vio', F.vio]].map(function (s) { var m = {}; s[1].forEach(function (r) { m[r.shift_date] = (m[r.shift_date] || 0) + 1; }); return { l: it(s[0]), m: m }; });
+    var mx = 1; days.forEach(function (d) { ser.forEach(function (s) { mx = Math.max(mx, s.m[d] || 0); }); });
+    var step = Math.ceil(days.length / 15);
+    return '<div class="ilegend">' + ser.map(function (s, i) { return '<span><i style="background:' + I_COL[i] + '"></i>' + esc(s.l) + '</span>'; }).join('') + '</div>' +
+      '<div class="icols">' + days.map(function (d, k) {
+        return '<div class="icol" title="' + d + ' · ' + ser.map(function (s) { return s.l + ': ' + (s.m[d] || 0); }).join(' · ') + '"><div class="ibars">' +
+          ser.map(function (s, i) { var v = s.m[d] || 0; return '<i style="height:' + (v / mx * 100).toFixed(1) + '%;background:' + I_COL[i] + '">' + (days.length <= 10 && v ? '<em>' + v + '</em>' : '') + '</i>'; }).join('') +
+          '</div><span class="ilb">' + (k % step === 0 ? d.slice(5) : '') + '</span></div>';
+      }).join('') + '</div>';
+  }
+  /* حسب الساعة: يبدأ من 07 (اليوم التشغيلي) */
+  function iHours(F) {
+    var m = {}, all = F.rdy.concat(F.ins, F.vio);
+    all.forEach(function (r) { var h = Number(String(r.start_time).slice(11, 13)); if (!isNaN(h) && String(r.start_time).length > 12) m[h] = (m[h] || 0) + 1; });
+    var hrs = []; for (var i = 0; i < 24; i++) hrs.push((i + 7) % 24);
+    var mx = Math.max.apply(null, [1].concat(hrs.map(function (h) { return m[h] || 0; })));
+    return '<div class="icols hrs">' + hrs.map(function (h) { var v = m[h] || 0; return '<div class="icol" title="' + ('0' + h).slice(-2) + ':00 · ' + v + '"><div class="ibars"><i style="height:' + (v / mx * 100).toFixed(1) + '%;background:' + I_COL[0] + '">' + (v ? '<em>' + v + '</em>' : '') + '</i></div><span class="ilb">' + ('0' + h).slice(-2) + '</span></div>'; }).join('') + '</div>';
+  }
+  function iByShift(rows) { return iCount(rows, function (r) { return r.shift ? String(r.shift) : ''; }).map(function (x) { return { l: iShName(x.l), v: x.v }; }); }
+  function iByEmp(rows) { var m = {}; rows.forEach(function (r) { var k = iName(r); if (k) m[k] = (m[k] || 0) + 1; }); return Object.keys(m).map(function (k) { return { l: k, v: m[k] }; }).sort(function (a, b) { return b.v - a.v; }); }
+  function iRouteRate(rows) {
+    var m = {}; rows.forEach(function (r) { var k = r.route || '—'; m[k] = m[k] || [0, 0]; m[k][0] += +r.no_tickets || 0; m[k][1] += +r.total_pax || 0; });
+    return Object.keys(m).filter(function (k) { return m[k][1] > 0; }).map(function (k) { return { l: (st.lang === 'en' ? 'Route ' : 'مسار ') + k, v: Math.round(m[k][0] / m[k][1] * 1000) / 10, n: m[k][0], p: m[k][1] }; }).sort(function (a, b) { return b.v - a.v; });
+  }
+  function iSearch(rows, q) { q = String(q || '').trim().toLowerCase(); if (!q) return rows; return rows.filter(function (r) { return Object.keys(r).some(function (k) { var v = r[k]; return v !== '' && v !== null && (String(v).toLowerCase().indexOf(q) >= 0 || String(tr(String(v))).toLowerCase().indexOf(q) >= 0); }); }); }
+  function iTable(kind, cols, rows, title) {
+    var I = st.ins, list = iSearch(rows, I.q[kind]), show = list.slice(0, 400);
+    return '<h3 class="rh3">' + esc(title) + '</h3><div class="toolbar noprint"><input class="input" type="search" data-iq-s="' + kind + '" placeholder="' + esc(it('search')) + '" value="' + esc(I.q[kind]) + '">' +
+      '<button type="button" class="btn sm" data-icsv="' + kind + '">' + icon('download') + it('csv') + '</button><span class="muted"><span class="num">' + list.length + '</span> ' + it('rows') + (list.length > 400 ? ' · 400 ↓ CSV' : '') + '</span></div>' +
+      '<div class="tblwrap rtbl"><table class="tbl twrap"><thead><tr>' + cols.map(function (c) { return '<th>' + esc(it(c[0])) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      (show.length ? show.map(function (r) { return '<tr>' + cols.map(function (c) { return '<td' + (c[2] ? ' class="' + c[2] + '"' : '') + '>' + c[1](r) + '</td>'; }).join('') + '</tr>'; }).join('') : '<tr><td colspan="' + cols.length + '" class="empty">' + t('no_rows') + '</td></tr>') +
+      '</tbody></table></div>';
+  }
+
+  /* أعمدة السجلات + نسخة CSV (نص بدون HTML) */
+  var I_COLS = {
+    rdy: function () { var items = st.ins.d.items; return [
+      ['t_time', function (r) { return iTime(r.end_time || r.start_time); }], ['t_id', function (r) { return '<span class="ltr">' + esc(r.case_id) + '</span>'; }],
+      ['t_loc', function (r) { return esc(r.location_type === 'محطة' || r.station ? tr(r.station || '') : it('bus_l')); }], ['t_bus', function (r) { return '<b class="ltr">' + esc(r.bus_no) + '</b>'; }],
+      ['t_emp', function (r) { return esc(iName(r)) + '<div class="muted num">' + esc(r.emp_id) + '</div>'; }],
+      ['t_res', function (r) { return +r.failed_count > 0 ? '<span class="tbad">✖ ' + esc(tr(r.failed_items) || r.failed_count) + '</span>' : '<span class="tok">' + it('okall') + '</span>'; }],
+      ['t_items', function (r) { return '<span class="ichk">' + items.map(function (x) { var v = r[x[0]]; return '<i class="' + (v === 'غير مطابق' ? 'no' : v ? 'ok' : '') + '" title="' + esc(tr(x[1])) + '">' + esc(tr(x[1])) + '</i>'; }).join('') + '</span>'; }],
+      ['t_notes', function (r) { return esc(r.notes); }], ['t_att', iLinks], ['t_entry', function (r) { return esc(iEntry(r.entry_method)); }]
+    ]; },
+    ins: function () { return [
+      ['t_time', function (r) { return iTime(r.start_time); }], ['t_id', function (r) { return '<span class="ltr">' + esc(r.case_id) + '</span>'; }],
+      ['t_bus', function (r) { return '<b class="ltr">' + esc(r.bus_no) + '</b>'; }], ['t_route', function (r) { return esc(r.route); }],
+      ['t_emp', function (r) { return esc(iName(r)) + '<div class="muted num">' + esc(r.emp_id) + '</div>'; }],
+      ['t_src', function (r) { return esc(tr(r.source || '')) + (r.cdc_ref ? '<div class="muted ltr">' + esc(r.cdc_ref) + '</div>' : ''); }],
+      ['t_valid', function (r) { return r.valid_tickets; }, 'num'], ['t_not', function (r) { return r.no_tickets ? '<b class="twarn">' + r.no_tickets + '</b>' : '0'; }, 'num'], ['t_pax', function (r) { return r.total_pax; }, 'num'],
+      ['t_vc', function (r) { return r.violations_count || ''; }, 'num'], ['t_dur', function (r) { return r.duration_min ? iDur(r.duration_min) : '—'; }],
+      ['t_driver', function (r) { return '<span class="num">' + esc(r.driver_id) + '</span>'; }], ['t_notes', function (r) { return esc(r.notes); }], ['t_att', iLinks], ['t_entry', function (r) { return esc(iEntry(r.entry_method)); }]
+    ]; },
+    vio: function () { return [
+      ['t_time', function (r) { return iTime(r.start_time); }], ['t_id', function (r) { return '<span class="ltr">' + esc(r.case_id) + '</span>'; }],
+      ['t_type', function (r) { return esc(tr(r.violation_type)) + (r.violation_code ? '<div class="muted num">' + esc(r.violation_code) + '</div>' : ''); }],
+      ['t_amt', function (r) { return '<b>' + iMoney(r.fine_amount) + '</b>'; }, 'num'], ['t_vno', function (r) { return '<span class="num">' + esc(r.violation_no) + '</span>'; }],
+      ['t_loc', function (r) { return r.at_station ? esc(it('station') + ' ' + tr(r.station)) : '<span class="ltr">' + esc(r.bus_no) + '</span>' + (r.route ? ' / ' + esc(r.route) : ''); }],
+      ['t_emp', function (r) { return esc(iName(r)) + '<div class="muted num">' + esc(r.emp_id) + '</div>'; }],
+      ['t_911', function (r) { return r.police ? '🚨 <span class="ltr">' + esc(String(r.police_call_time).slice(11, 16)) + (r.police_arrival_time ? ' → ' + esc(String(r.police_arrival_time).slice(11, 16)) : '') + '</span>' : '—'; }],
+      ['t_parent', function (r) { return r.parent_case_id ? '<span class="ltr muted">' + esc(r.parent_case_id) + '</span>' : ''; }],
+      ['t_notes', function (r) { return esc(r.notes); }], ['t_att', iLinks], ['t_entry', function (r) { return esc(iEntry(r.entry_method)); }]
+    ]; },
+    cov: function () { return [
+      ['t_emp', function (r) { return esc(iName(r)) + '<div class="muted num">' + esc(r.emp_id) + '</div>'; }], ['t_loc', function (r) { return esc(tr(r.station)); }],
+      ['t_reason', function (r) { return esc(tr(r.reason || '')); }], ['t_start', function (r) { return iTime(r.start_time); }], ['t_end', function (r) { return iTime(r.end_time); }],
+      ['t_dur', function (r) { return iDur(r.duration_min); }], ['t_status', function (r) { return esc(tr(r.status || '')); }]
+    ]; }
+  };
+  var I_CSV = {
+    rdy: [['t_time', 'end_time'], ['t_id', 'case_id'], ['t_loc', 'station'], ['t_bus', 'bus_no'], ['t_emp', 'emp_name'], ['emp', 'emp_id'], ['shift', 'shift'], ['t_res', 'failed_count'], ['t_items', 'failed_items'], ['t_notes', 'notes'], ['t_entry', 'entry_method']],
+    ins: [['t_time', 'start_time'], ['t_id', 'case_id'], ['t_bus', 'bus_no'], ['t_route', 'route'], ['t_emp', 'emp_name'], ['emp', 'emp_id'], ['shift', 'shift'], ['t_src', 'source'], ['cdc_ref', 'cdc_ref'], ['t_valid', 'valid_tickets'], ['t_not', 'no_tickets'], ['t_pax', 'total_pax'], ['t_vc', 'violations_count'], ['t_dur', 'duration_min'], ['t_driver', 'driver_id'], ['t_notes', 'notes'], ['t_entry', 'entry_method']],
+    vio: [['t_time', 'start_time'], ['t_id', 'case_id'], ['code', 'violation_code'], ['t_type', 'violation_type'], ['t_amt', 'fine_amount'], ['t_vno', 'violation_no'], ['t_loc', 'station'], ['t_bus', 'bus_no'], ['t_route', 'route'], ['t_emp', 'emp_name'], ['emp', 'emp_id'], ['shift', 'shift'], ['t_911', 'police'], ['call', 'police_call_time'], ['arrive', 'police_arrival_time'], ['t_parent', 'parent_case_id'], ['t_notes', 'notes']],
+    cov: [['t_emp', 'emp_name'], ['emp', 'emp_id'], ['shift', 'shift'], ['t_loc', 'station'], ['t_reason', 'reason'], ['t_start', 'start_time'], ['t_end', 'end_time'], ['t_dur', 'duration_min'], ['t_status', 'status']]
+  };
+  function iCsvDl(name, head, rows) {
+    var q = function (v) { v = String(v === null || v === undefined ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    var out = [head.map(q).join(',')].concat(rows.map(function (r) { return r.map(q).join(','); })).join('\r\n');
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + out], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'MBCO_' + name + '_' + st.ins.from + '_' + st.ins.to + '.csv'; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+
+  /* ---------- نظرة عامة ---------- */
+  function insKpis(F) {
+    var pax = iSum(F.ins, 'total_pax'), noT = iSum(F.ins, 'no_tickets'), ok = F.rdy.filter(function (r) { return !(+r.failed_count > 0); }).length;
+    return { pax: pax, noT: noT, ok: ok, fines: iSum(F.vio, 'fine_amount'), police: F.vio.filter(function (r) { return r.police; }).length, covMin: iSum(F.cov, 'duration_min') };
+  }
+  function insOverview() {
+    var F = insF(), K = insKpis(F);
+    var h = '<div class="kpis k6">' +
+      rKpi(it('k_rdy'), F.rdy.length) + rKpi(it('k_okr'), iPct(K.ok, F.rdy.length), 'ok') +
+      rKpi(it('k_ins'), F.ins.length) + rKpi(it('k_pax'), K.pax) + rKpi(it('k_rate'), iPct(K.noT, K.pax), K.noT ? 'warn' : '') +
+      rKpi(it('k_vio'), F.vio.length, F.vio.length ? 'bad' : '') + rKpi(it('k_fines') + ' (' + it('sar') + ')', iMoney(K.fines)) + rKpi(it('k_911'), K.police) +
+      rKpi(it('k_cov') + ' (' + F.cov.length + ' ' + it('times') + ')', iDur(K.covMin)) + '</div>';
+    h += '<div class="row2 r2eq">' + iCard(it('c_trend'), iTrend(F)) + iCard(it('c_hour'), iHours(F)) + '</div>';
+    var items = st.ins.d.items.map(function (x) { return { l: x[1], v: F.rdy.filter(function (r) { return r[x[0]] === 'غير مطابق'; }).length }; }).filter(function (x) { return x.v; }).sort(function (a, b) { return b.v - a.v; });
+    h += '<div class="igrid3">' +
+      '<section class="card ipane" data-go="stn"><div class="chead"><span class="bar4"></span><h2>🚏 ' + it('stn') + '</h2><span class="muted num">' + F.rdy.length + '</span></div>' + iBars(items, null, 5) + '</section>' +
+      '<section class="card ipane" data-go="enf"><div class="chead"><span class="bar4"></span><h2>🎫 ' + it('enf') + '</h2><span class="muted num">' + F.ins.length + '</span></div>' + iBars(iRouteRate(F.ins), function (v) { return v + '%'; }, 5) + '</section>' +
+      '<section class="card ipane" data-go="vio"><div class="chead"><span class="bar4"></span><h2>📝 ' + it('vio') + '</h2><span class="muted num">' + F.vio.length + '</span></div>' + iBars(iCount(F.vio, function (r) { return r.violation_type || '—'; }), null, 5) + '</section>' +
+      '</div>';
+    return h;
+  }
+
+  /* ---------- فحص المحطات ---------- */
+  function insStn() {
+    var F = insF(), R = F.rdy, ok = R.filter(function (r) { return !(+r.failed_count > 0); }).length;
+    var items = st.ins.d.items.map(function (x) { return { l: x[1], v: R.filter(function (r) { return r[x[0]] === 'غير مطابق'; }).length }; }).sort(function (a, b) { return b.v - a.v; });
+    var stations = iCount(R, function (r) { return r.station || it('bus_l'); });
+    return '<div class="kpis k6">' + rKpi(it('k_rdy'), R.length) + rKpi(it('k_ok'), ok + ' <small>' + iPct(ok, R.length) + '</small>', 'ok') + rKpi(it('k_fail'), R.length - ok, R.length - ok ? 'warn' : '') +
+      rKpi(it('k_buses'), Object.keys(R.reduce(function (m, r) { if (r.bus_no) m[r.bus_no] = 1; return m; }, {})).length) + rKpi(it('k_stations'), stations.length) + '</div>' +
+      '<div class="row2 r2eq">' + iCard(it('c_items'), iBars(items, function (v) { return v + ' <span class="muted">' + iPct(v, R.length) + '</span>'; })) +
+      iCard(it('c_buses'), iBars(iCount(R.filter(function (r) { return +r.failed_count > 0; }), function (r) { return r.bus_no; }))) + '</div>' +
+      '<div class="row2 r2eq">' + iCard(it('c_byst'), iBars(stations.map(function (s) { var f = R.filter(function (r) { return (r.station || it('bus_l')) === s.l && +r.failed_count > 0; }).length; return { l: s.l, v: s.v, f: f }; }), function (v, x) { return v + (x.f ? ' <span class="twarn">✖' + x.f + '</span>' : ''); })) +
+      iCard(it('c_bysh') + ' · ' + it('c_byemp'), iBars(iByShift(R), null) + '<hr class="isep">' + iBars(iByEmp(R), null, 8)) + '</div>' +
+      iTable('rdy', I_COLS.rdy(), R, it('rec_rdy'));
+  }
+
+  /* ---------- فحص التذاكر (+ التغطية) ---------- */
+  function insEnf() {
+    var F = insF(), R = F.ins, pax = iSum(R, 'total_pax'), noT = iSum(R, 'no_tickets'), cdc = R.filter(function (r) { return r.from_cdc; }).length;
+    var dur = R.filter(function (r) { return +r.duration_min > 0; });
+    var buses = {}; R.forEach(function (r) { if (r.bus_no && +r.no_tickets) buses[r.bus_no] = (buses[r.bus_no] || 0) + (+r.no_tickets); });
+    return '<div class="kpis k6">' + rKpi(it('k_ins'), R.length) + rKpi(it('k_cdc'), cdc) + rKpi(it('k_pax'), pax) + rKpi(it('k_not'), noT + ' <small>' + iPct(noT, pax) + '</small>', noT ? 'warn' : '') +
+      rKpi(it('k_dur'), dur.length ? iDur(iSum(dur, 'duration_min') / dur.length) : '—') + rKpi(it('k_invio'), iSum(R, 'violations_count')) +
+      rKpi(it('k_cov') + ' (' + F.cov.length + ' ' + it('times') + ')', iDur(iSum(F.cov, 'duration_min'))) + '</div>' +
+      '<div class="row2 r2eq">' + iCard(it('c_route'), iBars(iRouteRate(R), function (v, x) { return v + '% <span class="muted">(' + x.n + '/' + x.p + ')</span>'; }, 13)) +
+      iCard(it('c_src'), iBars(iCount(R, function (r) { return r.source || '—'; }))) + '</div>' +
+      '<div class="row2 r2eq">' + iCard(it('c_busnot'), iBars(Object.keys(buses).map(function (k) { return { l: k, v: buses[k] }; }).sort(function (a, b) { return b.v - a.v; }))) +
+      iCard(it('c_bysh') + ' · ' + it('c_byemp'), iBars(iByShift(R), null) + '<hr class="isep">' + iBars(iByEmp(R), null, 8)) + '</div>' +
+      iTable('ins', I_COLS.ins(), R, it('rec_ins')) +
+      (F.cov.length ? '<div class="row2 r2eq" style="margin-top:14px">' + iCard(it('c_covst'), iBars(F.cov.reduce(function (a, r) { var k = r.station || '—', x = a.filter(function (y) { return y.l === k; })[0]; if (!x) a.push(x = { l: k, v: 0 }); x.v += +r.duration_min || 0; return a; }, []).sort(function (a, b) { return b.v - a.v; }), iDur)) + '</div>' : '') +
+      iTable('cov', I_COLS.cov(), F.cov, it('rec_cov'));
+  }
+
+  /* ---------- المخالفات ---------- */
+  function insVio() {
+    var F = insF(), R = F.vio, fines = iSum(R, 'fine_amount'), pol = R.filter(function (r) { return r.police; });
+    var arr = pol.map(function (r) { if (!r.police_call_time || !r.police_arrival_time) return null; var a = Date.parse(r.police_call_time.replace(' ', 'T')), b = Date.parse(r.police_arrival_time.replace(' ', 'T')); return b >= a ? (b - a) / 60000 : null; }).filter(function (x) { return x !== null && x < 600; });
+    var amt = {}; R.forEach(function (r) { var k = r.violation_type || '—'; amt[k] = (amt[k] || 0) + (+r.fine_amount || 0); });
+    var st_ = R.filter(function (r) { return r.at_station; }).length;
+    return '<div class="kpis k6">' + rKpi(it('k_vio'), R.length, R.length ? 'bad' : '') + rKpi(it('k_fines') + ' (' + it('sar') + ')', iMoney(fines)) + rKpi(it('k_911'), pol.length) +
+      rKpi(it('k_inbus'), R.length - st_) + rKpi(it('k_atstn'), st_) + rKpi(it('k_pol'), arr.length ? iDur(arr.reduce(function (a, b) { return a + b; }, 0) / arr.length) : '—') + '</div>' +
+      '<div class="row2 r2eq">' + iCard(it('c_type'), iBars(iCount(R, function (r) { return r.violation_type || '—'; }), function (v, x) { return v + ' <span class="muted">· ' + iMoney(amt[x.l]) + '</span>'; }, 19)) +
+      iCard(it('c_loc'), iBars(iCount(R, function (r) { return r.at_station ? it('station') + ' ' + (r.station || '') : it('inbus'); }))) + '</div>' +
+      '<div class="row2 r2eq">' + iCard(it('c_vroute'), iBars(iCount(R.filter(function (r) { return r.route; }), function (r) { return (st.lang === 'en' ? 'Route ' : 'مسار ') + r.route; }), null, 13)) +
+      iCard(it('c_bysh') + ' · ' + it('c_byemp'), iBars(iByShift(R), null) + '<hr class="isep">' + iBars(iByEmp(R), null, 8)) + '</div>' +
+      iTable('vio', I_COLS.vio(), R, it('rec_vio'));
+  }
+
+  /* ---------- أداء الموظفين (من insKpi_ في الـ Hub) ---------- */
+  var I_ECOLS = [
+    ['name', 'emp', ''], ['id', 'e_id', ''], ['team', 'e_team', ''], ['days', 'e_days', ''], ['total', 'e_total', ''], ['perDay', 'e_pd', ''],
+    ['stn.n', 'e_n', 'g_stn'], ['stn.okRate', 'e_okr', 'g_stn'], ['stn.failed', 'e_fail', 'g_stn'],
+    ['enf.n', 'e_n', 'g_enf'], ['enf.pax', 'e_pax', 'g_enf'], ['enf.rate', 'e_rate', 'g_enf'], ['enf.avgDur', 'e_avg', 'g_enf'], ['enf.cdc', 'e_cdc', 'g_enf'],
+    ['vio.n', 'e_n', 'g_vio'], ['vio.fines', 'e_amt', 'g_vio'], ['vio.police', 't_911', 'g_vio'],
+    ['cov.n', 'times', 'g_cov'], ['cov.min', 'e_hrs', 'g_cov']
+  ];
+  function iGet(o, path) { return path.split('.').reduce(function (x, k) { return x === null || x === undefined ? x : x[k]; }, o); }
+  function iEmpRows() {
+    var I = st.ins;
+    return I.d.kpi.filter(function (p) { return (!I.team || p.team === I.team) && (!I.emp || p.id === I.emp); }).slice().sort(function (a, b) {
+      var x = iGet(a, I.sort.k), y = iGet(b, I.sort.k); x = x === null || x === undefined ? -1 : x; y = y === null || y === undefined ? -1 : y;
+      if (I.sort.k === 'name') { x = iName(a); y = iName(b); return String(x).localeCompare(String(y), 'ar') * I.sort.d; }
+      return (x > y ? 1 : x < y ? -1 : 0) * I.sort.d;
+    });
+  }
+  function iEmpCell(p, k) {
+    var v = iGet(p, k);
+    if (k === 'name') return '<b>' + esc(iName(p)) + '</b>';
+    if (k === 'team') return esc(rTeam(v));
+    if (v === null || v === undefined) return '<span class="muted">—</span>';
+    if (k === 'stn.okRate' || k === 'enf.rate') return v + '%';
+    if (k === 'enf.avgDur') return iDur(v);
+    if (k === 'cov.min') return (Math.round(v / 6) / 10).toString();
+    if (k === 'vio.fines') return iMoney(v);
+    return v === 0 ? '<span class="muted">0</span>' : esc(v);
+  }
+  function iECols() {
+    var tm = st.ins.team, hide = tm === 'STN' ? { g_enf: 1, g_vio: 1, g_cov: 1 } : tm === 'ENF' ? { g_stn: 1 } : {};
+    return I_ECOLS.filter(function (c) { return !hide[c[2]]; });
+  }
+  function insEmps() {
+    var I = st.ins, rows = iEmpRows(), groups = [], I_ECOLS = iECols();
+    I_ECOLS.forEach(function (c) { var g = c[2] || ''; if (!groups.length || groups[groups.length - 1].g !== g) groups.push({ g: g, n: 1 }); else groups[groups.length - 1].n++; });
+    return '<div class="toolbar noprint"><div class="seg teams">' + [['', 't_all'], ['ENF', 't_enf'], ['STN', 't_stn']].map(function (x) { return '<button type="button" data-iteam="' + x[0] + '" class="' + (I.team === x[0] ? 'on' : '') + '">' + it(x[1]) + '</button>'; }).join('') + '</div>' +
+      '<button type="button" class="btn sm" id="iEmpCsv">' + icon('download') + it('csv') + '</button><span class="muted"><span class="num">' + rows.length + '</span></span></div>' +
+      (I.sh ? '<div class="romsg warn">' + it('e_shift') + '</div>' : '') +
+      '<div class="tblwrap rtbl"><table class="tbl iemp"><thead><tr>' + groups.map(function (g) { return '<th colspan="' + g.n + '" class="' + (g.g ? 'grp' : 'grp0') + '">' + (g.g ? esc(it(g.g)) : '') + '</th>'; }).join('') + '</tr><tr>' +
+      I_ECOLS.map(function (c) { return '<th data-isort="' + c[0] + '" class="srt' + (c[2] ? ' g' : '') + '">' + esc(it(c[1])) + (I.sort.k === c[0] ? (I.sort.d > 0 ? ' ▲' : ' ▼') : '') + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      (rows.length ? rows.map(function (p) { return '<tr>' + I_ECOLS.map(function (c) { return '<td class="' + (c[0] === 'name' || c[0] === 'team' ? '' : 'num') + (c[2] ? ' g' : '') + '">' + iEmpCell(p, c[0]) + '</td>'; }).join('') + '</tr>'; }).join('') : '<tr><td colspan="' + I_ECOLS.length + '" class="empty">' + t('no_rows') + '</td></tr>') +
+      '</tbody></table></div><p class="muted rmeta">' + it('e_note') + '</p>';
+  }
+
+  /* ---------- التقرير (يومي أو للفترة) – بنفس نمط التقرير اليومي ---------- */
+  function insDaily() {
+    var I = st.ins, F = insF(), K = insKpis(F), one = I.from === I.to;
+    var period = one ? I.from : I.from + ' → ' + I.to;
+    var shifts = []; F.rdy.concat(F.ins, F.vio).forEach(function (r) { if (r.shift && shifts.indexOf(String(r.shift)) < 0) shifts.push(String(r.shift)); }); shifts.sort();
+    var byShift = shifts.map(function (sh) { var f = function (r) { return String(r.shift) === sh; }, A = F.rdy.filter(f), B = F.ins.filter(f), C = F.vio.filter(f);
+      return '<tr><td>' + esc(iShName(sh)) + '</td><td class="num">' + A.length + '</td><td class="num">' + A.filter(function (r) { return +r.failed_count > 0; }).length + '</td><td class="num">' + B.length + '</td><td class="num">' + iSum(B, 'total_pax') + '</td><td class="num">' + iSum(B, 'no_tickets') + '</td><td class="num">' + C.length + '</td><td class="num">' + iMoney(iSum(C, 'fine_amount')) + '</td></tr>'; }).join('');
+    var E = {}; var g = function (r) { var k = String(r.emp_id || r.emp_name); return E[k] || (E[k] = { n: iName(r), id: r.emp_id, rdy: 0, ins: 0, vio: 0, f: 0 }); };
+    F.rdy.forEach(function (r) { g(r).rdy++; }); F.ins.forEach(function (r) { g(r).ins++; }); F.vio.forEach(function (r) { var x = g(r); x.vio++; x.f += +r.fine_amount || 0; });
+    var emps = Object.keys(E).map(function (k) { return E[k]; }).sort(function (a, b) { return (b.rdy + b.ins + b.vio) - (a.rdy + a.ins + a.vio); });
+    var items = I.d.items.map(function (x) { return { l: x[1], v: F.rdy.filter(function (r) { return r[x[0]] === 'غير مطابق'; }).length }; }).filter(function (x) { return x.v; }).sort(function (a, b) { return b.v - a.v; });
+    var amt = {}; F.vio.forEach(function (r) { var k = r.violation_type || '—'; amt[k] = (amt[k] || 0) + (+r.fine_amount || 0); });
+    var th = function (a) { return '<tr>' + a.map(function (k) { return '<th>' + esc(it(k)) + '</th>'; }).join('') + '</tr>'; };
+    var vioRows = F.vio.slice().sort(function (a, b) { return String(a.start_time).localeCompare(String(b.start_time)); }).map(function (r) {
+      return '<tr><td>' + iTime(r.start_time) + '</td><td><b class="ltr" style="color:var(--accent-text)">' + esc(r.case_id) + '</b></td><td>' + esc(tr(r.violation_type)) + '</td><td class="num">' + iMoney(r.fine_amount) + '</td><td class="num">' + esc(r.violation_no) + '</td><td>' + (r.at_station ? esc(it('station') + ' ' + tr(r.station)) : '<span class="ltr">' + esc(r.bus_no) + (r.route ? ' / ' + esc(r.route) : '') + '</span>') + '</td><td>' + esc(iName(r)) + '</td><td>' + (r.police ? '🚨 <span class="ltr">' + esc(String(r.police_call_time).slice(11, 16)) + '</span>' : '—') + '</td></tr>'; }).join('');
+    var rdyRows = F.rdy.filter(function (r) { return +r.failed_count > 0; }).map(function (r) {
+      return '<tr><td>' + iTime(r.end_time || r.start_time) + '</td><td class="ltr">' + esc(r.bus_no) + '</td><td>' + esc(r.station ? tr(r.station) : it('bus_l')) + '</td><td class="tbad">' + esc(tr(r.failed_items)) + '</td><td>' + esc(iName(r)) + '</td><td>' + esc(r.notes) + '</td></tr>'; }).join('');
+    var filt = [I.sh && it('shift') + ' ' + iShName(I.sh), I.emp && (document.getElementById('iEmp') || {}).selectedOptions && document.getElementById('iEmp').selectedOptions[0].text].filter(Boolean).join(' · ');
+    return '<div class="toolbar noprint"><button type="button" class="btn primary sm" id="iPrint">' + icon('print') + it('print') + '</button></div>' +
+      '<div class="card rrep"><div class="rrh"><div><b class="rlogo">MBCO</b><div class="muted">Modern Bus Company Limited</div></div><span class="tag b-acc">' + (one ? 'Daily' : 'Period') + ' · <span class="ltr">' + esc(period) + '</span></span></div>' +
+      '<h2 class="rrt">' + it(one ? 'r_daily' : 'r_period') + '</h2><p class="muted rmeta">' + it('r_made') + ' <span class="ltr">' + esc(I.d.generated) + '</span>' + (filt ? ' · ' + esc(filt) : '') + '</p>' +
+      '<div class="kpis k6">' + rKpi(it('k_rdy'), F.rdy.length) + rKpi(it('k_ok'), K.ok + ' <small>' + iPct(K.ok, F.rdy.length) + '</small>', 'ok') + rKpi(it('k_ins'), F.ins.length) + rKpi(it('k_pax'), K.pax) +
+      rKpi(it('k_not'), K.noT + ' <small>' + iPct(K.noT, K.pax) + '</small>', K.noT ? 'warn' : '') + rKpi(it('k_vio'), F.vio.length, F.vio.length ? 'bad' : '') + rKpi(it('k_fines') + ' (' + it('sar') + ')', iMoney(K.fines)) + rKpi('🚨 ' + it('k_911'), K.police) + '</div>' +
+      '<div class="row2 r2eq">' + iCard('🚏 ' + it('c_items'), iBars(items)) + iCard('📝 ' + it('c_type'), iBars(iCount(F.vio, function (r) { return r.violation_type || '—'; }), function (v, x) { return v + ' <span class="muted">· ' + iMoney(amt[x.l]) + '</span>'; }, 19)) + '</div>' +
+      '<div class="row2 r2eq">' + iCard('🎫 ' + it('c_route'), iBars(iRouteRate(F.ins), function (v) { return v + '%'; }, 13)) + iCard(it('k_cov'), iBars(F.cov.reduce(function (a, r) { var k = r.station || '—', x = a.filter(function (y) { return y.l === k; })[0]; if (!x) a.push(x = { l: k, v: 0 }); x.v += +r.duration_min || 0; return a; }, []), iDur)) + '</div>' +
+      '<h3 class="rh3">' + it('r_byshemp') + '</h3><div class="tblwrap"><table class="tbl"><thead>' + th(['shift', 'k_rdy', 'k_fail', 'k_ins', 'e_pax', 't_not', 'vio', 'e_amt']) + '</thead><tbody>' + (byShift || '<tr><td colspan="8" class="empty">—</td></tr>') + '</tbody></table></div>' +
+      '<h3 class="rh3">' + it('r_emps') + '</h3><div class="tblwrap"><table class="tbl"><thead>' + th(['emp', 't_id', 'stn', 'enf', 'vio', 'e_amt']) + '</thead><tbody>' + (emps.map(function (x) { return '<tr><td>' + esc(x.n) + '</td><td class="num">' + esc(x.id) + '</td><td class="num">' + x.rdy + '</td><td class="num">' + x.ins + '</td><td class="num">' + x.vio + '</td><td class="num">' + iMoney(x.f) + '</td></tr>'; }).join('') || '<tr><td colspan="6" class="empty">—</td></tr>') + '</tbody></table></div>' +
+      '<h3 class="rh3">' + it('rec_vio') + '</h3><div class="tblwrap"><table class="tbl twrap"><thead>' + th(['t_time', 't_id', 't_type', 't_amt', 't_vno', 't_loc', 't_emp', 't_911']) + '</thead><tbody>' + (vioRows || '<tr><td colspan="8" class="empty">' + it('r_novio') + '</td></tr>') + '</tbody></table></div>' +
+      '<h3 class="rh3">' + it('r_rdyn') + '</h3><div class="tblwrap"><table class="tbl twrap"><thead>' + th(['t_time', 't_bus', 't_loc', 't_items', 't_emp', 't_notes']) + '</thead><tbody>' + (rdyRows || '<tr><td colspan="6" class="empty">' + it('r_nonotes') + '</td></tr>') + '</tbody></table></div>' +
+      '<div class="rfoot muted"><span>' + it('r_foot') + '</span><span class="ltr">' + esc(period) + '</span></div></div>';
+  }
+
+  function insBind(b) {
+    var I = st.ins;
+    b.querySelectorAll('[data-go]').forEach(function (c) { c.onclick = function () { var btn = document.querySelector('[data-itab="' + c.getAttribute('data-go') + '"]'); if (btn) btn.click(); }; });
+    b.querySelectorAll('[data-iq-s]').forEach(function (q) {
+      q.oninput = function () { var k = q.getAttribute('data-iq-s'), pos = q.selectionStart; I.q[k] = q.value; insDraw(); var n = document.querySelector('[data-iq-s="' + k + '"]'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } };
+    });
+    b.querySelectorAll('[data-icsv]').forEach(function (btn) {
+      btn.onclick = function () {
+        var k = btn.getAttribute('data-icsv'), F = insF(), rows = iSearch(F[k], I.q[k]), cols = I_CSV[k];
+        iCsvDl({ rdy: 'station_inspections', ins: 'ticket_inspections', vio: 'violations', cov: 'station_coverage' }[k], cols.map(function (c) { return it(c[0]); }),
+          rows.map(function (r) { return cols.map(function (c) { var v = r[c[1]]; return c[1] === 'police' ? (v ? 'نعم' : '') : typeof v === 'string' ? tr(v) : v; }); }));
+      };
+    });
+    b.querySelectorAll('[data-iteam]').forEach(function (x) { x.onclick = function () { I.team = x.getAttribute('data-iteam'); insDraw(); }; });
+    b.querySelectorAll('[data-isort]').forEach(function (th) { th.onclick = function () { var k = th.getAttribute('data-isort'); I.sort = { k: k, d: I.sort.k === k ? -I.sort.d : -1 }; insDraw(); }; });
+    var ec = b.querySelector('#iEmpCsv');
+    if (ec) ec.onclick = function () {
+      var I_ECOLS = iECols();
+      iCsvDl('staff_performance', I_ECOLS.map(function (c) { return (c[2] ? it(c[2]) + ' – ' : '') + it(c[1]); }), iEmpRows().map(function (p) {
+        return I_ECOLS.map(function (c) { var v = iGet(p, c[0]); if (c[0] === 'name') return iName(p); if (c[0] === 'team') return rTeam(v); if (c[0] === 'cov.min') return Math.round((v || 0) / 6) / 10; return v === null || v === undefined ? '' : v; });
+      }));
+    };
+    var pr = b.querySelector('#iPrint'); if (pr) pr.onclick = function () { window.print(); };
+  }
+
   function loadSection(key) {
     var main = document.getElementById('main');
     var s = st.sec[key] || { from: '', to: '', q: '' };
@@ -1975,6 +2380,13 @@
         bindModeSwitch(key);
         if (st.user.role === 'Officer') { document.getElementById('ctlWrap').innerHTML = '<div class="ctlmsg"><p>' + esc(t('ctl_role')) + '</p></div>'; return; }
         renderCar(document.getElementById('ctlWrap'), false);
+        return;
+      }
+      if (key === 'ins') {
+        main.innerHTML = title + '<div class="ctlnative" id="ctlWrap"></div>';
+        bindModeSwitch(key);
+        if (st.user.role === 'Officer') { document.getElementById('ctlWrap').innerHTML = '<div class="ctlmsg"><p>' + esc(t('ctl_role')) + '</p></div>'; return; }
+        renderIns(document.getElementById('ctlWrap'), false);
         return;
       }
       if (key === 'dist') {

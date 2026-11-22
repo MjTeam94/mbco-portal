@@ -262,6 +262,65 @@ window.MBCO_DEMO = (function () {
     return { emps: emps, grid: grid, shifts: shifts, days: days, day: day, leaves: leaves, reqs: reqs, LV: LV, REQ: REQ, admins: ['ماجد'], kpi: kpi, rosterRange: [days[0], days[n - 1]], today: opDay(), now: opDay() + ' ' + new Date().toTimeString().slice(0, 5), month: M, date: D };
   }
 
+  /* الفحص والمخالفات (v2.1): ثلاث مجموعات + التغطية + مؤشرات الموظفين بنفس شكل insKpi_ في الـ Hub */
+  function insDemo(from, to) {
+    var T = opDay(); to = to || T; from = from || to;
+    var seed = 7; var rnd = function () { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    var pickA = function (a) { return a[Math.floor(rnd() * a.length)]; };
+    var ENF = [['10090', 'سامي الهوساوي'], ['10675', 'عماد برناوي'], ['10171', 'سليمان الحازمي'], ['12272', 'سعدي المالكي'], ['10101', 'خالد العتيبي'], ['10102', 'فيصل الغامدي']];
+    var STN = [['10093', 'أنور اللحياني'], ['12162', 'بديع ساعاتي'], ['10546', 'صقر المجنوني'], ['12293', 'متعب الحربي'], ['10131', 'مخلد العتيبي'], ['10201', 'عبدالله الزهراني']];
+    var stations = ['المروة', 'قطار الحرمين', 'جبل الكعبة', 'التنعيم', 'الأحوال المدنية (100)'], routes = ['1', '2', '3', '4', '5', '6', '7A', '7B', '8', '9', '10', '11', '12'];
+    var VT = [['3', 'عدم حمل تذكرة سارية', 100], ['7', 'التدخين داخل الحافلة', 200], ['11', 'الإضرار بممتلكات الحافلة', 500], ['5', 'إعاقة الأبواب', 100], ['9', 'تناول الطعام داخل الحافلة', 100]];
+    var items = [['chk_clean', 'النظافة'], ['chk_reader', 'قارئ التذاكر'], ['chk_screens', 'الشاشات'], ['chk_uniform', 'زي السائق'], ['chk_cameras', 'الكاميرات']];
+    var bus = function () { return (rnd() < .5 ? 'MA' : 'MS') + (1000 + Math.floor(rnd() * 80)); };
+    var tm = function (d, sh) { var h = sh === '1' ? 7 + Math.floor(rnd() * 9) : sh === '2' ? 15 + Math.floor(rnd() * 9) : 23 + Math.floor(rnd() * 8); var dd = h >= 24 ? add(d, 1) : d; return dd + ' ' + ('0' + (h % 24)).slice(-2) + ':' + ('0' + Math.floor(rnd() * 60)).slice(-2); };
+    var plus = function (ts, m) { var x = new Date(ts.replace(' ', 'T') + ':00Z'); x = new Date(x.getTime() + m * 60000); return x.toISOString().slice(0, 16).replace('T', ' '); };
+    var rdy = [], ins = [], vio = [], cov = [], n = { r: 0, i: 0, v: 0, c: 0 };
+    var id = function (p, d, k) { return p + '-' + d.replace(/-/g, '') + '-' + ('000' + k).slice(-4); };
+    for (var d = from; d <= to; d = add(d, 1)) {
+      var k = 0, perDay = d === T ? 0.55 : 1;
+      for (var a = 0; a < Math.round(26 * perDay); a++) {
+        var sh = pickA(['1', '2', '3']), e = pickA(STN), st0 = tm(d, sh), r = { case_id: id('STN-RDY', d, ++k), status: 'مغلقة', shift_date: d, shift: sh, team: 'STN', emp_id: e[0], emp_name: e[1], start_time: st0, end_time: plus(st0, 4 + Math.floor(rnd() * 6)), duration_min: 5, location_type: 'محطة', station: pickA(stations), bus_no: bus(), route: pickA(routes), map_link: '', parent_case_id: '', entry_method: rnd() < .1 ? 'نموذج ورقي' : 'البوت', notes: '', photo_url: 'https://drive.google.com/' };
+        var failed = []; items.forEach(function (it, j) { var bad = rnd() < [.12, .09, .05, .04, .03][j]; r[it[0]] = bad ? 'غير مطابق' : 'مطابق'; if (bad) failed.push(it[1]); });
+        r.failed_count = failed.length; r.failed_items = failed.join('، '); if (failed.length) r.notes = pickA(['تم إبلاغ السائق', 'تم الرفع للصيانة', '']); rdy.push(r);
+      }
+      k = 0;
+      for (var b = 0; b < Math.round(22 * perDay); b++) {
+        var sh2 = pickA(['1', '2']), e2 = pickA(ENF), st2 = tm(d, sh2), valid = 15 + Math.floor(rnd() * 40), noT = rnd() < .45 ? Math.floor(rnd() * 5) : 0, cdc = rnd() < .25, dur = 6 + Math.floor(rnd() * 14);
+        var r2 = { case_id: id('ENF-INS', d, ++k), status: 'مغلقة', shift_date: d, shift: sh2, team: 'ENF', emp_id: e2[0], emp_name: e2[1], start_time: st2, end_time: plus(st2, dur), duration_min: dur, location_type: 'حافلة', station: '', bus_no: bus(), route: pickA(routes), map_link: 'https://maps.google.com/', parent_case_id: '', entry_method: rnd() < .15 ? 'نموذج ورقي' : 'البوت', notes: '',
+          source: cdc ? 'بلاغ عمليات' : pickA(['فحص ميداني', 'تمركز محطة']), cdc_ref: cdc ? 'T-' + (1200 + Math.floor(rnd() * 300)) : '', driver_id: String(40000 + Math.floor(rnd() * 900)), valid_tickets: valid, no_tickets: noT, total_pax: valid + noT, violations_count: 0, form_photo_url: '', from_cdc: cdc };
+        ins.push(r2);
+        if (noT && rnd() < .5) {
+          var vt = pickA(VT), vt0 = plus(st2, 3), pol = rnd() < .15;
+          r2.violations_count = 1;
+          vio.push({ case_id: id('ENF-VIO', d, ++n.v), status: 'مغلقة', shift_date: d, shift: sh2, team: 'ENF', emp_id: e2[0], emp_name: e2[1], start_time: vt0, end_time: '', duration_min: 0, location_type: 'حافلة', station: '', bus_no: r2.bus_no, route: r2.route, map_link: '', parent_case_id: r2.case_id, entry_method: 'البوت', notes: '',
+            violation_code: vt[0], violation_type: vt[1], fine_amount: vt[2], violation_no: String(880000 + Math.floor(rnd() * 9999)), source: r2.source, cdc_ref: r2.cdc_ref, police: pol, police_call_time: pol ? plus(vt0, 2) : '', police_arrival_time: pol ? plus(vt0, 14 + Math.floor(rnd() * 20)) : '', photo_url: 'https://drive.google.com/', at_station: false });
+        }
+      }
+      for (var c = 0; c < Math.round(4 * perDay); c++) {
+        var e3 = pickA(ENF), sh3 = pickA(['1', '2']), vt3 = pickA(VT), t3 = tm(d, sh3);
+        vio.push({ case_id: id('ENF-VIO', d, ++n.v), status: 'مغلقة', shift_date: d, shift: sh3, team: 'ENF', emp_id: e3[0], emp_name: e3[1], start_time: t3, end_time: '', duration_min: 0, location_type: 'محطة', station: pickA(stations), bus_no: '', route: '', map_link: '', parent_case_id: '', entry_method: 'البوت', notes: '',
+          violation_code: vt3[0], violation_type: vt3[1], fine_amount: vt3[2], violation_no: String(880000 + Math.floor(rnd() * 9999)), source: 'تمركز محطة', cdc_ref: '', police: false, police_call_time: '', police_arrival_time: '', photo_url: '', at_station: true });
+      }
+      for (var q = 0; q < Math.round(2 * perDay); q++) {
+        var e4 = pickA(ENF), t4 = tm(d, '1'), m4 = 60 + Math.floor(rnd() * 180);
+        cov.push({ case_id: id('ENF-COV', d, ++n.c), status: 'مغلقة', shift_date: d, shift: '1', team: 'ENF', emp_id: e4[0], emp_name: e4[1], start_time: t4, end_time: plus(t4, m4), duration_min: m4, location_type: 'محطة', station: pickA(stations), bus_no: '', route: '', map_link: '', parent_case_id: '', entry_method: 'البوت', notes: '', reason: pickA(['نقص في فريق المحطات', 'دعم وقت الذروة']) });
+      }
+    }
+    var srt = function (a, b) { return String(b.start_time).localeCompare(String(a.start_time)); };
+    [rdy, ins, vio, cov].forEach(function (l) { l.sort(srt); });
+    var m = {};
+    var g = function (r) { return m[r.emp_id] || (m[r.emp_id] = { id: r.emp_id, name: r.emp_name, team: r.team, _d: {}, stn: { n: 0, ok: 0, failed: 0, okRate: null, buses: 0, _b: {} }, enf: { n: 0, pax: 0, noT: 0, rate: null, dur: 0, avgDur: null, cdc: 0 }, vio: { n: 0, fines: 0, police: 0, bus: 0, station: 0 }, cov: { n: 0, min: 0 } }); };
+    rdy.forEach(function (r) { var p = g(r); p._d[r.shift_date] = 1; p.stn.n++; if (r.failed_count) p.stn.failed++; else p.stn.ok++; p.stn._b[r.bus_no] = 1; });
+    ins.forEach(function (r) { var p = g(r); p._d[r.shift_date] = 1; p.enf.n++; p.enf.pax += r.total_pax; p.enf.noT += r.no_tickets; p.enf.dur += r.duration_min; if (r.from_cdc) p.enf.cdc++; });
+    vio.forEach(function (r) { var p = g(r); p._d[r.shift_date] = 1; p.vio.n++; p.vio.fines += r.fine_amount; if (r.police) p.vio.police++; if (r.at_station) p.vio.station++; else p.vio.bus++; });
+    cov.forEach(function (r) { var p = g(r); p._d[r.shift_date] = 1; p.cov.n++; p.cov.min += r.duration_min; });
+    var kpi = Object.keys(m).map(function (x) { var p = m[x]; p.days = Object.keys(p._d).length; delete p._d; p.stn.buses = Object.keys(p.stn._b).length; delete p.stn._b;
+      p.stn.okRate = p.stn.n ? Math.round(p.stn.ok / p.stn.n * 100) : null; p.enf.rate = p.enf.pax ? Math.round(p.enf.noT / p.enf.pax * 1000) / 10 : null; p.enf.avgDur = p.enf.n ? Math.round(p.enf.dur / p.enf.n) : null;
+      p.total = p.stn.n + p.enf.n + p.vio.n; p.perDay = p.days ? Math.round(p.total / p.days * 10) / 10 : 0; return p; }).sort(function (a, b) { return b.total - a.total; });
+    return { from: from, to: to, today: T, generated: T + ' ' + new Date().toTimeString().slice(0, 5), rdy: rdy, ins: ins, vio: vio, cov: cov, items: items, kpi: kpi, emps: [], shifts: [], dict: {}, systems: [] };
+  }
+
   return {
     handle: function (p) {
       if (p.action === 'login') return p.emp_id === '10190' && p.pin === '1234' ? ok({ token: 'demo', user: USER, mustChange: false, sections: SECTIONS }) : fail('badpin');
@@ -280,6 +339,7 @@ window.MBCO_DEMO = (function () {
         case 'rstAct': return ok({});
         case 'carDash': return ok({ data: carDemo(p.from, p.to), canAct: true, me: { id: '10190', name: USER.name } });
         case 'carAct': return ok({ result: carDemoAct(p) });
+        case 'insDash': return ok({ data: insDemo(p.from, p.to) });
         case 'rosterGet': return ok(rosDemoGet(p));
         case 'rosterSave': return ok(rosDemoSave(p));
         case 'rosterUndo': { var D0 = rosDemoInit(); if (D0.backup) { D0.codes = JSON.parse(D0.backup); D0.backup = null; } return ok({}); }

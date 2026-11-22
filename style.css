@@ -372,3 +372,34 @@ tr.dfix td{background:color-mix(in srgb,var(--warn) 7%,transparent)}
 .tok{color:var(--ok)}
 a.ph,a.dl{color:var(--accent-text);text-decoration:none;font-weight:700}
 .b-bad{background:var(--danger-bg);color:var(--danger-ink)}
+
+/* ---- v2.1 الفحص والمخالفات داخل البوابة ---- */
+.ichips{display:flex;flex-wrap:wrap;gap:4px;align-self:flex-end}
+.ichip{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:5px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.ichip:hover{border-color:var(--accent);color:var(--accent-text)}
+.ilegend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted)}
+.ilegend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-inline-end:5px;vertical-align:-1px}
+.icols{display:flex;align-items:stretch;gap:3px;height:190px;padding-top:14px}
+.icol{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:4px}
+.ibars{flex:1;display:flex;align-items:flex-end;gap:1px;border-bottom:1px solid var(--line)}
+.ibars i{position:relative;flex:1;min-height:0;border-radius:3px 3px 0 0;display:block}
+.ibars i em{position:absolute;top:-15px;left:50%;transform:translateX(-50%);font-style:normal;font-size:10px;color:var(--muted);font-weight:700}
+.ilb{font-size:10px;color:var(--muted);text-align:center;height:13px;white-space:nowrap;overflow:visible}
+.icols.hrs .ilb{font-size:9px}
+.igrid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:14px}
+.ipane{cursor:pointer;display:flex;flex-direction:column;gap:8px}
+.ipane:hover{border-color:var(--accent)}
+.isep{border:0;border-top:1px dashed var(--line);margin:6px 0}
+.ichk{display:flex;flex-wrap:wrap;gap:3px}
+.ichk i{font-style:normal;font-size:11px;border-radius:5px;padding:1px 6px;background:var(--track);color:var(--muted)}
+.ichk i.ok{background:var(--ok-bg);color:var(--ok)}
+.ichk i.no{background:var(--danger-bg);color:var(--bad);font-weight:700}
+.iemp th.grp{text-align:center;background:var(--tint2);color:var(--accent-text);border-inline-start:2px solid var(--surface)}
+.iemp th.grp0{background:transparent}
+.iemp th.srt{cursor:pointer;user-select:none}
+.iemp td.g,.iemp th.g{border-inline-start:1px solid var(--line)}
+.kpi .v small{font-size:12px;font-weight:600;color:var(--muted)}
+@media print{.ichips,.ipane:hover{display:none}.icols{height:150px}}
+.ibw .rbar .lb{width:150px}
+.ibw .rbar b{width:auto;min-width:56px;white-space:nowrap}
+.twrap td .ltr{white-space:nowrap}
