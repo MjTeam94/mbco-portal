@@ -2419,7 +2419,7 @@
       tl_requested: 'البلاغ', tl_accepted: 'الاستلام', tl_contacted: 'التواصل مع السائق', tl_enroute: 'التوجه للموقع', tl_arrived: 'الوصول', tl_patrol_called: 'استدعاء الدوريات', tl_patrol_arrived: 'وصول الدوريات', tl_closed: 'الإغلاق',
       // الجلسة
       ses_load: 'جارِ ربط حسابك في نظام البلاغات…', ses_nouser: 'رقمك الوظيفي ({emp}) غير مسجّل في مستخدمي نظام البلاغات. اللوحة والتحليل والسجل تشتغل، أما التحكم بالبلاغات فيحتاج حساب في CDC بنفس رقمك الوظيفي (تبويب المستخدمين).',
-      ses_old: 'نظام CDC يحتاج تحديث Api.gs/PortalSso.gs (الدخول الموحد).', ses_err: 'تعذر الربط مع نظام البلاغات', ses_noapi: 'رابط واجهة CDC غير معروف للـ Hub (URL_CDC).', role_ops: 'عمليات', role_insp: 'مفتش', role_admin: 'إدارة', as: 'حسابك في CDC:',
+      ses_old: 'نظام CDC يحتاج تحديث Api.gs/PortalSso.gs (الدخول الموحد).', ses_err: 'تعذر الربط مع نظام البلاغات', ses_key: 'مشروع CDC اللي على رابط CDC_API ما فيه HUB_KEY (أو مفتاحه يختلف عن KEY_CDC في الـ Hub)، أو ما فيه Api.gs. أضفها في نفس المشروع اللي يستخدمه موقع البلاغات المستقل.', ses_html: 'رابط واجهة CDC (CDC_API في الـ Hub) يرجع صفحة بدل بيانات: الرابط غلط أو لنشر قديم. استخدم نفس API_URL الموجود في config.js حق موقع البلاغات المستقل', ses_noapi: 'رابط واجهة CDC غير معروف للـ Hub (URL_CDC).', role_ops: 'عمليات', role_insp: 'مفتش', role_admin: 'إدارة', as: 'حسابك في CDC:',
       // المستخدمين
       u_add: '+ مستخدم جديد', u_name: 'الاسم', u_user: 'اسم المستخدم', u_emp: 'الرقم الوظيفي', u_role: 'الدور', u_tg: 'تلقرام', u_state: 'الحالة', u_last: 'آخر دخول', u_edit: 'تعديل', u_approve: 'موافقة', u_link: 'ربط تلقرام',
       u_pend: 'طلب انضمام', u_active: 'نشط', u_must: 'بانتظار تغيير الرمز', u_off: 'موقوف', u_new: 'مستخدم جديد', u_ed: 'تعديل: ', u_pin_new: 'رمز مؤقت (4–8 أرقام)', u_pin: 'رمز دخول الموقع (اختياري)', u_isact: 'الحساب نشط',
@@ -2468,7 +2468,7 @@
       r_call: 'Called', r_parr: 'Arrived', r_notarr: 'did not arrive', r_after: 'after', r_toacc: 'Report → pickup', r_toarr: 'Report → arrival', r_total: 'Total', notreq: 'Not required', inprog: 'In progress', loadph: 'Loading photo…', phfail: 'Photo failed to load',
       tl_requested: 'Report', tl_accepted: 'Pickup', tl_contacted: 'Driver contacted', tl_enroute: 'En route', tl_arrived: 'Arrival', tl_patrol_called: 'Patrol called', tl_patrol_arrived: 'Patrol arrived', tl_closed: 'Closed',
       ses_load: 'Connecting your cases-system account…', ses_nouser: 'Your employee ID ({emp}) is not registered in the cases system users. The overview, analysis and log work; controlling cases needs a CDC account with the same employee ID (Users tab).',
-      ses_old: 'The CDC system needs the updated Api.gs/PortalSso.gs (single sign-on).', ses_err: 'Could not connect to the cases system', ses_noapi: 'The Hub does not know the CDC API link (URL_CDC).', role_ops: 'Operations', role_insp: 'Inspector', role_admin: 'Admin', as: 'Your CDC account:',
+      ses_old: 'The CDC system needs the updated Api.gs/PortalSso.gs (single sign-on).', ses_err: 'Could not connect to the cases system', ses_key: 'The CDC project behind CDC_API has no HUB_KEY (or it differs from KEY_CDC in the Hub), or lacks Api.gs. Add them to the same project the standalone cases site uses.', ses_html: 'The CDC API link (CDC_API in the Hub) returns a page instead of data: wrong or old deployment link. Use the same API_URL as the standalone cases site config.js', ses_noapi: 'The Hub does not know the CDC API link (URL_CDC).', role_ops: 'Operations', role_insp: 'Inspector', role_admin: 'Admin', as: 'Your CDC account:',
       u_add: '+ New user', u_name: 'Name', u_user: 'Username', u_emp: 'Employee ID', u_role: 'Role', u_tg: 'Telegram', u_state: 'Status', u_last: 'Last login', u_edit: 'Edit', u_approve: 'Approve', u_link: 'Link Telegram',
       u_pend: 'Join request', u_active: 'Active', u_must: 'Must change PIN', u_off: 'Disabled', u_new: 'New user', u_ed: 'Edit: ', u_pin_new: 'Temporary PIN (4–8 digits)', u_pin: 'Website PIN (optional)', u_isact: 'Account active',
       u_npend: '🆕 {n} Telegram join request(s). Click “Approve”, pick a role and keep “Account active”.', u_saved: 'Saved ✓', u_hint: 'Roles: Operations registers and cancels cases · Inspector picks up, handles and closes · Admin has full rights incl. users.',
@@ -2523,7 +2523,14 @@
       var body = Object.assign({ action: action, token: s.token }, data || {});
       if (DEMO) return window.MBCO_DEMO.cdc(body, s);
       return fetch(s.api, { method: 'POST', redirect: 'follow', body: JSON.stringify(body) })
-        .then(function (r) { return r.json(); }, function () { throw new Error('net'); })
+        .then(function (r) { return r.text(); }, function () { throw new Error('net'); })
+        .then(function (txt) {
+          try { return JSON.parse(txt); } catch (e) {
+            // الرابط يرجع صفحة HTML (غالباً رابط نشر قديم أو غير صحيح في CDC_API)
+            var u = String(s.api), short = u.replace(/^https:\/\/script\.google\.com\/macros\/s\//, '').replace(/\/exec.*$/, '');
+            throw new Error(cd('ses_html') + ' [' + short.slice(0, 8) + '…' + short.slice(-6) + ']');
+          }
+        })
         .then(function (j) {
           if (!j.ok) {
             if (j.code === 'AUTH' && !retried && action !== 'login') { st.cdc.ses = null; ls.set('mbco_cdc_sso', null); return cdSes(true).then(function () { return capi(action, data, true); }); }
@@ -2536,7 +2543,7 @@
   function cdErr(e) { var m = String(e && e.message || e); return m === 'net' ? t('e_net') : m; }
   function cdSesMsg() {
     var r = st.cdc.sesErr;
-    return r === 'cdc_no_user' ? cd('ses_nouser', { emp: st.user ? st.user.emp_id : '' }) : r === 'cdc_old_api' ? cd('ses_old') : r === 'noapi' ? cd('ses_noapi') : cd('ses_err');
+    return r === 'cdc_no_user' ? cd('ses_nouser', { emp: st.user ? st.user.emp_id : '' }) : r === 'cdc_old_api' ? cd('ses_old') : r === 'noapi' ? cd('ses_noapi') : r === 'cdc_key' ? cd('ses_key') : r === 'cdc_badurl' ? cd('ses_html') : cd('ses_err');
   }
   function cdUser() { return st.cdc.ses ? st.cdc.ses.user : null; }
   function cdRole() { var u = cdUser(); return u ? u.role : ''; }
