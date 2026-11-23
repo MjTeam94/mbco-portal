@@ -403,3 +403,58 @@ a.ph,a.dl{color:var(--accent-text);text-decoration:none;font-weight:700}
 .ibw .rbar .lb{width:150px}
 .ibw .rbar b{width:auto;min-width:56px;white-space:nowrap}
 .twrap td .ltr{white-space:nowrap}
+
+/* ---- v2.2 بلاغات العمليات داخل البوابة ---- */
+.sp{flex:1}
+.cdwho{font-size:12px;margin-top:6px}
+.cnew{display:inline-block;background:var(--bad);color:#fff;border-radius:99px;font-size:11px;padding:0 7px;margin-inline-start:4px;line-height:18px}
+.ichip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.cdbar .input[type=search]{flex:1;min-width:200px}
+.ccards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.ccard{display:flex;flex-direction:column;gap:10px;padding:14px}
+.ccard.isnew{border-color:var(--bad);box-shadow:0 0 0 3px var(--danger-bg)}
+.cch{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cno{color:var(--accent-text);font-weight:800}
+.cel{margin-inline-start:auto;font-size:12px}
+.ckv{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:13px}
+.ckv .k{display:block;font-size:11px;color:var(--muted);font-weight:700}
+.ckv .full{grid-column:1/-1}
+.ctp{background:var(--warn-bg,#FFF4D6);border-radius:8px;padding:6px 9px}
+.couts{display:flex;gap:4px;flex-wrap:wrap}
+.cob{font-size:11px;font-weight:700;border-radius:6px;padding:1px 8px;color:#fff;white-space:nowrap}
+.cacts{display:flex;gap:6px;flex-wrap:wrap;border-top:1px dashed var(--line);padding-top:10px}
+.cacts .cdend{margin-inline-start:auto}
+.btn.danger{color:var(--bad);border-color:var(--danger-bg)}
+.btn.ghost{background:var(--tint2);border-color:transparent;color:var(--accent-text)}
+.cdmbox{width:min(560px,96vw);max-height:92vh;overflow:auto}
+.copt{display:flex;gap:9px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 11px;cursor:pointer;font-size:13.5px}
+.copt input{accent-color:var(--accent);width:16px;height:16px}
+.copt.on{border-color:var(--accent);background:var(--tint2)}
+#cdRl,#cdOpts,#cdTl{display:flex;flex-direction:column;gap:6px}
+.cdscroll{max-height:42vh;overflow:auto}
+.csw{display:inline-block;width:10px;height:10px;border-radius:2px}
+.cgrid2{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+@media(max-width:640px){.cgrid2,.ckv{grid-template-columns:1fr}.ccards{grid-template-columns:1fr}}
+.cdrop{display:block;border:2px dashed var(--line);border-radius:12px;padding:12px;text-align:center;color:var(--muted);cursor:pointer}
+.cthumbs{display:flex;gap:8px;flex-wrap:wrap}
+.cthumbs img{width:72px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.cwa{white-space:pre-wrap;line-height:1.8;background:var(--ok-bg)}
+.cpaste{width:100%;min-height:200px;resize:vertical;line-height:1.7}
+tr.clk{cursor:pointer}
+tr.clk:hover td{background:var(--tint2)}
+.csnap{display:grid;grid-template-columns:1fr 1fr;gap:10px 36px;padding:0 6px}
+.csnap .k,.cnarr .k{font-size:11.5px;font-weight:700}
+.cnarr{padding:0 6px}.cnarr .k{color:var(--accent-text);margin-top:12px}
+.ctl{display:grid;padding:0 8px;margin-top:6px}
+.ctls{position:relative;padding-top:24px}
+.ctls:before{content:"";position:absolute;top:6px;right:0;left:0;height:2px;background:var(--tint2)}
+.ctls .dot{position:absolute;top:0;inset-inline-start:0;width:14px;height:14px;border-radius:50%;background:var(--accent);opacity:.45}
+.ctls.end .dot{opacity:1}.ctls.skip .dot{background:transparent;border:2px dashed var(--accent)}
+.ctls .lb{font-size:12.5px;font-weight:700}.ctls .tm{font-size:11.5px;color:var(--muted)}.ctls .du{font-size:11px;color:var(--accent-text);font-weight:700}
+.cphotos{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.cphotos figure{margin:0}.cphotos img,.cphph{width:100%;height:240px;object-fit:contain;background:var(--track);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12.5px}
+.cphotos figcaption{font-size:11px;color:var(--muted)}
+td.nowrap{white-space:nowrap}
+@media(max-width:640px){.csnap,.cphotos{grid-template-columns:1fr}.ctl{grid-template-columns:repeat(3,1fr)!important;row-gap:16px}}
+@media print{.ccards .cacts{display:none}}
+.clog td{white-space:nowrap}.clog td:nth-child(7),.clog td:nth-child(8){white-space:normal;min-width:110px}

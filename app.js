@@ -2365,6 +2365,898 @@
     var pr = b.querySelector('#iPrint'); if (pr) pr.onclick = function () { window.print(); };
   }
 
+  /* ================= بلاغات العمليات داخل البوابة (v2.2 – المرحلة 4) =================
+     ⚠️ كل إجراء (استلام، تواصل، وصول، إغلاق، إلغاء، تحويل، بلاغ جديد، المستخدمين) يُرسل لواجهة نظام CDC نفسها
+     (doPost في Code.gs) بجلسة الدخول الموحد، بنفس الطلبات اللي ترسلها صفحة البلاغات المستقلة حرفياً.
+     فتبقى بطاقات تلقرام وWebhook تطبيق عمليات CDC (أديب) والسجل كما هي بدون أي تعديل.
+     اللوحة والتحليل والسجل = قراءة فقط من الـ Hub (cdcDash). */
+  var CD = {
+    ar: {
+      board: 'لوحة البلاغات', dash: 'نظرة عامة', insp: 'أداء المفتشين', nw: 'بلاغ جديد', daily: 'التقرير اليومي', log: 'السجل', users: 'المستخدمين',
+      st_new: 'جديد', st_accepted: 'مستلم', st_contacted: 'تم التواصل', st_enroute: 'في الطريق', st_arrived: 'تم الوصول', st_patrol_called: 'بانتظار الدوريات', st_patrol_arrived: 'وصلت الدوريات', st_closed: 'مغلق', st_cancelled: 'ملغى',
+      o_valid: 'تذكرة فعّالة (خلل في جهاز القارئ)', o_offload: 'إنزال الراكب', o_fine: 'تحرير مخالفة', o_bought: 'شراء تذكرة / حل ودي', o_left: 'نزل الراكب قبل وصول المفتش', o_false: 'بلاغ غير صحيح',
+      o_left_patrol: 'نزل الراكب قبل وصول الدوريات الأمنية', o_nocoop: 'عدم تعاون الدوريات الأمنية', o_unreachable: 'تعذر التواصل مع السائق', o_not_taken: 'أُغلق دون استلام',
+      os_valid: 'تذكرة فعّالة', os_offload: 'إنزال الراكب', os_fine: 'مخالفة', os_bought: 'شراء تذكرة', os_left: 'نزل قبل الوصول', os_false: 'بلاغ غير صحيح', os_left_patrol: 'نزل قبل الدوريات', os_nocoop: 'عدم تعاون الدوريات', os_unreachable: 'تعذر التواصل', os_not_taken: 'دون استلام',
+      k_new: 'جديدة بانتظار الاستلام', k_prog: 'قيد المعالجة', k_closedT: 'أُغلقت اليوم', k_totalT: 'إجمالي بلاغات اليوم',
+      f_open: 'المفتوحة', f_mine: 'حالاتي', f_closed: 'المغلقة', f_all: 'الكل', bsearch: 'بحث: رقم البلاغ، الحافلة، المسار، المحطة…',
+      auto: 'يتحدّث تلقائياً كل 20 ثانية', none: 'لا توجد بلاغات في هذا العرض', elapsed: 'منذ', took: 'استغرقت', notyet: 'لم يُستلم بعد',
+      busroute: 'الحافلة / المسار', dest: 'متجه إلى', driver: 'السائق', dphone: 'جوال السائق', rtime: 'وقت البلاغ', inspector: 'المفتش', stloc: 'موقع المحطة', creason: 'سبب الإلغاء', police: 'رقم بلاغ الشرطة', trlog: 'سجل التحويل',
+      a_accept: 'استلام البلاغ', a_nx: '🗃 إغلاق دون استلام', a_tacc: '✅ قبول التحويل', a_tdec: 'رفض', a_tnear: '✋ أنا أقرب: استلام', a_tcan: 'إلغاء التحويل', a_contacted: 'تم التواصل مع السائق', a_uc: '📵 تعذر التواصل',
+      a_enroute: 'التوجه للموقع', a_remote: 'إغلاق بدون توجه', a_arrived: 'تم الوصول + صورة', a_parr: '🚓 وصلت الدوريات', a_leftp: '🏃 نزل الراكب قبل وصول الدوريات', a_close: 'إغلاق الحالة', a_pcall: '🚨 استدعاء الدوريات الأمنية',
+      a_nocoop: '⚠️ عدم تعاون الدوريات', a_police: '🚔 رقم بلاغ الشرطة', a_transfer: '🔁 تحويل', a_report: 'التقرير', a_cancel: 'إلغاء',
+      tpend_to: 'تحويل معلّق إلى {n}، بانتظار قبوله', tpend_any: 'مطلوب مفتش أقرب، أول من يستلم تصير الحالة له', tpend_by: 'طلب {n}',
+      remote: 'عن بُعد', test: '🧪 تجريبي', fromapp: '📲 CDC',
+      // نوافذ
+      back: 'رجوع', save: 'حفظ', cancel: 'إلغاء', done: 'تم', confirm_close: 'إغلاق الحالة',
+      nx_t: '🗃 إغلاق بلاغ لم يُستلم', nx_s: 'البلاغ بيتقفل ويتسجل «أُغلق دون استلام» باسمك.', nx_time: 'تجاوز الوقت دون استلام', nx_shift: 'تبديل الشفت', nx_other: 'سبب آخر', note_opt: 'ملاحظة (اختياري)',
+      uc_t: '📵 تعذر التواصل مع السائق', uc_s: 'بعد 3 محاولات تواصل فاشلة. الحالة بتتقفل بهذي النتيجة.', uc_off: 'الجوال مغلق', uc_noans: 'لا يجيب', uc_wrong: 'رقم خطأ',
+      pol_t: 'رقم بلاغ الشرطة', pol_s: 'الصق رسالة الشرطة زي ما هي، والنظام ياخذ الرقم اللي بين القوسين.', pol_ok: '✓ رقم البلاغ: ', pol_no: 'لم يتم العثور على رقم بين قوسين', pol_saved: '🚔 تم حفظ رقم بلاغ الشرطة: ',
+      tr_t: 'تحويل الحالة', tr_s: 'الحالة الحين مع {n}. اختر المفتش الأقرب للموقع.', tr_any: '📢 أي مفتش أقرب (أول من يستلم)', tr_direct: 'تعيين مباشر بدون انتظار قبول المفتش (للإدارة)', tr_hint: 'المفتش المختار يوصله إشعار، والحالة ما تنتقل له إلا بعد ما يضغط «قبول التحويل».', tr_send: 'إرسال طلب التحويل', tr_pick: 'للتعيين المباشر اختر مفتش محدد', tr_sent: '🔁 تم إرسال طلب التحويل', tr_set: '✅ تم تعيين الحالة',
+      ar_t: 'تأكيد الوصول', ar_s: 'صوّر الحافلة عند الوصول (تظهر في تقرير الحالة)', ar_pick: '📷 التقاط / إضافة صورة الحافلة', ar_ok: 'تأكيد الوصول', ar_nophoto: 'المتابعة بدون صورة', ar_pref: 'يُفضَّل إرفاق صورة الحافلة',
+      cl_t: 'إغلاق الحالة', cl_rt: 'إغلاق بدون توجه للموقع', cl_s: 'كيف تم التعامل مع الحالة؟ (يمكن اختيار أكثر من نتيجة)', cl_rs: 'انحلت الحالة بالتواصل مع السائق (يمكن اختيار أكثر من نتيجة)', cl_vno: 'رقم المخالفة', cl_pax: 'عدد الركاب', cl_notes: 'ملاحظات المفتش', cl_notes_ph: 'وصف مختصر لما حدث', cl_more: '📎 صور إضافية (المخالفة، التذكرة…)', cl_need_vno: 'أدخل رقم المخالفة', maxph: 'الحد الأقصى 6 صور',
+      ca_t: 'إلغاء البلاغ', ca_s: 'مثلاً: بلاغ مكرر، أو أُرسل بالخطأ', ca_r: 'سبب الإلغاء', ca_ok: 'تأكيد الإلغاء', ca_need: 'اكتب سبب الإلغاء',
+      wa_t: 'رسالة جاهزة للقروب', wa_s: '{t}: انسخها وأرسلها في قروب «مسارات»', wa_copy: 'نسخ الرسالة', wa_open: 'فتح واتساب', copied: 'تم النسخ ✓', tg_done: '✓ {t} — تحدّثت بطاقة البلاغ في تلقرام',
+      newcase: '🔴 بلاغ جديد: ', t_acc: '✅ الحالة صارت معك', t_dec: 'تم رفض التحويل', t_can: 'تم إلغاء التحويل', nx_done: 'تم إغلاق البلاغ دون استلام', uc_done: 'تم إغلاق الحالة: تعذر التواصل',
+      // بلاغ جديد
+      n_t: 'تسجيل بلاغ جديد', n_1: '١) الصق رسالة البلاغ كما هي', n_1h: 'نفس صيغة رسالة الواتساب الحالية، والنظام يعبّي الحقول تلقائياً.', n_parse: 'قراءة الرسالة', n_2: '٢) راجع البيانات وأرسل البلاغ',
+      n_send: 'إرسال البلاغ للمفتشين', n_auto: 'يسجَّل وقت البلاغ تلقائياً', n_read: '✓ تمت قراءة {n} حقول', n_noread: 'لم يتم التعرف على الحقول',
+      fl_bus: 'رقم الحافلة *', fl_route: 'رقم المسار *', fl_dest: 'متجه إلى', fl_stationName: 'اسم المحطة', fl_stationUrl: 'رابط موقع المحطة', fl_type: 'نوع الحالة', fl_driverId: 'الرقم الوظيفي للسائق', fl_driverPhone: 'جوال السائق *', fl_driverName: 'اسم السائق', fl_opsName: 'مرحّل العمليات',
+      // اللوحة
+      from: 'من', to: 'إلى', today: 'اليوم', yday: 'أمس', d7: 'آخر 7 أيام', d30: 'آخر 30 يوم', shift: 'الوردية', sh1: 'الأولى', sh2: 'الثانية', sh0: 'خارج الورديات', all: 'الكل', updated: 'آخر تحديث',
+      d_total: 'إجمالي البلاغات', d_closed: 'مغلقة', d_open: 'مفتوحة', d_remote: 'أُغلقت عن بُعد', d_fines: 'مخالفات محررة', d_take: 'متوسط زمن الاستلام', d_arrive: 'متوسط زمن الوصول', d_close: 'متوسط مدة الحالة',
+      d_takeR: 'الاستلام خلال {m} د', d_arrR: 'الوصول خلال {m} د', d_patrol: 'استدعاء الدوريات', d_pavg: 'متوسط وصول الدوريات', d_nt: 'أُغلقت دون استلام', d_pax: 'عدد الركاب', d_canc: 'ملغاة (غير محتسبة)', target: 'الهدف',
+      c_trend: 'البلاغات اليومية', c_hour: 'البلاغات حسب ساعة اليوم', c_out: 'النتائج', c_station: 'حسب المحطة', c_route: 'حسب المسار', c_emp: 'حسب المفتش', c_src: 'مصدر البلاغ', c_shift: 'حسب الوردية', c_bus: 'الحافلات المتكررة', c_tresp: 'متوسط زمن الاستلام حسب الساعة',
+      s_closed: 'مغلقة', s_open: 'مفتوحة', src_app: '📲 تطبيق عمليات CDC', src_tg: '✈️ تلقرام', src_web: '🖥 الموقع', route_l: 'مسار ',
+      // المفتشين
+      e_name: 'المفتش', e_id: 'الرقم الوظيفي', e_n: 'البلاغات', e_closed: 'مغلقة', e_open: 'مفتوحة', e_remote: 'عن بُعد', e_fines: 'مخالفات', e_take: 'م. الاستلام', e_takeR: 'استلام بالهدف %', e_arr: 'م. الوصول', e_arrR: 'وصول بالهدف %', e_close: 'م. المدة', e_patrol: 'دوريات', e_nt: 'دون استلام', e_pax: 'ركاب',
+      e_note: 'الأزمنة من وقت البلاغ. «بالهدف» = نسبة البلاغات اللي انستلمت أو وصلها المفتش خلال المدة المحددة في الإعدادات. هذي المؤشرات نفسها راح تنربط بصفحة KPI.',
+      // السجل والتقرير
+      l_no: 'رقم البلاغ', l_date: 'اليوم', l_time: 'الوقت', l_bus: 'الحافلة', l_route: 'المسار', l_station: 'المحطة', l_insp: 'المفتش', l_take: 'الاستلام', l_arr: 'الوصول', l_close: 'المدة', l_out: 'النتيجة', l_fine: 'المخالفة', l_status: 'الحالة', l_src: 'المصدر', l_ops: 'مرحّل العمليات', l_shift: 'الوردية',
+      xlsx: 'تصدير Excel', rows: 'بلاغ', search: 'بحث: رقم البلاغ، الحافلة، المسار، المفتش…', clickcase: 'اضغط على أي بلاغ لفتح تقريره.',
+      r_title: 'التقرير اليومي: الركاب بدون تذاكر', r_case: 'تقرير حالة راكب بدون تذكرة', r_gen: 'أُنشئ', print: 'طباعة / حفظ PDF', r_out: 'النتائج', r_byri: 'حسب المسار والمفتش', r_log: 'سجل الحالات', r_by: 'أعدّه',
+      r_cases: 'البلاغات', r_trans: 'حالات محوّلة لمفتش أقرب', r_sum: 'ملخص الحالة', r_res: 'النتيجة والإفادة', r_how: 'طريقة التعامل', r_notes: 'ملاحظات المفتش', r_patrol: 'الدوريات الأمنية', r_dur: 'مدة الحالة', r_tl: 'الخط الزمني', r_photos: 'الصور',
+      r_call: 'الاستدعاء', r_parr: 'الوصول', r_notarr: 'لم تصل', r_after: 'بعد', r_toacc: 'من البلاغ للاستلام', r_toarr: 'من البلاغ للوصول', r_total: 'الإجمالي', notreq: 'لم يتطلب', inprog: 'قيد المعالجة', loadph: 'جارِ تحميل الصورة…', phfail: 'تعذر تحميل الصورة',
+      tl_requested: 'البلاغ', tl_accepted: 'الاستلام', tl_contacted: 'التواصل مع السائق', tl_enroute: 'التوجه للموقع', tl_arrived: 'الوصول', tl_patrol_called: 'استدعاء الدوريات', tl_patrol_arrived: 'وصول الدوريات', tl_closed: 'الإغلاق',
+      // الجلسة
+      ses_load: 'جارِ ربط حسابك في نظام البلاغات…', ses_nouser: 'رقمك الوظيفي ({emp}) غير مسجّل في مستخدمي نظام البلاغات. اللوحة والتحليل والسجل تشتغل، أما التحكم بالبلاغات فيحتاج حساب في CDC بنفس رقمك الوظيفي (تبويب المستخدمين).',
+      ses_old: 'نظام CDC يحتاج تحديث Api.gs/PortalSso.gs (الدخول الموحد).', ses_err: 'تعذر الربط مع نظام البلاغات', ses_noapi: 'رابط واجهة CDC غير معروف للـ Hub (URL_CDC).', role_ops: 'عمليات', role_insp: 'مفتش', role_admin: 'إدارة', as: 'حسابك في CDC:',
+      // المستخدمين
+      u_add: '+ مستخدم جديد', u_name: 'الاسم', u_user: 'اسم المستخدم', u_emp: 'الرقم الوظيفي', u_role: 'الدور', u_tg: 'تلقرام', u_state: 'الحالة', u_last: 'آخر دخول', u_edit: 'تعديل', u_approve: 'موافقة', u_link: 'ربط تلقرام',
+      u_pend: 'طلب انضمام', u_active: 'نشط', u_must: 'بانتظار تغيير الرمز', u_off: 'موقوف', u_new: 'مستخدم جديد', u_ed: 'تعديل: ', u_pin_new: 'رمز مؤقت (4–8 أرقام)', u_pin: 'رمز دخول الموقع (اختياري)', u_isact: 'الحساب نشط',
+      u_npend: '🆕 عندك {n} طلب انضمام من تلقرام. اضغط «موافقة»، واختر الدور، وفعّل «الحساب نشط».', u_saved: 'تم الحفظ ✓', u_hint: 'الأدوار: عمليات تسجّل البلاغات وتلغيها · مفتش يستلم ويعالج ويغلق · إدارة كل الصلاحيات وإدارة المستخدمين.',
+      u_tl_t: 'ربط تلقرام: ', u_tl_s: 'أرسل الرابط للموظف. يفتح البوت ويضغط Start، والربط يتم تلقائياً. الرابط صالح {h} ساعات ولمرة وحدة.', u_copy: 'نسخ الرابط'
+    },
+    en: {
+      board: 'Live board', dash: 'Overview', insp: 'Inspector performance', nw: 'New case', daily: 'Daily report', log: 'Log', users: 'Users',
+      st_new: 'New', st_accepted: 'Accepted', st_contacted: 'Contacted', st_enroute: 'En route', st_arrived: 'Arrived', st_patrol_called: 'Waiting for patrol', st_patrol_arrived: 'Patrol arrived', st_closed: 'Closed', st_cancelled: 'Cancelled',
+      o_valid: 'Valid ticket (reader fault)', o_offload: 'Passenger offloaded', o_fine: 'Fine issued', o_bought: 'Bought ticket / settled', o_left: 'Left before inspector arrived', o_false: 'False report',
+      o_left_patrol: 'Left before patrol arrived', o_nocoop: 'Patrol did not cooperate', o_unreachable: 'Driver unreachable', o_not_taken: 'Closed without pickup',
+      os_valid: 'Valid ticket', os_offload: 'Offloaded', os_fine: 'Fine', os_bought: 'Bought ticket', os_left: 'Left early', os_false: 'False report', os_left_patrol: 'Left before patrol', os_nocoop: 'No patrol coop.', os_unreachable: 'Unreachable', os_not_taken: 'Not taken',
+      k_new: 'New, awaiting pickup', k_prog: 'In progress', k_closedT: 'Closed today', k_totalT: 'Total today',
+      f_open: 'Open', f_mine: 'Mine', f_closed: 'Closed', f_all: 'All', bsearch: 'Search: case, bus, route, station…',
+      auto: 'Auto-refreshes every 20 seconds', none: 'No cases in this view', elapsed: '', took: 'Took', notyet: 'Not picked up yet',
+      busroute: 'Bus / route', dest: 'Heading to', driver: 'Driver', dphone: 'Driver phone', rtime: 'Reported', inspector: 'Inspector', stloc: 'Station location', creason: 'Cancel reason', police: 'Police report no.', trlog: 'Transfer log',
+      a_accept: 'Pick up case', a_nx: '🗃 Close without pickup', a_tacc: '✅ Accept transfer', a_tdec: 'Decline', a_tnear: "✋ I'm closer: take it", a_tcan: 'Cancel transfer', a_contacted: 'Driver contacted', a_uc: '📵 Driver unreachable',
+      a_enroute: 'Heading to site', a_remote: 'Close remotely', a_arrived: 'Arrived + photo', a_parr: '🚓 Patrol arrived', a_leftp: '🏃 Left before patrol', a_close: 'Close case', a_pcall: '🚨 Call security patrol',
+      a_nocoop: '⚠️ Patrol did not cooperate', a_police: '🚔 Police report no.', a_transfer: '🔁 Transfer', a_report: 'Report', a_cancel: 'Cancel',
+      tpend_to: 'Transfer pending to {n}, awaiting acceptance', tpend_any: 'Closer inspector needed — first to accept takes it', tpend_by: 'requested by {n}',
+      remote: 'remote', test: '🧪 Test', fromapp: '📲 CDC',
+      back: 'Back', save: 'Save', cancel: 'Cancel', done: 'Done', confirm_close: 'Close case',
+      nx_t: '🗃 Close an untaken case', nx_s: 'The case closes as “Closed without pickup” under your name.', nx_time: 'Time exceeded without pickup', nx_shift: 'Shift change', nx_other: 'Other reason', note_opt: 'Note (optional)',
+      uc_t: '📵 Driver unreachable', uc_s: 'After 3 failed attempts. The case closes with this outcome.', uc_off: 'Phone off', uc_noans: 'No answer', uc_wrong: 'Wrong number',
+      pol_t: 'Police report no.', pol_s: 'Paste the police message as is; the number in brackets is extracted.', pol_ok: '✓ Report no.: ', pol_no: 'No number in brackets found', pol_saved: '🚔 Police report no. saved: ',
+      tr_t: 'Transfer case', tr_s: 'The case is with {n}. Pick the inspector closest to the site.', tr_any: '📢 Any closer inspector (first to accept)', tr_direct: 'Assign directly without acceptance (admin)', tr_hint: 'The selected inspector is notified; the case moves only after they accept.', tr_send: 'Send transfer request', tr_pick: 'Pick a specific inspector for direct assignment', tr_sent: '🔁 Transfer request sent', tr_set: '✅ Case assigned',
+      ar_t: 'Confirm arrival', ar_s: 'Photograph the bus on arrival (shown in the case report)', ar_pick: '📷 Take / add bus photo', ar_ok: 'Confirm arrival', ar_nophoto: 'Continue without photo', ar_pref: 'A bus photo is recommended',
+      cl_t: 'Close case', cl_rt: 'Close without going to site', cl_s: 'How was the case handled? (multiple allowed)', cl_rs: 'Resolved by contacting the driver (multiple allowed)', cl_vno: 'Fine number', cl_pax: 'Passengers', cl_notes: 'Inspector notes', cl_notes_ph: 'Short description', cl_more: '📎 Extra photos (fine, ticket…)', cl_need_vno: 'Enter the fine number', maxph: 'Maximum 6 photos',
+      ca_t: 'Cancel case', ca_s: 'e.g. duplicate or sent by mistake', ca_r: 'Cancel reason', ca_ok: 'Confirm cancel', ca_need: 'Enter a reason',
+      wa_t: 'Message ready for the group', wa_s: '{t}: copy it to the “Masarat” group', wa_copy: 'Copy message', wa_open: 'Open WhatsApp', copied: 'Copied ✓', tg_done: '✓ {t} — Telegram card updated',
+      newcase: '🔴 New case: ', t_acc: '✅ The case is now yours', t_dec: 'Transfer declined', t_can: 'Transfer cancelled', nx_done: 'Closed without pickup', uc_done: 'Closed: driver unreachable',
+      n_t: 'Register a new case', n_1: '1) Paste the case message as is', n_1h: 'Same format as the WhatsApp message; fields fill automatically.', n_parse: 'Read message', n_2: '2) Review and send',
+      n_send: 'Send to inspectors', n_auto: 'Report time is recorded automatically', n_read: '✓ {n} fields read', n_noread: 'No fields recognised',
+      fl_bus: 'Bus no. *', fl_route: 'Route *', fl_dest: 'Heading to', fl_stationName: 'Station name', fl_stationUrl: 'Station location link', fl_type: 'Case type', fl_driverId: 'Driver ID', fl_driverPhone: 'Driver phone *', fl_driverName: 'Driver name', fl_opsName: 'Operations dispatcher',
+      from: 'From', to: 'To', today: 'Today', yday: 'Yesterday', d7: 'Last 7 days', d30: 'Last 30 days', shift: 'Shift', sh1: 'First', sh2: 'Second', sh0: 'Off-shift', all: 'All', updated: 'Updated',
+      d_total: 'Total cases', d_closed: 'Closed', d_open: 'Open', d_remote: 'Closed remotely', d_fines: 'Fines issued', d_take: 'Avg. pickup time', d_arrive: 'Avg. arrival time', d_close: 'Avg. case duration',
+      d_takeR: 'Picked up within {m} m', d_arrR: 'Arrived within {m} m', d_patrol: 'Patrol calls', d_pavg: 'Avg. patrol arrival', d_nt: 'Closed without pickup', d_pax: 'Passengers', d_canc: 'Cancelled (excluded)', target: 'Target',
+      c_trend: 'Daily cases', c_hour: 'Cases by hour', c_out: 'Outcomes', c_station: 'By station', c_route: 'By route', c_emp: 'By inspector', c_src: 'Case source', c_shift: 'By shift', c_bus: 'Repeat buses', c_tresp: 'Avg. pickup time by hour',
+      s_closed: 'Closed', s_open: 'Open', src_app: '📲 CDC operations app', src_tg: '✈️ Telegram', src_web: '🖥 Website', route_l: 'Route ',
+      e_name: 'Inspector', e_id: 'Employee ID', e_n: 'Cases', e_closed: 'Closed', e_open: 'Open', e_remote: 'Remote', e_fines: 'Fines', e_take: 'Avg. pickup', e_takeR: 'Pickup on target %', e_arr: 'Avg. arrival', e_arrR: 'Arrival on target %', e_close: 'Avg. duration', e_patrol: 'Patrol', e_nt: 'Not taken', e_pax: 'Pax',
+      e_note: 'Times are from the report time. “On target” = share of cases picked up or reached within the limits in Settings. These same indicators will feed the KPI page.',
+      l_no: 'Case', l_date: 'Day', l_time: 'Time', l_bus: 'Bus', l_route: 'Route', l_station: 'Station', l_insp: 'Inspector', l_take: 'Pickup', l_arr: 'Arrival', l_close: 'Duration', l_out: 'Outcome', l_fine: 'Fine', l_status: 'Status', l_src: 'Source', l_ops: 'Dispatcher', l_shift: 'Shift',
+      xlsx: 'Export Excel', rows: 'cases', search: 'Search: case, bus, route, inspector…', clickcase: 'Click a case to open its report.',
+      r_title: 'Daily report: passengers without tickets', r_case: 'Passenger without ticket – case report', r_gen: 'Generated', print: 'Print / save PDF', r_out: 'Outcomes', r_byri: 'By route and inspector', r_log: 'Case log', r_by: 'Prepared by',
+      r_cases: 'Cases', r_trans: 'Cases transferred to a closer inspector', r_sum: 'Case summary', r_res: 'Outcome and statement', r_how: 'Handling', r_notes: 'Inspector notes', r_patrol: 'Security patrol', r_dur: 'Case duration', r_tl: 'Timeline', r_photos: 'Photos',
+      r_call: 'Called', r_parr: 'Arrived', r_notarr: 'did not arrive', r_after: 'after', r_toacc: 'Report → pickup', r_toarr: 'Report → arrival', r_total: 'Total', notreq: 'Not required', inprog: 'In progress', loadph: 'Loading photo…', phfail: 'Photo failed to load',
+      tl_requested: 'Report', tl_accepted: 'Pickup', tl_contacted: 'Driver contacted', tl_enroute: 'En route', tl_arrived: 'Arrival', tl_patrol_called: 'Patrol called', tl_patrol_arrived: 'Patrol arrived', tl_closed: 'Closed',
+      ses_load: 'Connecting your cases-system account…', ses_nouser: 'Your employee ID ({emp}) is not registered in the cases system users. The overview, analysis and log work; controlling cases needs a CDC account with the same employee ID (Users tab).',
+      ses_old: 'The CDC system needs the updated Api.gs/PortalSso.gs (single sign-on).', ses_err: 'Could not connect to the cases system', ses_noapi: 'The Hub does not know the CDC API link (URL_CDC).', role_ops: 'Operations', role_insp: 'Inspector', role_admin: 'Admin', as: 'Your CDC account:',
+      u_add: '+ New user', u_name: 'Name', u_user: 'Username', u_emp: 'Employee ID', u_role: 'Role', u_tg: 'Telegram', u_state: 'Status', u_last: 'Last login', u_edit: 'Edit', u_approve: 'Approve', u_link: 'Link Telegram',
+      u_pend: 'Join request', u_active: 'Active', u_must: 'Must change PIN', u_off: 'Disabled', u_new: 'New user', u_ed: 'Edit: ', u_pin_new: 'Temporary PIN (4–8 digits)', u_pin: 'Website PIN (optional)', u_isact: 'Account active',
+      u_npend: '🆕 {n} Telegram join request(s). Click “Approve”, pick a role and keep “Account active”.', u_saved: 'Saved ✓', u_hint: 'Roles: Operations registers and cancels cases · Inspector picks up, handles and closes · Admin has full rights incl. users.',
+      u_tl_t: 'Link Telegram: ', u_tl_s: 'Send the link to the employee. They open the bot and press Start. Valid {h} hours, one use.', u_copy: 'Copy link'
+    }
+  };
+  function cd(k, rep) { var L = CD[st.lang] || CD.ar, s = k in L ? L[k] : (k in CD.ar ? CD.ar[k] : k); if (rep) Object.keys(rep).forEach(function (x) { s = s.replace('{' + x + '}', rep[x]); }); return s; }
+  var CD_OUT = [['valid', '#2E7D5B'], ['offload', '#B26A00'], ['fine', '#B3261E'], ['bought', '#1F5FA8'], ['left', '#6B7280'], ['false', '#9CA3AF'], ['left_patrol', '#7C5C2E'], ['nocoop', '#4A1D5E'], ['unreachable', '#9A3412'], ['not_taken', '#374151']];
+  var CD_OC = {}; CD_OUT.forEach(function (o) { CD_OC[o[0]] = o[1]; });
+  var CD_TAG = { 'new': 'b-bad', accepted: 'b-warn', contacted: 'b-acc', enroute: 'b-acc', arrived: 'b-ok', patrol_called: 'b-bad', patrol_arrived: 'b-acc', closed: 'b-muted', cancelled: 'b-muted' };
+  var CD_ORDER = { 'new': 0, accepted: 1, contacted: 2, enroute: 3, arrived: 4, patrol_called: 5, patrol_arrived: 6, closed: 7, cancelled: 8 };
+  var CD_ONSITE = ['arrived', 'patrol_called', 'patrol_arrived'], CD_BASE = ['offload', 'fine', 'valid', 'bought', 'left', 'false'], CD_REMOTE = ['valid', 'left', 'false', 'bought'];
+
+  function cdState() {
+    if (!st.cdc) st.cdc = { tab: ls.get('mbco_cdc_tab') || 'board', from: '', to: '', sh: '', emp: '', q: '', sort: { k: 'n', d: -1 }, d: null, at: 0, key: '',
+      ses: null, sesErr: null, live: null, seen: {}, filter: 'open', bq: '', day: '', dayData: null, users: null, insp: null, photos: {}, view: null };
+    return st.cdc;
+  }
+  function cdOpen(c) { return c.status !== 'closed' && c.status !== 'cancelled'; }
+  var cdPad = function (n) { return ('0' + n).slice(-2); };
+  function cdT(t) { if (!t) return '—'; var d = new Date(t); return cdPad(d.getHours()) + ':' + cdPad(d.getMinutes()); }
+  function cdD(t) { var d = new Date(t); return d.getFullYear() + '-' + cdPad(d.getMonth() + 1) + '-' + cdPad(d.getDate()); }
+  function cdDT(t) { return t ? cdD(t) + ' ' + cdT(t) : '—'; }
+  function cdMins(a, b) { return a && b ? Math.max(0, Math.round((b - a) / 60000)) : null; }
+  function cdDur(m) { if (m === null || m === undefined || isNaN(m)) return '—'; m = Math.round(m); var s = m < 60 ? m + ' ' + it('min') : Math.floor(m / 60) + ' ' + it('h') + ' ' + cdPad(m % 60) + ' ' + it('min'); return '<bdi dir="' + (st.lang === 'en' ? 'ltr' : 'rtl') + '">' + s + '</bdi>'; }
+  function cdDurTxt(m) { if (m === null || m === undefined || isNaN(m)) return ''; m = Math.round(m); return m < 60 ? m + ' ' + it('min') : Math.floor(m / 60) + ' ' + it('h') + ' ' + cdPad(m % 60) + ' ' + it('min'); }
+  function cdAvg(a) { var v = a.filter(function (x) { return x !== null && x !== undefined; }); return v.length ? Math.round(v.reduce(function (s, x) { return s + x; }, 0) / v.length) : null; }
+  function cdDigits(s) { return String(s).replace(/[٠-٩]/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); }).replace(/[۰-۹]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); }); }
+  function cdChip(s) { return '<span class="tag ' + (CD_TAG[s] || 'b-muted') + '">' + esc(cd('st_' + s)) + '</span>'; }
+  function cdOutB(keys) { return keys && keys.length ? '<div class="couts">' + keys.map(function (k) { return '<span class="cob" style="background:' + (CD_OC[k] || '#6B7280') + '">' + esc(cd('os_' + k)) + '</span>'; }).join('') + '</div>' : ''; }
+
+  /* ---------- جلسة CDC (الدخول الموحد) + الاستدعاء المباشر لواجهة Code.gs ---------- */
+  function cdSes(renew) {
+    var C = cdState();
+    if (DEMO) { C.ses = { token: 'demo', user: { username: 'majed', name: 'ماجد', role: 'admin' }, api: 'demo' }; return Promise.resolve(C.ses); }
+    var memo = ls.json('mbco_cdc_sso'), cur = ls.json(CDC_SESSION);
+    if (!renew && C.ses) return Promise.resolve(C.ses);
+    if (!renew && memo && memo.api && cur && cur.token === memo.token && memo.emp === st.user.emp_id && Date.now() - memo.at < (memo.hours - 1) * 3600e3) {
+      C.ses = { token: cur.token, user: cur.user, api: memo.api }; return Promise.resolve(C.ses);
+    }
+    return api('embed', { key: 'cdc', renew: !!renew }).then(function (j) {
+      if (!j.session) { C.sesErr = j.reason || 'cdc_error'; C.ses = null; throw new Error('ses:' + C.sesErr); }
+      if (!j.api) { C.sesErr = 'noapi'; throw new Error('ses:noapi'); }
+      ls.set(CDC_SESSION, JSON.stringify(j.session));
+      ls.set('mbco_cdc_sso', JSON.stringify({ token: j.session.token, emp: st.user.emp_id, at: Date.now(), hours: j.hours || 12, url: j.url, api: j.api }));
+      C.sesErr = null; C.ses = { token: j.session.token, user: j.session.user, api: j.api };
+      return C.ses;
+    });
+  }
+  function capi(action, data, retried) {
+    return cdSes(false).then(function (s) {
+      var body = Object.assign({ action: action, token: s.token }, data || {});
+      if (DEMO) return window.MBCO_DEMO.cdc(body, s);
+      return fetch(s.api, { method: 'POST', redirect: 'follow', body: JSON.stringify(body) })
+        .then(function (r) { return r.json(); }, function () { throw new Error('net'); })
+        .then(function (j) {
+          if (!j.ok) {
+            if (j.code === 'AUTH' && !retried && action !== 'login') { st.cdc.ses = null; ls.set('mbco_cdc_sso', null); return cdSes(true).then(function () { return capi(action, data, true); }); }
+            throw new Error(j.error || 'generic');
+          }
+          return j.data;
+        });
+    });
+  }
+  function cdErr(e) { var m = String(e && e.message || e); return m === 'net' ? t('e_net') : m; }
+  function cdSesMsg() {
+    var r = st.cdc.sesErr;
+    return r === 'cdc_no_user' ? cd('ses_nouser', { emp: st.user ? st.user.emp_id : '' }) : r === 'cdc_old_api' ? cd('ses_old') : r === 'noapi' ? cd('ses_noapi') : cd('ses_err');
+  }
+  function cdUser() { return st.cdc.ses ? st.cdc.ses.user : null; }
+  function cdRole() { var u = cdUser(); return u ? u.role : ''; }
+
+  /* ---------- الصفحة ---------- */
+  function cdTabs() {
+    var r = cdRole(), T = ['board', 'dash', 'insp'];
+    if (r === 'ops' || r === 'admin') T.push('nw');
+    T.push('daily', 'log');
+    if (r === 'admin') T.push('users');
+    return T;
+  }
+  function renderCdc(wrap, force) {
+    var C = cdState();
+    var shell = function () {
+      var T = cdTabs(); if (T.indexOf(C.tab) < 0) C.tab = 'board';
+      var nNew = C.live ? C.live.cases.filter(function (c) { return c.status === 'new'; }).length : 0;
+      wrap.innerHTML = '<div class="card rsttools noprint"><div class="seg sub" id="cdTabs">' + T.map(function (k) {
+        return '<button type="button" data-ctab="' + k + '" class="' + (C.tab === k ? 'on' : '') + '">' + cd(k) + (k === 'board' && nNew ? ' <span class="cnew">' + nNew + '</span>' : '') + '</button>'; }).join('') + '</div>' +
+        '<div class="rstctl" id="cdRange"><label class="field">' + cd('from') + '<input class="input num" type="date" id="cFrom"></label><label class="field">' + cd('to') + '<input class="input num" type="date" id="cTo"></label>' +
+        '<div class="ichips">' + [['0', 'today'], ['1', 'yday'], ['7', 'd7'], ['30', 'd30']].map(function (q) { return '<button type="button" class="ichip" data-cq="' + q[0] + '">' + cd(q[1]) + '</button>'; }).join('') + '</div>' +
+        '<label class="field">' + cd('shift') + '<select class="input" id="cSh"></select></label><label class="field">' + cd('inspector') + '<select class="input" id="cEmp"></select></label>' +
+        '<button type="button" class="btn sm" id="cRef">' + icon('refresh') + rt('refresh') + '</button></div><div class="cdwho muted" id="cdWho"></div></div><div id="cdBody"><div class="loading"><div class="spin"></div>' + t('loading') + '</div></div>';
+      wrap.querySelectorAll('[data-ctab]').forEach(function (b) { b.onclick = function () { C.tab = b.getAttribute('data-ctab'); C.view = null; ls.set('mbco_cdc_tab', C.tab); cdTabBar(); cdGo(false); }; });
+      var f = document.getElementById('cFrom'), tt = document.getElementById('cTo');
+      f.onchange = tt.onchange = function () { C.from = f.value; C.to = tt.value; cdLoad(true); };
+      wrap.querySelectorAll('[data-cq]').forEach(function (b) {
+        b.onclick = function () { var n = +b.getAttribute('data-cq'), td = (C.d && C.d.today) || todayStr();
+          if (n === 0) C.from = C.to = td; else if (n === 1) C.from = C.to = dAdd(td, -1); else { C.from = dAdd(td, -(n - 1)); C.to = td; }
+          cdLoad(false); };
+      });
+      document.getElementById('cSh').onchange = function () { C.sh = this.value; cdDraw(); };
+      document.getElementById('cEmp').onchange = function () { C.emp = this.value; cdDraw(); };
+      document.getElementById('cRef').onclick = function () { if (C.tab === 'board') cdBoardLoad(false); else if (C.tab === 'daily') { C.dayData = null; cdDraw(); } else if (C.tab === 'users') { C.users = null; cdDraw(); } else cdLoad(true); };
+    };
+    if (!wrap.querySelector('#cdBody')) shell();
+    cdSes(false).then(function () { if (!wrap.querySelector('#cdTabs') || wrap.querySelectorAll('[data-ctab]').length !== cdTabs().length) shell(); cdWho(); }, function () { cdWho(); })
+      .then(function () { cdGo(force); });
+  }
+  function cdWho() {
+    var w = document.getElementById('cdWho'); if (!w) return; var u = cdUser();
+    w.innerHTML = u ? cd('as') + ' <b>' + esc(u.name) + '</b> · ' + esc(cd('role_' + u.role)) : (st.cdc.sesErr ? '⚠️ ' + esc(cdSesMsg()) : '');
+  }
+  function cdTabBar() {
+    var C = st.cdc, nNew = C.live ? C.live.cases.filter(function (c) { return c.status === 'new'; }).length : 0;
+    document.querySelectorAll('[data-ctab]').forEach(function (b) { var k = b.getAttribute('data-ctab'); b.classList.toggle('on', k === C.tab); b.innerHTML = cd(k) + (k === 'board' && nNew ? ' <span class="cnew">' + nNew + '</span>' : ''); });
+    var rg = document.getElementById('cdRange'); if (rg) rg.classList.toggle('hide', ['board', 'nw', 'daily', 'users'].indexOf(C.tab) >= 0);
+  }
+  /* يحدد وش يحتاج التبويب: لوحة البلاغات/بلاغ جديد/التقرير/المستخدمين = واجهة CDC · الباقي = الـ Hub */
+  function cdGo(force) {
+    var C = st.cdc; cdTabBar();
+    if (C.view) return cdCase(C.view);
+    if (C.tab === 'board') return cdBoardLoad(!force && C.live && Date.now() - C.live.at < 15000);
+    if (['nw', 'daily', 'users'].indexOf(C.tab) >= 0) return cdDraw();
+    cdLoad(force);
+  }
+  function cdLoad(force) {
+    var C = st.cdc, ck = C.from + '|' + C.to;
+    if (C.d && C.key === ck && !force && Date.now() - C.at < 60000) return cdDraw();
+    setSync(true);
+    return api('cdcDash', { from: C.from, to: C.to, fresh: !!force }).then(function (j) {
+      C.d = j.data; C.at = Date.now(); addDict(C.d.dict); C.from = C.d.from; C.to = C.d.to; C.key = C.from + '|' + C.to;
+      var f = document.getElementById('cFrom'), tt = document.getElementById('cTo'); if (f) { f.value = C.from; tt.value = C.to; }
+      if (route() === 'cdc') cdDraw();
+    }).catch(function (e) { var b = document.getElementById('cdBody'); if (b && route() === 'cdc') failBox(b, e, function () { cdLoad(true); }); })
+      .then(function () { setSync(false); });
+  }
+  function cdDraw() {
+    var C = st.cdc, b = document.getElementById('cdBody'); if (!b) return;
+    var needSes = ['board', 'nw', 'daily', 'users'].indexOf(C.tab) >= 0;
+    if (needSes && !C.ses) { b.innerHTML = '<div class="ctlmsg"><div>' + icon('alert') + '</div><p>' + esc(cdSesMsg()) + '</p><button type="button" class="btn" id="cdRetry">' + rt('refresh') + '</button></div>'; document.getElementById('cdRetry').onclick = function () { cdSes(true).then(function () { cdGo(true); }, function () { cdWho(); cdDraw(); }); }; return; }
+    if (!needSes && !C.d) return cdLoad(false);
+    if (!needSes) cdFilters();
+    b.innerHTML = ({ board: cdBoard, dash: cdDash, insp: cdInsp, nw: cdNew, daily: cdDaily, log: cdLog, users: cdUsers }[C.tab] || cdDash)();
+    cdBind(b);
+  }
+  function cdFilters() {
+    var C = st.cdc, D = C.d, sh = document.getElementById('cSh'), em = document.getElementById('cEmp'); if (!sh || !D) return;
+    sh.innerHTML = '<option value="">' + cd('all') + '</option>' + ['1', '2', '0'].map(function (c) { return '<option value="' + c + '"' + (C.sh === c ? ' selected' : '') + '>' + cd('sh' + c) + '</option>'; }).join('');
+    var seen = {}, list = []; D.rows.forEach(function (r) { var id = r.emp || r.empName; if (id && !seen[id]) { seen[id] = 1; list.push({ id: id, n: st.lang === 'en' ? tr(r.empName || id) : (r.empName || id) }); } });
+    list.sort(function (a, b) { return String(a.n).localeCompare(String(b.n), 'ar'); });
+    em.innerHTML = '<option value="">' + cd('all') + '</option>' + list.map(function (e) { return '<option value="' + esc(e.id) + '"' + (C.emp === e.id ? ' selected' : '') + '>' + esc(e.n) + '</option>'; }).join('');
+  }
+  function cdRows(withCancelled) {
+    var C = st.cdc;
+    return C.d.rows.filter(function (r) { return (withCancelled || !r.cancelled) && (!C.sh || r.shift === C.sh) && (!C.emp || (r.emp || r.empName) === C.emp); });
+  }
+  function cdName(r) { var n = r.empName || r.emp || ''; return st.lang === 'en' ? tr(n) : n; }
+
+  /* ================= لوحة البلاغات (مباشرة من CDC) ================= */
+  function cdBoardLoad(useCache) {
+    var C = st.cdc;
+    if (useCache) return cdDraw();
+    setSync(true);
+    return capi('board').then(function (d) {
+      var fresh = d.cases.filter(function (c) { return c.status === 'new' && !C.seen[c.id]; });
+      var first = !C.live;
+      C.live = { cases: d.cases, tg: !!d.tg, at: Date.now() };
+      d.cases.forEach(function (c) { C.seen[c.id] = 1; });
+      if (!first && fresh.length && cdRole() !== 'ops') { cdBeep(); toast(cd('newcase') + fresh.map(function (c) { return c.caseNo + ' · ' + c.bus; }).join('، ')); }
+      cdTabBar();
+      if (route() === 'cdc' && C.tab === 'board' && !C.view && !document.querySelector('.mov')) cdDraw();
+    }).catch(function (e) {
+      var b = document.getElementById('cdBody');
+      if (/^ses:/.test(e.message)) { cdWho(); return cdDraw(); }
+      if (b && route() === 'cdc' && C.tab === 'board' && !C.live) failBox(b, e, function () { cdBoardLoad(false); });
+      else toast('⚠️ ' + cdErr(e));
+    }).then(function () { setSync(false); });
+  }
+  var cdAudio = null;
+  function cdBeep() {
+    try {
+      cdAudio = cdAudio || new (window.AudioContext || window.webkitAudioContext)(); if (cdAudio.state === 'suspended') cdAudio.resume();
+      [0, 0.22].forEach(function (d) { var o = cdAudio.createOscillator(), g = cdAudio.createGain(); o.frequency.value = 880; o.connect(g); g.connect(cdAudio.destination);
+        g.gain.setValueAtTime(0.0001, cdAudio.currentTime + d); g.gain.exponentialRampToValueAtTime(0.25, cdAudio.currentTime + d + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, cdAudio.currentTime + d + 0.18);
+        o.start(cdAudio.currentTime + d); o.stop(cdAudio.currentTime + d + 0.2); });
+    } catch (e) {}
+  }
+  /* تحديث تلقائي كل 20 ثانية (فقط وصفحة البلاغات مفتوحة وظاهرة وبدون نافذة مفتوحة) */
+  setInterval(function () {
+    var C = st.cdc;
+    if (!C || !st.user || route() !== 'cdc' || C.tab !== 'board' || C.view || document.visibilityState !== 'visible' || document.querySelector('.mov') || !C.ses) return;
+    if (document.activeElement && document.activeElement.id === 'cdQ') return;
+    cdBoardLoad(false);
+  }, 20000);
+
+  function cdBoard() {
+    var C = st.cdc, L = C.live; if (!L) return '<div class="loading"><div class="spin"></div>' + t('loading') + '</div>';
+    var today = cdD(Date.now()), u = cdUser();
+    var todays = L.cases.filter(function (c) { return cdD(c.times.requested) === today && c.status !== 'cancelled'; });
+    var nNew = L.cases.filter(function (c) { return c.status === 'new'; }).length;
+    var prog = L.cases.filter(function (c) { return cdOpen(c) && c.status !== 'new'; }).length;
+    var list = L.cases.slice();
+    if (C.filter === 'open') list = list.filter(cdOpen);
+    if (C.filter === 'closed') list = list.filter(function (c) { return !cdOpen(c); });
+    if (C.filter === 'mine') list = list.filter(function (c) { return (c.inspector && c.inspector.username === u.username) || c.opsUser === u.username; });
+    var q = String(C.bq || '').trim().toLowerCase();
+    if (q) list = list.filter(function (c) { return [c.caseNo, c.bus, c.route, c.dest, c.driverId, c.inspector && c.inspector.name].join(' ').toLowerCase().indexOf(q) >= 0; });
+    list.sort(function (a, b) { return (!cdOpen(a)) - (!cdOpen(b)) || (!cdOpen(a) ? (b.times.closed || 0) - (a.times.closed || 0) : CD_ORDER[a.status] - CD_ORDER[b.status] || a.times.requested - b.times.requested); });
+    return '<div class="kpis k4">' + rKpi(cd('k_new'), nNew, nNew ? 'bad' : '') + rKpi(cd('k_prog'), prog) + rKpi(cd('k_closedT'), todays.filter(function (c) { return c.status === 'closed'; }).length, 'ok') + rKpi(cd('k_totalT'), todays.length) + '</div>' +
+      '<div class="toolbar cdbar">' + ['open', 'mine', 'closed', 'all'].map(function (k) { return '<button type="button" class="ichip' + (C.filter === k ? ' on' : '') + '" data-cf="' + k + '">' + cd('f_' + k) + '</button>'; }).join('') +
+      '<input class="input" type="search" id="cdQ" placeholder="' + esc(cd('bsearch')) + '" value="' + esc(C.bq) + '">' +
+      (cdRole() === 'ops' || cdRole() === 'admin' ? '<button type="button" class="btn primary sm" data-cgo="nw">+ ' + cd('nw') + '</button>' : '') + '</div>' +
+      (list.length ? '<div class="ccards">' + list.map(cdCard).join('') + '</div>' : '<div class="empty card">' + cd('none') + '</div>') +
+      '<p class="muted rmeta">' + it('updated') + ' <span class="ltr">' + cdT(L.at) + '</span> · ' + cd('auto') + '</p>';
+  }
+  function cdCard(c) {
+    var u = cdUser(), adm = u.role === 'admin', mine = adm || (c.inspector && c.inspector.username === u.username), tp = c.transferPending, A = [];
+    var B = function (act, label, cls) { A.push('<button type="button" class="btn sm ' + (cls || '') + '" data-cact="' + act + '" data-cid="' + esc(c.id) + '">' + esc(label) + '</button>'); };
+    var el = !cdOpen(c) ? (c.status === 'cancelled' ? cd('st_cancelled') : cd('took') + ' ' + cdDur(cdMins(c.times.requested, c.times.closed))) : (cd('elapsed') ? cd('elapsed') + ' ' : '') + cdDur(cdMins(c.times.requested, Date.now()));
+    if (c.status === 'new' && (u.role === 'insp' || adm)) B('accept', cd('a_accept'), 'primary');
+    if (c.status === 'new' && adm) B('nx', cd('a_nx'));
+    if (tp && cdOpen(c)) {
+      if (tp.to === u.username) { B('tAccept', cd('a_tacc'), 'primary'); B('tDecline', cd('a_tdec')); }
+      else if (!tp.to && (u.role === 'insp' || adm) && !(c.inspector && c.inspector.username === u.username)) B('tAccept', cd('a_tnear'), 'primary');
+      if (mine) B('tCancel', cd('a_tcan'));
+    } else if (mine) {
+      if (c.status === 'accepted') { B('contacted', cd('a_contacted'), 'primary'); B('uc', cd('a_uc')); }
+      if (c.status === 'contacted') B('enroute', cd('a_enroute'), 'primary');
+      if (c.status === 'accepted' || c.status === 'contacted') B('closeRemote', cd('a_remote'));
+      if (c.status === 'enroute') B('arrived', cd('a_arrived'), 'primary');
+      if (c.status === 'patrol_called') { B('pArr', cd('a_parr'), 'primary'); B('closeLeftP', cd('a_leftp')); }
+      if (CD_ONSITE.indexOf(c.status) >= 0 || (adm && c.status === 'enroute')) B('close', cd('a_close'), c.status === 'patrol_called' ? '' : 'primary');
+      if (c.status === 'arrived') B('pCall', cd('a_pcall'));
+      if (c.status === 'patrol_arrived') B('closeNoCoop', cd('a_nocoop'), 'danger');
+      if (c.times.patrol_called) B('police', cd('a_police'));
+      if (['accepted', 'contacted', 'enroute'].concat(CD_ONSITE).indexOf(c.status) >= 0) B('transfer', cd('a_transfer'));
+    }
+    A.push('<button type="button" class="btn sm ghost" data-ccase="' + esc(c.id) + '">' + cd('a_report') + '</button>');
+    if (cdOpen(c) && (u.role === 'ops' || adm)) A.push('<button type="button" class="btn sm danger cdend" data-cact="cancel" data-cid="' + esc(c.id) + '">' + cd('a_cancel') + '</button>');
+    var phone = c.driverPhone ? '0' + c.driverPhone : '';
+    var kv = function (k, v, full) { return '<div' + (full ? ' class="full"' : '') + '><span class="k">' + esc(cd(k)) + '</span>' + v + '</div>'; };
+    return '<div class="card ccard ' + (c.status === 'new' ? 'isnew' : '') + '"><div class="cch"><b class="ltr cno">' + esc(c.caseNo) + '</b>' + cdChip(c.status) +
+      (c.isTest ? '<span class="tag b-warn">' + cd('test') + '</span>' : '') + (String(c.source || '').indexOf('CDC') === 0 ? '<span class="tag b-mu">' + cd('fromapp') + '</span>' : '') +
+      (c.remote && c.status === 'closed' ? '<span class="tag b-mu">' + cd('remote') + '</span>' : '') + '<span class="muted cel">' + el + '</span></div>' +
+      '<div class="ckv">' + kv('busroute', '<b class="ltr">' + esc(c.bus) + '</b> / <span class="ltr">' + esc(c.route) + '</span>') + kv('dest', esc(tr(c.dest || ''))) +
+      kv('driver', (c.driverName ? esc(c.driverName) + ' · ' : '') + '<span class="num">' + esc(c.driverId || '') + '</span>') +
+      kv('dphone', phone ? '<a class="ltr" href="tel:+966' + esc(c.driverPhone) + '">📞 ' + esc(phone) + '</a>' : '—') +
+      kv('rtime', '<span class="ltr">' + cdT(c.times.requested) + '</span> · ' + esc(c.opsName || '')) +
+      kv('inspector', c.inspector ? esc(st.lang === 'en' ? tr(c.inspector.name) : c.inspector.name) : (c.status === 'cancelled' ? '—' : '<span class="tbad">' + cd('notyet') + '</span>')) +
+      (c.stationUrl ? kv('stloc', '<a href="' + esc(c.stationUrl) + '" target="_blank" rel="noopener">' + esc(tr(c.stationName || c.dest || '')) + ' ↗</a>', 1) : '') +
+      (c.status === 'cancelled' && c.cancelReason ? kv('creason', esc(c.cancelReason), 1) : '') +
+      (c.policeNo ? kv('police', '<b class="num">' + esc(c.policeNo) + '</b>', 1) : '') +
+      ((c.transfers || []).length ? kv('trlog', c.transfers.map(esc).join('<br>'), 1) : '') +
+      (tp && cdOpen(c) ? '<div class="full ctp"><b>🔁 ' + esc(tp.to ? cd('tpend_to', { n: tp.toName }) : cd('tpend_any')) + '</b> <span class="muted">(' + esc(cd('tpend_by', { n: tp.fromName })) + ')</span></div>' : '') +
+      '</div>' + cdOutB(c.outcomes) + '<div class="cacts">' + A.join('') + '</div></div>';
+  }
+
+  /* ---------- الإجراءات: نفس طلبات صفحة البلاغات حرفياً ---------- */
+  function cdUpsert(c) {
+    var C = st.cdc; if (!C.live) return;
+    var i = -1; C.live.cases.forEach(function (x, k) { if (x.id === c.id) i = k; });
+    if (i >= 0) C.live.cases[i] = c; else C.live.cases.push(c); C.seen[c.id] = 1;
+    if (C.dayData) C.dayData.cases.forEach(function (x, k) { if (x.id === c.id) C.dayData.cases[k] = c; });
+    C.at = 0; // اللوحة والسجل تُحدَّث في المرة الجاية
+  }
+  function cdRun(btn, fn) {
+    if (btn) { if (btn.classList.contains('spinning')) return; btn.classList.add('spinning'); btn.disabled = true; }
+    return Promise.resolve().then(fn).catch(function (e) { toast('⚠️ ' + cdErr(e)); }).then(function () { if (btn && btn.isConnected) { btn.classList.remove('spinning'); btn.disabled = false; } });
+  }
+  function cdAfter(n, step, title) { cdUpsert(n); cdModalClose(); cdDraw(); cdNotify(cdWaUpdate(n, step), n.caseNo + ' · ' + title); }
+  function cdAct(id, a, btn) {
+    var C = st.cdc, c = null; (C.live ? C.live.cases : []).forEach(function (x) { if (String(x.id) === String(id)) c = x; }); if (!c) return;
+    var step = function (s) { return cdRun(btn, function () { return capi('step', { id: c.id, step: s }).then(function (n) { cdAfter(n, s, cd('st_' + s)); }); }); };
+    if (a === 'accept') return step('accepted');
+    if (a === 'contacted' || a === 'enroute') return step(a);
+    if (a === 'pCall') return step('patrol_called');
+    if (a === 'pArr') return step('patrol_arrived');
+    if (a === 'closeLeftP') return cdCloseBox(c, false, ['left_patrol']);
+    if (a === 'closeNoCoop') return cdCloseBox(c, false, ['nocoop']);
+    if (a === 'arrived') return cdArrivedBox(c);
+    if (a === 'close') return cdCloseBox(c, false, []);
+    if (a === 'closeRemote') return cdCloseBox(c, true, []);
+    if (a === 'cancel') return cdCancelBox(c);
+    if (a === 'transfer') return cdTransferBox(c);
+    if (a === 'police') return cdPoliceBox(c);
+    if (a === 'nx') return cdReasonBox(c, cd('nx_t'), cd('nx_s'), { time: cd('nx_time'), shift: cd('nx_shift'), other: cd('nx_other') }, true, 'closeUnattended', cd('nx_done'));
+    if (a === 'uc') return cdReasonBox(c, cd('uc_t'), cd('uc_s'), { off: cd('uc_off'), noans: cd('uc_noans'), wrong: cd('uc_wrong') }, false, 'closeUnreachable', cd('uc_done'));
+    var tAct = { tAccept: ['transferAccept', cd('t_acc')], tDecline: ['transferDecline', cd('t_dec')], tCancel: ['transferCancel', cd('t_can')] }[a];
+    if (tAct) return cdRun(btn, function () { return capi(tAct[0], { id: c.id }).then(function (n) { cdUpsert(n); cdDraw(); toast(tAct[1]); }); });
+  }
+  function cdModal(html, onMount, locked) {
+    cdModalClose();
+    var ov = document.createElement('div'); ov.className = 'mov'; ov.id = 'cdMov';
+    ov.innerHTML = '<div class="mbox cdmbox" role="dialog" aria-modal="true">' + html + '</div>';
+    document.body.appendChild(ov);
+    if (!locked) ov.addEventListener('click', function (e) { if (e.target === ov) cdModalClose(); });
+    ov.querySelectorAll('[data-x]').forEach(function (b) { b.onclick = cdModalClose; });
+    if (onMount) onMount(ov);
+  }
+  function cdModalClose() { var o = document.getElementById('cdMov'); if (o) o.remove(); }
+  function cdOptToggle(ov, sel) { ov.querySelectorAll(sel + ' input').forEach(function (i) { i.onchange = function () { ov.querySelectorAll(sel + ' .copt').forEach(function (l) { l.classList.toggle('on', l.querySelector('input').checked); }); }; }); }
+  function cdReasonBox(c, title, sub, reasons, withNote, action, done) {
+    var keys = Object.keys(reasons);
+    cdModal('<h3>' + esc(c.caseNo) + ' · ' + esc(title) + '</h3><p class="muted">' + esc(sub) + '</p><div id="cdRl">' +
+      keys.map(function (k, i) { return '<label class="copt' + (i ? '' : ' on') + '"><input type="radio" name="r" value="' + k + '"' + (i ? '' : ' checked') + '> ' + esc(reasons[k]) + '</label>'; }).join('') + '</div>' +
+      (withNote ? '<label class="field">' + cd('note_opt') + '<input class="input" id="cdRn"></label>' : '') +
+      '<div class="mrow"><button type="button" class="btn" data-x>' + cd('back') + '</button><button type="button" class="btn primary" id="cdOk">' + cd('confirm_close') + '</button></div>',
+    function (ov) {
+      cdOptToggle(ov, '#cdRl'); var ok = ov.querySelector('#cdOk');
+      ok.onclick = function () { cdRun(ok, function () { return capi(action, { id: c.id, reason: ov.querySelector('#cdRl input:checked').value, note: (ov.querySelector('#cdRn') || {}).value || '' }).then(function (n) { cdAfter(n, 'closed', done); }); }); };
+    });
+  }
+  function cdPoliceParse(v) {
+    var tx = cdDigits(v).replace(/[‎‏‪-‮⁦-⁩]/g, ''), m = tx.match(/[(\[﴿（]\s*([^)\]﴾）]+?)\s*[)\]﴾）]/);
+    if (m) return m[1].replace(/\s+/g, '');
+    var s = tx.trim().replace(/\s+/g, ''); return /^[؀-ۿA-Za-z]{0,3}\d{4,15}$/.test(s) ? s : '';
+  }
+  function cdPoliceBox(c) {
+    cdModal('<h3>' + esc(c.caseNo) + ' · ' + cd('pol_t') + '</h3><p class="muted">' + cd('pol_s') + '</p><textarea class="input" id="cdPm" rows="3" placeholder="بلاغكم (د8481343) محل اهتمامنا وجاري معالجته من الجهة المختصة ."></textarea><div class="muted" id="cdPv"></div>' +
+      '<div class="mrow"><button type="button" class="btn" data-x>' + cd('cancel') + '</button><button type="button" class="btn primary" id="cdOk">' + cd('save') + '</button></div>',
+    function (ov) {
+      var ta = ov.querySelector('#cdPm'), pv = ov.querySelector('#cdPv'), ok = ov.querySelector('#cdOk'); ta.focus();
+      ta.oninput = function () { var n = cdPoliceParse(ta.value); pv.textContent = n ? cd('pol_ok') + n : (ta.value.trim() ? cd('pol_no') : ''); pv.className = n ? 'tok' : 'tbad'; };
+      ok.onclick = function () { if (!cdPoliceParse(ta.value)) return toast(cd('pol_no'));
+        cdRun(ok, function () { return capi('policeNo', { id: c.id, text: ta.value }).then(function (n) { cdUpsert(n); cdModalClose(); cdDraw(); toast(cd('pol_saved') + n.policeNo); }); }); };
+    });
+  }
+  function cdTransferBox(c) {
+    var C = st.cdc;
+    (C.insp ? Promise.resolve(C.insp) : capi('inspectors').then(function (l) { C.insp = l; return l; })).then(function (list) {
+      list = list.filter(function (x) { return !(c.inspector && x.username === c.inspector.username); });
+      var adm = cdRole() === 'admin';
+      cdModal('<h3>' + esc(c.caseNo) + ' · ' + cd('tr_t') + '</h3><p class="muted">' + esc(cd('tr_s', { n: c.inspector ? c.inspector.name : '—' })) + '</p><div id="cdTl" class="cdscroll">' +
+        '<label class="copt on"><input type="radio" name="to" value="" checked> ' + cd('tr_any') + '</label>' +
+        list.map(function (x) { return '<label class="copt"><input type="radio" name="to" value="' + esc(x.username) + '"> 👮 ' + esc(x.name) + (x.employeeId ? ' <span class="muted num">' + esc(x.employeeId) + '</span>' : '') + '</label>'; }).join('') + '</div>' +
+        (adm ? '<label class="copt"><input type="checkbox" id="cdDirect"> ' + cd('tr_direct') + '</label>' : '') + '<p class="muted">' + cd('tr_hint') + '</p>' +
+        '<div class="mrow"><button type="button" class="btn" data-x>' + cd('cancel') + '</button><button type="button" class="btn primary" id="cdOk">' + cd('tr_send') + '</button></div>',
+      function (ov) {
+        cdOptToggle(ov, '#cdTl'); var ok = ov.querySelector('#cdOk');
+        ok.onclick = function () {
+          var to = ov.querySelector('#cdTl input:checked').value, d = ov.querySelector('#cdDirect'), direct = !!(d && d.checked);
+          if (direct && !to) return toast(cd('tr_pick'));
+          cdRun(ok, function () { return capi('transfer', { id: c.id, to: to, direct: direct }).then(function (n) { cdUpsert(n); cdModalClose(); cdDraw(); toast(direct ? cd('tr_set') : cd('tr_sent')); }); });
+        };
+      });
+    }).catch(function (e) { toast('⚠️ ' + cdErr(e)); });
+  }
+  function cdFileUrl(file, max) {
+    max = max || 1280;
+    return new Promise(function (res, rej) {
+      var r = new FileReader();
+      r.onload = function () { var img = new Image(); img.onload = function () {
+        var k = Math.min(1, max / Math.max(img.width, img.height)), cv = document.createElement('canvas'); cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); res(cv.toDataURL('image/jpeg', 0.75)); }; img.onerror = rej; img.src = r.result; };
+      r.onerror = rej; r.readAsDataURL(file);
+    });
+  }
+  function cdPhotos(ov, bucket) {
+    var inp = ov.querySelector('#cdPh'), th = ov.querySelector('#cdTh'); if (!inp) return;
+    inp.onchange = function () {
+      var files = Array.prototype.slice.call(inp.files);
+      files.reduce(function (p, f) { return p.then(function () { if (bucket.length >= 6) { toast(cd('maxph')); return; } return cdFileUrl(f).then(function (d) { bucket.push({ data: d }); }, function () {}); }); }, Promise.resolve())
+        .then(function () { th.innerHTML = bucket.map(function (p) { return '<img src="' + p.data + '" alt="">'; }).join(''); inp.value = ''; });
+    };
+  }
+  function cdArrivedBox(c) {
+    var bucket = [];
+    cdModal('<h3>' + esc(c.caseNo) + ' · ' + cd('ar_t') + '</h3><p class="muted">' + cd('ar_s') + '</p><label class="cdrop">' + cd('ar_pick') + '<input type="file" id="cdPh" accept="image/*" capture="environment" multiple hidden></label><div class="cthumbs" id="cdTh"></div>' +
+      '<div class="mrow"><button type="button" class="btn" data-x>' + cd('cancel') + '</button><button type="button" class="btn primary" id="cdOk">' + cd('ar_ok') + '</button></div>',
+    function (ov) {
+      cdPhotos(ov, bucket); var ok = ov.querySelector('#cdOk');
+      ok.onclick = function () {
+        if (!bucket.length && !ok.getAttribute('data-w')) { ok.setAttribute('data-w', '1'); ok.textContent = cd('ar_nophoto'); toast(cd('ar_pref')); return; }
+        cdRun(ok, function () { return capi('arrive', { id: c.id, photos: bucket }).then(function (n) { cdAfter(n, 'arrived', cd('st_arrived')); }); });
+      };
+    }, true);
+  }
+  function cdCloseBox(c, remote, pre) {
+    var bucket = [], sel = {}; pre.forEach(function (k) { sel[k] = 1; });
+    var allow = remote ? CD_REMOTE.slice() : CD_BASE.slice(); if (!remote && c.status === 'patrol_called') allow.push('left_patrol'); if (!remote && c.status === 'patrol_arrived') allow.push('nocoop');
+    pre.forEach(function (k) { if (allow.indexOf(k) < 0) allow.push(k); });
+    var opts = CD_OUT.filter(function (o) { return allow.indexOf(o[0]) >= 0; });
+    var n = function () { return Object.keys(sel).length; };
+    cdModal('<h3>' + esc(c.caseNo) + ' · ' + (remote ? cd('cl_rt') : cd('cl_t')) + '</h3><p class="muted">' + (remote ? cd('cl_rs') : cd('cl_s')) + '</p><div id="cdOpts">' +
+      opts.map(function (o) { return '<label class="copt' + (sel[o[0]] ? ' on' : '') + '"><input type="checkbox" value="' + o[0] + '"' + (sel[o[0]] ? ' checked' : '') + '> <i class="csw" style="background:' + o[1] + '"></i>' + esc(cd('o_' + o[0])) + '</label>'; }).join('') + '</div>' +
+      '<div class="cgrid2"><label class="field hide" id="cdVbox">' + cd('cl_vno') + '<input class="input ltr" id="cdVno"></label><label class="field">' + cd('cl_pax') + '<input class="input num" id="cdPax" type="number" min="1" value="' + (c.passengers || 1) + '"></label></div>' +
+      '<label class="field">' + cd('cl_notes') + '<textarea class="input" id="cdNt" rows="3" placeholder="' + esc(cd('cl_notes_ph')) + '"></textarea></label>' +
+      (remote ? '' : '<label class="cdrop">' + cd('cl_more') + '<input type="file" id="cdPh" accept="image/*" multiple hidden></label><div class="cthumbs" id="cdTh"></div>') +
+      '<div class="mrow"><button type="button" class="btn" data-x>' + cd('cancel') + '</button><button type="button" class="btn primary" id="cdOk"' + (n() ? '' : ' disabled') + '>' + cd('confirm_close') + '</button></div>',
+    function (ov) {
+      if (!remote) cdPhotos(ov, bucket);
+      var ok = ov.querySelector('#cdOk');
+      ov.querySelectorAll('#cdOpts input').forEach(function (i) {
+        i.onchange = function () { if (i.checked) sel[i.value] = 1; else delete sel[i.value]; i.closest('.copt').classList.toggle('on', i.checked); ov.querySelector('#cdVbox').classList.toggle('hide', !sel.fine); ok.disabled = !n(); };
+      });
+      ok.onclick = function () {
+        var vno = ov.querySelector('#cdVno').value.trim();
+        if (sel.fine && !vno) { toast(cd('cl_need_vno')); ov.querySelector('#cdVno').focus(); return; }
+        cdRun(ok, function () {
+          return capi('close', { id: c.id, remote: remote, outcomes: Object.keys(sel), violationNo: vno, passengers: +ov.querySelector('#cdPax').value || 1, notes: ov.querySelector('#cdNt').value.trim(), photos: bucket })
+            .then(function (x) { cdAfter(x, 'closed', cd('st_closed')); });
+        });
+      };
+    }, true);
+  }
+  function cdCancelBox(c) {
+    cdModal('<h3>' + cd('ca_t') + ' ' + esc(c.caseNo) + '</h3><p class="muted">' + cd('ca_s') + '</p><label class="field">' + cd('ca_r') + '<input class="input" id="cdRs"></label>' +
+      '<div class="mrow"><button type="button" class="btn" data-x>' + cd('back') + '</button><button type="button" class="btn primary" id="cdOk">' + cd('ca_ok') + '</button></div>',
+    function (ov) {
+      var ok = ov.querySelector('#cdOk'); ov.querySelector('#cdRs').focus();
+      ok.onclick = function () { var r = ov.querySelector('#cdRs').value.trim(); if (!r) return toast(cd('ca_need'));
+        cdRun(ok, function () { return capi('cancel', { id: c.id, reason: r }).then(function (n) { cdAfter(n, 'cancelled', cd('st_cancelled')); }); }); };
+    });
+  }
+  /* رسائل القروب: نفس نص صفحة البلاغات (تظهر فقط لو تلقرام غير مفعّل في CDC) */
+  function cdWaNew(c) {
+    return '🔴 بلاغ جديد ' + c.caseNo + '\nرقم الحافلة: ' + c.bus + '\nالحالة: ' + c.type + '\nرقم المسار: ' + c.route + '\nمتجه إلى: ' + c.dest + '\nموقع المحطة - ' + c.stationName + ': ' + c.stationUrl +
+      '\nالرقم الوظيفي: ' + c.driverId + '\nرقم الجوال: ' + c.driverPhone + '\nمرحل العمليات: ' + c.opsName + '\nوقت البلاغ: ' + cdT(c.times.requested);
+  }
+  function cdWaUpdate(c, step) {
+    var ic = { accepted: '🟡', contacted: '🔵', enroute: '🟣', arrived: '🟢', patrol_called: '🚨', patrol_arrived: '🚓', closed: '✅', cancelled: '⚪' }[step] || '•';
+    var lb = { accepted: 'تم الاستلام', contacted: 'تم التواصل مع السائق', enroute: 'المفتش في الطريق', arrived: 'تم الوصول', patrol_called: 'تم استدعاء الدوريات الأمنية', patrol_arrived: 'وصلت الدوريات الأمنية', closed: c.remote ? 'تم الإغلاق (عن بُعد)' : 'تم الإغلاق', cancelled: 'تم إلغاء البلاغ' }[step];
+    var m = ic + ' ' + c.caseNo + ' | ' + lb + '\nالحافلة: ' + c.bus + ' | المسار: ' + c.route;
+    if (step === 'cancelled') return m + '\nالسبب: ' + c.cancelReason;
+    m += '\nالمفتش: ' + (c.inspector ? c.inspector.name + (c.inspector.id ? ' (' + c.inspector.id + ')' : '') : '—') + '\nالوقت: ' + cdT(c.times[step]);
+    if (step === 'closed') {
+      m += '\nالنتيجة: ' + c.outcomes.map(function (k) { return CD.ar['o_' + k] || k; }).join(' + ');
+      if (c.violationNo) m += '\nرقم المخالفة: ' + c.violationNo;
+      if (c.notes) m += '\nملاحظات: ' + c.notes;
+      m += '\nمدة الحالة: ' + cdDurTxt(cdMins(c.times.requested, c.times.closed));
+    }
+    return m;
+  }
+  function cdNotify(text, title) {
+    if (st.cdc.live && st.cdc.live.tg) { toast(cd('tg_done', { t: title })); return; }
+    cdModal('<h3>' + cd('wa_t') + '</h3><p class="muted">' + esc(cd('wa_s', { t: title })) + '</p><textarea class="input cwa" id="cdWa" readonly rows="8">' + esc(text) + '</textarea>' +
+      '<div class="mrow"><button type="button" class="btn" data-x>' + cd('done') + '</button><a class="btn" href="https://wa.me/?text=' + encodeURIComponent(text) + '" target="_blank" rel="noopener">' + cd('wa_open') + '</a><button type="button" class="btn primary" id="cdCp">' + cd('wa_copy') + '</button></div>',
+    function (ov) { ov.querySelector('#cdCp').onclick = function () { cdCopy(ov.querySelector('#cdWa')); }; });
+  }
+  function cdCopy(ta) {
+    var done = function () { toast(cd('copied')); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, function () { ta.select(); try { document.execCommand('copy'); done(); } catch (e) {} });
+    else { ta.select(); try { document.execCommand('copy'); done(); } catch (e) {} }
+  }
+
+  /* ================= بلاغ جديد (نفس قراءة الرسالة في صفحة البلاغات) ================= */
+  var CD_FIELDS = [['bus', 'MA1019'], ['route', '10'], ['dest', 'شارع الحج (130)'], ['stationName', 'شارع الحج (130)'], ['stationUrl', 'https://cdc-ops.github.io/cdc-ops/#s=…'], ['type', 'ركاب بدون تذاكر'],
+    ['driverId', '11483'], ['driverPhone', '582601767'], ['driverName', 'Amir Khan'], ['opsName', '']];
+  function cdParse(txt) {
+    var out = {}, clean = cdDigits(txt).replace(/[‎‏‪-‮⁦-⁩*_~`]/g, '').replace(/[   ]/g, ' ').replace(/[：﹕]/g, ':');
+    if (/ركاب بدون تذاكر/.test(clean)) out.type = 'ركاب بدون تذاكر';
+    clean.split(/\r?\n/).forEach(function (raw) {
+      raw.split('|').forEach(function (seg) {
+        var line = seg.trim(); if (!line) return;
+        if (/^https?:\/\//.test(line)) { if (!out.stationUrl) out.stationUrl = line.split(/\s/)[0]; return; }
+        var i = line.indexOf(':'); if (i < 0) return;
+        var k = line.slice(0, i).replace(/^[^؀-ۿA-Za-z0-9]+/, '').replace(/\s+/g, ' ').trim(), v = line.slice(i + 1).trim(), url = (v.match(/https?:\/\/\S+/) || [])[0];
+        if (/^رقم الحافلة|^الحافلة/.test(k)) out.bus = v.split(/\s/)[0].toUpperCase();
+        else if (/^رقم المسار|^المسار/.test(k)) out.route = v.split(/\s/)[0];
+        else if (/^نوع الحالة|^الحالة/.test(k)) out.type = v;
+        else if (/^متجه/.test(k)) out.dest = v;
+        else if (/^رقم الجوال|^الجوال|^جوال السائق/.test(k)) out.driverPhone = v;
+        else if (/^الرقم الوظيفي/.test(k)) out.driverId = (v.match(/\d+/) || [v])[0];
+        else if (/^اسم السائق|^السائق/.test(k)) {
+          var m = v.match(/^(.*?)\s*[(\[]\s*(\d+)\s*[)\]]\s*$/);
+          if (m) { if (m[1].trim()) out.driverName = m[1].trim(); if (!out.driverId) out.driverId = m[2]; }
+          else if (/^\d+$/.test(v)) { if (!out.driverId) out.driverId = v; } else out.driverName = v;
+        }
+        else if (/^مر[حّ]+ل العمليات|^المرحل/.test(k)) out.opsName = v.replace(/\s*[(\[]\s*CDC\s*[)\]]\s*$/i, '').trim();
+        else if (url) { out.stationUrl = url; var n = k.replace(/^موقع المحطة\s*[-–—]?\s*/, '').trim(); if (n && n !== 'موقع المحطة') out.stationName = n; }
+      });
+    });
+    if (!out.stationName && out.dest) out.stationName = out.dest;
+    return out;
+  }
+  function cdNew() {
+    var u = cdUser();
+    return '<div class="row2 r2eq"><section class="card"><div class="chead"><span class="bar4"></span><h2>' + cd('n_1') + '</h2></div><p class="muted">' + cd('n_1h') + '</p>' +
+      '<textarea class="input cpaste" id="cdPaste" placeholder="رقم الحافلة: MA1019&#10;الحالة: ركاب بدون تذاكر&#10;رقم المسار: 10&#10;…"></textarea>' +
+      '<div class="toolbar"><button type="button" class="btn primary sm" id="cdParse">' + cd('n_parse') + '</button><span id="cdPmsg" class="tok"></span></div></section>' +
+      '<form class="card" id="cdFrm"><div class="chead"><span class="bar4"></span><h2>' + cd('n_2') + '</h2></div><div class="cgrid2">' +
+      CD_FIELDS.map(function (f) { var k = f[0];
+        return '<label class="field">' + cd('fl_' + k) + '<input class="input' + (['stationUrl', 'driverPhone', 'driverId', 'bus'].indexOf(k) >= 0 ? ' ltr' : '') + '" name="' + k + '" placeholder="' + esc(f[1]) + '"' + (['bus', 'route', 'driverPhone'].indexOf(k) >= 0 ? ' required' : '') +
+          ' value="' + (k === 'type' ? 'ركاب بدون تذاكر' : k === 'opsName' ? esc(u ? u.name : '') : '') + '"></label>'; }).join('') +
+      '</div><div class="toolbar"><button type="submit" class="btn primary">' + cd('n_send') + '</button><span class="muted">' + cd('n_auto') + '</span></div></form></div>';
+  }
+
+  /* ================= نظرة عامة (من الـ Hub) ================= */
+  function cdKpis(R, all) {
+    var D = st.cdc.d, T = D.targets, closed = R.filter(function (r) { return r.status === 'closed'; });
+    var take = R.filter(function (r) { return r.mTake !== null; }), arr = R.filter(function (r) { return r.mArrive !== null; });
+    return {
+      total: R.length, closed: closed.length, open: R.length - closed.length, remote: closed.filter(function (r) { return r.remote; }).length,
+      fines: R.filter(function (r) { return r.keys.indexOf('fine') >= 0; }).length, nt: R.filter(function (r) { return r.keys.indexOf('not_taken') >= 0; }).length,
+      take: cdAvg(take.map(function (r) { return r.mTake; })), arrive: cdAvg(arr.map(function (r) { return r.mArrive; })),
+      close: cdAvg(closed.filter(function (r) { return r.keys.indexOf('not_taken') < 0; }).map(function (r) { return r.mClose; })),
+      takeR: take.length ? Math.round(take.filter(function (r) { return r.mTake <= T.takeMin; }).length / take.length * 100) : null,
+      arrR: arr.length ? Math.round(arr.filter(function (r) { return r.mArrive <= T.arriveMin; }).length / arr.length * 100) : null,
+      patrol: R.filter(function (r) { return r.pCalled; }).length, pavg: cdAvg(R.map(function (r) { return r.mPatrol; })),
+      pax: closed.reduce(function (s, r) { return s + (r.pax || 1); }, 0), canc: all.filter(function (r) { return r.cancelled; }).length
+    };
+  }
+  function cdTone(v, target) { return v === null ? '' : v >= target ? 'ok' : v >= target - 15 ? 'warn' : 'bad'; }
+  function cdCols(labels, series, opts) {
+    opts = opts || {};
+    var mx = 1; labels.forEach(function (l, i) { series.forEach(function (s) { mx = Math.max(mx, s.v[i] || 0); }); });
+    var step = Math.ceil(labels.length / (opts.max || 15));
+    return (series.length > 1 ? '<div class="ilegend">' + series.map(function (s) { return '<span><i style="background:' + s.c + '"></i>' + esc(s.l) + '</span>'; }).join('') + '</div>' : '') +
+      '<div class="icols' + (opts.cls ? ' ' + opts.cls : '') + '">' + labels.map(function (l, i) {
+        return '<div class="icol" title="' + esc(l + ' · ' + series.map(function (s) { return s.l + ': ' + (opts.fmt ? opts.fmt(s.v[i]) : (s.v[i] || 0)); }).join(' · ')) + '"><div class="ibars">' + series.map(function (s) { var v = s.v[i] || 0;
+          return '<i style="height:' + (v / mx * 100).toFixed(1) + '%;background:' + s.c + '">' + (labels.length <= (opts.lbl || 12) && v ? '<em>' + (opts.short ? opts.short(v) : v) + '</em>' : '') + '</i>'; }).join('') + '</div><span class="ilb">' + (i % step === 0 ? esc(opts.tick ? opts.tick(l) : l) : '') + '</span></div>';
+      }).join('') + '</div>';
+  }
+  function cdDays() { var C = st.cdc, out = []; for (var x = C.from; x && x <= C.to && out.length < 120; x = dAdd(x, 1)) out.push(x); return out; }
+  function cdHrs() { var h = []; for (var i = 0; i < 24; i++) h.push((i + 7) % 24); return h; }
+  function cdGroup(R, fn) { var m = {}; R.forEach(function (r) { var k = fn(r); if (k === '' || k === null || k === undefined) return; (m[k] = m[k] || []).push(r); }); return Object.keys(m).map(function (k) { return { l: k, rows: m[k], v: m[k].length }; }).sort(function (a, b) { return b.v - a.v; }); }
+  function cdDash() {
+    var C = st.cdc, all = cdRows(true), R = all.filter(function (r) { return !r.cancelled; }), K = cdKpis(R, all), T = C.d.targets, has = function (f) { return C.d.fields.indexOf(f) >= 0; };
+    var days = cdDays(), hrs = cdHrs();
+    var h = '<div class="kpis k6">' + rKpi(cd('d_total'), K.total) + rKpi(cd('d_closed') + ' / ' + cd('d_open'), K.closed + ' <small>/ ' + K.open + '</small>') +
+      rKpi(cd('d_take'), cdDur(K.take)) + rKpi(cd('d_takeR', { m: T.takeMin }), K.takeR === null ? '—' : K.takeR + '% <small>' + cd('target') + ' ' + T.take + '%</small>', cdTone(K.takeR, T.take)) +
+      rKpi(cd('d_arrive'), cdDur(K.arrive)) + rKpi(cd('d_arrR', { m: T.arriveMin }), K.arrR === null ? '—' : K.arrR + '% <small>' + cd('target') + ' ' + T.arrive + '%</small>', cdTone(K.arrR, T.arrive)) +
+      rKpi(cd('d_close'), cdDur(K.close)) + (has('remote') ? rKpi(cd('d_remote'), K.remote) : '') + rKpi(cd('d_fines'), K.fines, K.fines ? 'bad' : '') +
+      (has('pCalled') ? rKpi('🚨 ' + cd('d_patrol'), K.patrol) + (has('pArrived') ? rKpi(cd('d_pavg'), cdDur(K.pavg)) : '') : '') +
+      rKpi(cd('d_nt'), K.nt, K.nt ? 'warn' : '') + (has('pax') ? rKpi(cd('d_pax'), K.pax) : '') + (K.canc ? rKpi(cd('d_canc'), K.canc) : '') + '</div>';
+    var byDay = function (fn) { return days.map(function (d) { return R.filter(function (r) { return r.date === d && fn(r); }).length; }); };
+    h += '<div class="row2 r2eq">' + iCard(cd('c_trend'), cdCols(days, [{ l: cd('s_closed'), c: I_COL[0], v: byDay(function (r) { return r.status === 'closed'; }) }, { l: cd('s_open'), c: I_COL[1], v: byDay(function (r) { return r.status !== 'closed'; }) }], { tick: function (d) { return d.slice(5); } })) +
+      iCard(cd('c_hour'), cdCols(hrs.map(function (x) { return cdPad(x); }), [{ l: cd('r_cases'), c: I_COL[0], v: hrs.map(function (x) { return R.filter(function (r) { return Number(String(r.time).slice(11, 13)) === x; }).length; }) }], { cls: 'hrs', lbl: 24, max: 24 })) + '</div>';
+    var outs = CD_OUT.map(function (o) { return { l: cd('os_' + o[0]), v: R.filter(function (r) { return r.keys.indexOf(o[0]) >= 0; }).length, c: o[1] }; }).filter(function (x) { return x.v; }).sort(function (a, b) { return b.v - a.v; });
+    var avgTake = function (rows) { return cdAvg(rows.map(function (r) { return r.mTake; })); };
+    h += '<div class="row2 r2eq">' + iCard(cd('c_out'), iBars(outs, function (v) { return v + ' <span class="muted">' + iPct(v, K.closed) + '</span>'; }, 10)) +
+      iCard(cd('c_tresp'), cdCols(hrs.map(function (x) { return cdPad(x); }), [{ l: cd('d_take'), c: I_COL[2], v: hrs.map(function (x) { return avgTake(R.filter(function (r) { return Number(String(r.time).slice(11, 13)) === x; })) || 0; }) }], { cls: 'hrs', lbl: 24, max: 24, fmt: function (v) { return v ? cdDurTxt(v) : '—'; } })) + '</div>';
+    var grp = function (fn, lab) { return cdGroup(R, fn).map(function (g) { return { l: lab ? lab(g.l) : g.l, v: g.v, t: avgTake(g.rows), a: cdAvg(g.rows.map(function (r) { return r.mArrive; })) }; }); };
+    var fmtGA = function (v, x) { return v + (x.t !== null ? ' <span class="muted">· ⏱' + cdDur(x.t) + '</span>' : ''); };
+    h += '<div class="row2 r2eq">' + iCard(cd('c_station'), iBars(grp(function (r) { return r.station || r.dest; }), fmtGA, 12)) + iCard(cd('c_route'), iBars(grp(function (r) { return r.route; }, function (l) { return cd('route_l') + l; }), fmtGA, 13)) + '</div>';
+    h += '<div class="row2 r2eq">' + iCard(cd('c_emp'), iBars(grp(function (r) { return cdName(r); }), function (v, x) { return v + (x.t !== null ? ' <span class="muted">· ⏱' + cdDur(x.t) + (x.a !== null ? ' · 📍' + cdDur(x.a) : '') + '</span>' : ''); }, 12)) +
+      iCard(cd('c_shift') + ' · ' + cd('c_src'), iBars(cdGroup(R, function (r) { return r.shift; }).map(function (g) { return { l: cd('sh' + g.l), v: g.v }; })) + '<hr class="isep">' +
+        iBars(cdGroup(R, function (r) { return r.src; }).map(function (g) { return { l: cd('src_' + g.l), v: g.v }; })) + '<hr class="isep">' +
+        iBars(cdGroup(R, function (r) { return r.bus; }).filter(function (g) { return g.v > 1; }).map(function (g) { return { l: g.l, v: g.v }; }), null, 6)) + '</div>';
+    return h + '<p class="muted rmeta">' + it('updated') + ' <span class="ltr">' + esc(String(C.d.generated).slice(11)) + '</span> · ⏱ = ' + cd('d_take') + ' · 📍 = ' + cd('d_arrive') + '</p>';
+  }
+
+  /* ================= أداء المفتشين (cdcKpi_ من الـ Hub) ================= */
+  var CD_ECOLS = [['name', 'e_name'], ['id', 'e_id'], ['n', 'e_n'], ['closed', 'e_closed'], ['open', 'e_open'], ['remote', 'e_remote'], ['fines', 'e_fines'], ['take.avg', 'e_take'], ['take.rate', 'e_takeR'],
+    ['arrive.avg', 'e_arr'], ['arrive.rate', 'e_arrR'], ['close.avg', 'e_close'], ['patrol.n', 'e_patrol'], ['notTaken', 'e_nt'], ['pax', 'e_pax']];
+  function cdEmpRows() {
+    var C = st.cdc;
+    return C.d.kpi.filter(function (p) { return !C.emp || (p.id || p.name) === C.emp; }).slice().sort(function (a, b) {
+      if (C.sort.k === 'name') return String(a.name).localeCompare(String(b.name), 'ar') * C.sort.d;
+      var x = iGet(a, C.sort.k), y = iGet(b, C.sort.k); x = x === null || x === undefined ? -1 : x; y = y === null || y === undefined ? -1 : y; return (x > y ? 1 : x < y ? -1 : 0) * C.sort.d;
+    });
+  }
+  function cdEmpCell(p, k) {
+    var v = iGet(p, k), T = st.cdc.d.targets;
+    if (k === 'name') return '<b>' + esc(st.lang === 'en' ? tr(p.name) : p.name) + '</b>';
+    if (v === null || v === undefined || v === '') return '<span class="muted">—</span>';
+    if (/\.avg$/.test(k)) return cdDur(v);
+    if (/\.rate$/.test(k)) return '<span class="' + ({ ok: 'tok', warn: 'twarn', bad: 'tbad' }[cdTone(v, k === 'take.rate' ? T.take : T.arrive)] || '') + '">' + v + '%</span>';
+    return v === 0 ? '<span class="muted">0</span>' : esc(v);
+  }
+  function cdInsp() {
+    var C = st.cdc, rows = cdEmpRows();
+    return (C.sh ? '<div class="romsg warn">' + it('e_shift') + '</div>' : '') + '<div class="toolbar"><button type="button" class="btn sm" id="cdEmpX">' + icon('download') + cd('xlsx') + '</button><span class="muted num">' + rows.length + '</span></div>' +
+      '<div class="tblwrap rtbl"><table class="tbl iemp"><thead><tr>' + CD_ECOLS.map(function (c) { return '<th data-csort="' + c[0] + '" class="srt">' + esc(cd(c[1])) + (C.sort.k === c[0] ? (C.sort.d > 0 ? ' ▲' : ' ▼') : '') + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      (rows.length ? rows.map(function (p) { return '<tr>' + CD_ECOLS.map(function (c) { return '<td class="' + (c[0] === 'name' ? '' : 'num') + '">' + cdEmpCell(p, c[0]) + '</td>'; }).join('') + '</tr>'; }).join('') : '<tr><td colspan="' + CD_ECOLS.length + '" class="empty">' + t('no_rows') + '</td></tr>') +
+      '</tbody></table></div><p class="muted rmeta">' + cd('e_note') + '</p>';
+  }
+
+  /* ================= السجل + Excel ================= */
+  var CD_LCOLS = [
+    ['l_no', function (r) { return '<b class="ltr cno">' + esc(r.no) + '</b>'; }, function (r) { return r.no; }],
+    ['l_date', function (r) { return '<span class="ltr">' + esc(r.date.slice(5)) + '</span>'; }, function (r) { return r.date; }],
+    ['l_time', function (r) { return '<span class="ltr">' + esc(String(r.time).slice(11, 16)) + '</span>'; }, function (r) { return String(r.time).slice(11, 16); }],
+    ['l_shift', function (r) { return esc(cd('sh' + r.shift)); }, function (r) { return cd('sh' + r.shift); }],
+    ['l_bus', function (r) { return '<b class="ltr">' + esc(r.bus) + '</b>'; }, function (r) { return r.bus; }],
+    ['l_route', function (r) { return esc(r.route); }, function (r) { return r.route; }],
+    ['l_station', function (r) { return esc(tr(r.station || r.dest)); }, function (r) { return r.station || r.dest; }],
+    ['l_insp', function (r) { return esc(cdName(r)) + (r.emp && /^\d+$/.test(r.emp) ? '<div class="muted num">' + esc(r.emp) + '</div>' : ''); }, function (r) { return r.empName || r.emp; }],
+    ['l_take', function (r) { return cdDur(r.mTake); }, function (r) { return r.mTake === null ? '' : r.mTake; }],
+    ['l_arr', function (r) { return r.remote && r.status === 'closed' ? cd('remote') : cdDur(r.mArrive); }, function (r) { return r.remote && r.status === 'closed' ? cd('remote') : (r.mArrive === null ? '' : r.mArrive); }],
+    ['l_close', function (r) { return cdDur(r.mClose); }, function (r) { return r.mClose === null ? '' : r.mClose; }],
+    ['l_out', function (r) { return cdOutB(r.keys) || '—'; }, function (r) { return r.keys.map(function (k) { return cd('os_' + k); }).join(' + '); }],
+    ['l_fine', function (r) { return '<span class="num">' + esc(r.fine || '—') + '</span>'; }, function (r) { return r.fine; }],
+    ['l_status', function (r) { return cdChip(r.status); }, function (r) { return cd('st_' + r.status); }],
+    ['l_src', function (r) { return '<span title="' + esc(cd('src_' + r.src)) + '">' + esc(cd('src_' + r.src).split(' ')[0]) + '</span>'; }, function (r) { return cd('src_' + r.src).replace(/^\S+\s/, ''); }],
+    ['l_ops', function (r) { return esc(r.ops); }, function (r) { return r.ops; }]
+  ];
+  function cdLogRows() {
+    var C = st.cdc, q = String(C.q || '').trim().toLowerCase(), R = cdRows(true);
+    if (q) R = R.filter(function (r) { return [r.no, r.bus, r.route, r.station, r.dest, r.empName, r.emp, r.fine, r.ops, tr(r.empName || '')].join(' ').toLowerCase().indexOf(q) >= 0; });
+    return R;
+  }
+  function cdLog() {
+    var C = st.cdc, R = cdLogRows(), show = R.slice(0, 500);
+    return '<div class="toolbar"><input class="input" type="search" id="cdLq" placeholder="' + esc(cd('search')) + '" value="' + esc(C.q) + '"><button type="button" class="btn sm primary" id="cdLx">' + icon('download') + cd('xlsx') + '</button>' +
+      '<span class="muted"><span class="num">' + R.length + '</span> ' + cd('rows') + (R.length > 500 ? ' · 500 ↓ Excel' : '') + '</span></div>' +
+      '<div class="tblwrap rtbl"><table class="tbl clog"><thead><tr>' + CD_LCOLS.map(function (c) { return '<th>' + esc(cd(c[0])) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      (show.length ? show.map(function (r) { return '<tr class="clk" data-cno="' + esc(r.no) + '" data-cdate="' + esc(r.date) + '">' + CD_LCOLS.map(function (c) { return '<td>' + c[1](r) + '</td>'; }).join('') + '</tr>'; }).join('') : '<tr><td colspan="' + CD_LCOLS.length + '" class="empty">' + t('no_rows') + '</td></tr>') +
+      '</tbody></table></div><p class="muted rmeta">' + cd('clickcase') + '</p>';
+  }
+  /* Excel منسّق: ورقة السجل + ورقة أداء المفتشين */
+  function cdXlsx(which) {
+    var C = st.cdc, X = window.MBCO_XLSX; if (!X) return toast('xlsx');
+    var head = { b: true, color: '#FFFFFF', fill: '#7B1E8F', h: 'center', border: 1, wrap: true }, cell = { border: 1 }, title = { b: true, sz: 14, color: '#7B1E8F' };
+    var rtl = st.lang !== 'en', period = C.from === C.to ? C.from : C.from + ' → ' + C.to;
+    var sheets = [];
+    if (which !== 'insp') {
+      var R = cdLogRows();
+      sheets.push({ name: st.lang === 'en' ? 'Cases' : 'البلاغات', rtl: rtl, freeze: 'A4', cols: [14, 11, 7, 11, 10, 7, 22, 20, 9, 9, 9, 26, 12, 12, 16, 16],
+        merges: ['A1:P1'], rows: [[{ v: 'MBCO · ' + cd('r_title') + ' · ' + period, s: title }], [cd('r_gen') + ' ' + nowLocal()], CD_LCOLS.map(function (c) { return { v: cd(c[0]), s: head }; })]
+          .concat(R.map(function (r) { return CD_LCOLS.map(function (c) { var v = c[2](r); return { v: v === null || v === undefined ? '' : (typeof v === 'string' ? tr(v) : v), s: cell }; }); })) });
+    }
+    var E = cdEmpRows();
+    sheets.push({ name: st.lang === 'en' ? 'Inspectors' : 'أداء المفتشين', rtl: rtl, freeze: 'A4', cols: CD_ECOLS.map(function (c, i) { return i === 0 ? 24 : 12; }), merges: ['A1:' + X.colName(CD_ECOLS.length - 1) + '1'],
+      rows: [[{ v: 'MBCO · ' + cd('insp') + ' · ' + period, s: title }], [cd('r_gen') + ' ' + nowLocal()], CD_ECOLS.map(function (c) { return { v: cd(c[1]), s: head }; })]
+        .concat(E.map(function (p) { return CD_ECOLS.map(function (c) { var v = iGet(p, c[0]); if (c[0] === 'name') v = st.lang === 'en' ? tr(p.name) : p.name; return { v: v === null || v === undefined ? '' : v, s: cell }; }); })) });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(X.write(sheets));
+    a.download = 'MBCO_CDC_' + (which === 'insp' ? 'inspectors' : 'cases') + '_' + C.from + '_' + C.to + '.xlsx'; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  }
+  function nowLocal() { var d = new Date(); return cdD(d) + ' ' + cdT(d); }
+
+  /* ================= التقرير اليومي (واجهة CDC: action=day) ================= */
+  function cdDaily() {
+    var C = st.cdc; if (!C.day) C.day = (C.d && C.d.today) || todayStr();
+    if (!C.dayData || C.dayData.date !== C.day) {
+      capi('day', { date: C.day }).then(function (d) { C.dayData = d; if (route() === 'cdc' && C.tab === 'daily' && !C.view) cdDraw(); })
+        .catch(function (e) { var b = document.getElementById('cdBody'); if (b) failBox(b, e, function () { C.dayData = null; cdDraw(); }); });
+      return '<div class="toolbar noprint"><label class="field">' + cd('l_date') + '<input class="input num" type="date" id="cdDay" value="' + esc(C.day) + '"></label></div><div class="loading"><div class="spin"></div>' + t('loading') + '</div>';
+    }
+    var L = C.dayData.cases.filter(function (c) { return c.status !== 'cancelled' && !c.isTest; }).sort(function (a, b) { return a.times.requested - b.times.requested; });
+    var canc = C.dayData.cases.filter(function (c) { return c.status === 'cancelled' && !c.isTest; }).length;
+    var closed = L.filter(function (c) { return c.status === 'closed'; }), remote = closed.filter(function (c) { return c.remote; });
+    var fines = L.filter(function (c) { return c.outcomes.indexOf('fine') >= 0; }).length, trans = L.filter(function (c) { return (c.transfers || []).length; }).length;
+    var aAcc = cdAvg(L.map(function (c) { return cdMins(c.times.requested, c.times.accepted); })), aArr = cdAvg(L.map(function (c) { return cdMins(c.times.requested, c.times.arrived); }));
+    var aCls = cdAvg(closed.filter(function (c) { return c.outcomes.indexOf('not_taken') < 0; }).map(function (c) { return cdMins(c.times.requested, c.times.closed); }));
+    var pc = L.filter(function (c) { return c.times.patrol_called; });
+    var group = function (fn) { var m = {}; L.forEach(function (c) { var k = fn(c); if (k === null || k === undefined || k === '') return; (m[k] = m[k] || []).push(c); }); return Object.keys(m).map(function (k) { return [k, m[k]]; }).sort(function (a, b) { return b[1].length - a[1].length; }); };
+    var outs = CD_OUT.map(function (o) { return { l: cd('os_' + o[0]), v: L.filter(function (c) { return c.outcomes.indexOf(o[0]) >= 0; }).length, c: o[1] }; });
+    var th = function (a) { return '<tr>' + a.map(function (k) { return '<th>' + esc(cd(k)) + '</th>'; }).join('') + '</tr>'; };
+    return '<div class="toolbar noprint"><label class="field">' + cd('l_date') + '<input class="input num" type="date" id="cdDay" value="' + esc(C.day) + '"></label><span class="sp"></span><button type="button" class="btn primary sm" id="cdPrint">' + icon('print') + cd('print') + '</button></div>' +
+      '<div class="card rrep"><div class="rrh"><div><b class="rlogo">MBCO</b><div class="muted">Modern Bus Company Limited</div></div><span class="tag b-acc">Daily · <span class="ltr">' + esc(C.day) + '</span></span></div>' +
+      '<h2 class="rrt">' + cd('r_title') + '</h2><p class="muted rmeta">' + cd('r_gen') + ' <span class="ltr">' + nowLocal() + '</span></p>' +
+      '<div class="kpis k4">' + rKpi(cd('d_total'), L.length) + rKpi(cd('d_closed') + ' / ' + cd('d_open'), closed.length + ' <small>/ ' + (L.length - closed.length) + '</small>') + rKpi(cd('d_remote'), remote.length) + rKpi(cd('d_fines'), fines, fines ? 'bad' : '') +
+      rKpi(cd('d_take'), cdDur(aAcc)) + rKpi(cd('d_arrive'), cdDur(aArr)) + rKpi(cd('d_close'), cdDur(aCls)) + rKpi(cd('d_pax'), closed.reduce(function (s, c) { return s + (c.passengers || 1); }, 0)) + '</div>' +
+      (trans || canc ? '<p class="muted rmeta">' + (trans ? cd('r_trans') + ': <b>' + trans + '</b>' : '') + (canc ? (trans ? ' · ' : '') + cd('d_canc') + ': ' + canc : '') + '</p>' : '') +
+      (pc.length ? '<div class="kpis k4">' + rKpi('🚨 ' + cd('d_patrol'), pc.length) + rKpi(cd('d_pavg'), cdDur(cdAvg(L.map(function (c) { return cdMins(c.times.patrol_called, c.times.patrol_arrived); })))) + rKpi(cd('os_nocoop'), L.filter(function (c) { return c.outcomes.indexOf('nocoop') >= 0; }).length, 'bad') + '</div>' : '') +
+      '<h3 class="rh3">' + cd('r_out') + '</h3>' + iBars(outs, null, 10) +
+      '<h3 class="rh3">' + cd('r_byri') + '</h3><div class="row2 r2eq"><div class="tblwrap"><table class="tbl"><thead>' + th(['l_route', 'r_cases', 'd_fines', 'e_remote']) + '</thead><tbody>' +
+      (group(function (c) { return c.route; }).map(function (g) { return '<tr><td class="ltr">' + esc(g[0]) + '</td><td class="num">' + g[1].length + '</td><td class="num">' + g[1].filter(function (c) { return c.outcomes.indexOf('fine') >= 0; }).length + '</td><td class="num">' + g[1].filter(function (c) { return c.remote && c.status === 'closed'; }).length + '</td></tr>'; }).join('') || '<tr><td colspan="4" class="empty">—</td></tr>') +
+      '</tbody></table></div><div class="tblwrap"><table class="tbl"><thead>' + th(['e_name', 'r_cases', 'e_take', 'e_arr']) + '</thead><tbody>' +
+      (group(function (c) { return c.inspector ? c.inspector.name : null; }).map(function (g) { return '<tr><td>' + esc(st.lang === 'en' ? tr(g[0]) : g[0]) + '</td><td class="num">' + g[1].length + '</td><td>' + cdDur(cdAvg(g[1].map(function (c) { return cdMins(c.times.requested, c.times.accepted); }))) + '</td><td>' + cdDur(cdAvg(g[1].map(function (c) { return cdMins(c.times.requested, c.times.arrived); }))) + '</td></tr>'; }).join('') || '<tr><td colspan="4" class="empty">—</td></tr>') +
+      '</tbody></table></div></div>' +
+      '<h3 class="rh3">' + cd('r_log') + '</h3><div class="tblwrap"><table class="tbl twrap"><thead>' + th(['l_no', 'l_time', 'l_bus', 'l_route', 'l_station', 'l_insp', 'l_take', 'l_arr', 'l_out', 'l_fine', 'l_status']) + '</thead><tbody>' +
+      (L.map(function (c) { return '<tr class="clk" data-ccase="' + esc(c.id) + '"><td><b class="ltr cno">' + esc(c.caseNo) + '</b></td><td class="ltr">' + cdT(c.times.requested) + '</td><td class="ltr">' + esc(c.bus) + '</td><td class="ltr">' + esc(c.route) + '</td><td>' + esc(tr(c.dest || '')) + '</td><td>' + (c.inspector ? esc(st.lang === 'en' ? tr(c.inspector.name) : c.inspector.name) : '—') + '</td>' +
+        '<td>' + cdDur(cdMins(c.times.requested, c.times.accepted)) + '</td><td>' + (c.remote && c.status === 'closed' ? cd('remote') : cdDur(cdMins(c.times.requested, c.times.arrived))) + '</td><td>' + (cdOutB(c.outcomes) || '—') + '</td><td class="num">' + esc(c.violationNo || '—') + '</td><td>' + cdChip(c.status) + '</td></tr>'; }).join('') || '<tr><td colspan="11" class="empty">—</td></tr>') +
+      '</tbody></table></div><p class="muted noprint">' + cd('clickcase') + '</p><div class="rfoot muted"><span>MBCO · CDC</span><span>' + cd('r_by') + ': ' + esc(st.user.name || '') + '</span></div></div>';
+  }
+
+  /* ================= تقرير حالة (واجهة CDC: getCase + photo) ================= */
+  function cdOpenCase(id) { st.cdc.view = String(id); cdCase(st.cdc.view); window.scrollTo(0, 0); }
+  function cdCaseByNo(no, date) {
+    var C = st.cdc;
+    if (!C.ses) return toast(cdSesMsg());
+    setSync(true);
+    capi('day', { date: date }).then(function (d) {
+      var c = null; d.cases.forEach(function (x) { if (String(x.caseNo) === String(no)) c = x; });
+      if (!c) { var n = new Date(date + 'T12:00:00'); n.setDate(n.getDate() + 1); return capi('day', { date: cdD(n) }).then(function (d2) { d2.cases.forEach(function (x) { if (String(x.caseNo) === String(no)) c = x; }); return c; }); }
+      return c;
+    }).then(function (c) { if (!c) return toast(t('no_rows')); C.cache = C.cache || {}; C.cache[c.id] = c; cdOpenCase(c.id); })
+      .catch(function (e) { toast('⚠️ ' + cdErr(e)); }).then(function () { setSync(false); });
+  }
+  function cdCase(id) {
+    var C = st.cdc, b = document.getElementById('cdBody'); if (!b) return;
+    var c = null; [(C.live || {}).cases || [], (C.dayData || {}).cases || []].forEach(function (l) { l.forEach(function (x) { if (String(x.id) === String(id)) c = x; }); });
+    if (!c && C.cache) c = C.cache[id];
+    if (!c) {
+      b.innerHTML = '<div class="loading"><div class="spin"></div>' + t('loading') + '</div>';
+      capi('getCase', { id: id }).then(function (x) { C.cache = C.cache || {}; C.cache[id] = x; if (C.view === String(id)) cdCase(id); }).catch(function (e) { failBox(b, e, function () { cdCase(id); }); });
+      return;
+    }
+    var T = c.times, RS = [['requested'], ['accepted'], ['contacted'], ['enroute'], ['arrived']];
+    if (T.patrol_called) RS.push(['patrol_called']); if (T.patrol_arrived || T.patrol_called) RS.push(['patrol_arrived']); RS.push(['closed']);
+    var tl = RS.map(function (s, i) {
+      var k = s[0], skip = (c.remote && (k === 'enroute' || k === 'arrived')) || (k === 'patrol_arrived' && !T.patrol_arrived && !cdOpen(c));
+      var prev = RS.slice(0, i).map(function (x) { return T[x[0]]; }).filter(Boolean).pop();
+      return '<div class="ctls' + ((i === 0 || k === 'closed') && T[k] ? ' end' : '') + (skip ? ' skip' : '') + '"><span class="dot"></span><div class="lb">' + cd('tl_' + k) + '</div><div class="tm ltr">' + (skip ? cd('notreq') : T[k] ? cdDT(T[k]) : '—') + '</div><div class="du">' + (T[k] && prev ? cd('r_after') + ' ' + cdDur(cdMins(prev, T[k])) : '') + '</div></div>';
+    }).join('');
+    var outTxt = c.status === 'cancelled' ? cd('st_cancelled') + ' — ' + (c.cancelReason || '') : c.outcomes.length ? c.outcomes.map(function (k) { return cd('o_' + k); }).join(' + ') : (cdOpen(c) ? cd('inprog') : '—');
+    var kv = function (k, v) { return '<div><div class="muted k">' + esc(cd(k)) + '</div><div>' + v + '</div></div>'; };
+    b.innerHTML = '<div class="toolbar noprint"><button type="button" class="btn sm" id="cdBack">→ ' + cd('back') + '</button><span class="sp"></span><button type="button" class="btn primary sm" id="cdPrint">' + icon('print') + cd('print') + '</button></div>' +
+      '<div class="card rrep"><div class="rrh"><div><b class="rlogo">MBCO</b><div class="muted">Modern Bus Company Limited</div></div><span class="tag b-acc">Case · <span class="ltr">' + esc(c.caseNo) + '</span></span></div>' +
+      '<h2 class="rrt">' + cd('r_case') + '</h2><p class="muted rmeta">' + cd('r_gen') + ' <span class="ltr">' + nowLocal() + '</span></p>' +
+      '<div class="kpis k4">' + rKpi(cd('busroute'), '<span class="ltr">' + esc(c.bus) + ' / ' + esc(c.route) + '</span>') + rKpi(cd('l_status'), esc(cd('st_' + c.status)) + (c.remote && c.status === 'closed' ? ' <small>(' + cd('remote') + ')</small>' : '')) +
+      rKpi(cd('inspector'), c.inspector ? esc(c.inspector.name) : '—') + rKpi(cd('l_out'), '<small>' + esc(c.outcomes.map(function (k) { return cd('os_' + k); }).join(' + ') || '—') + '</small>') + '</div>' +
+      '<h3 class="rh3">' + cd('r_sum') + '</h3><div class="csnap">' + kv('l_bus', '<span class="ltr">' + esc(c.bus) + '</span>') + kv('inspector', c.inspector ? esc(c.inspector.name) + (c.inspector.id ? ' · <span class="num">' + esc(c.inspector.id) + '</span>' : '') : '—') +
+      kv('l_route', '<span class="ltr">' + esc(c.route) + '</span>') + kv('fl_opsName', esc(c.opsName || '')) + kv('dest', esc(c.dest || '')) + kv('driver', (c.driverName ? esc(c.driverName) + ' · ' : '') + '<span class="num">' + esc(c.driverId || '—') + '</span>') +
+      kv('stloc', c.stationUrl ? '<a href="' + esc(c.stationUrl) + '" target="_blank" rel="noopener">' + esc(c.stationName || c.dest || '') + '</a>' : '—') + kv('dphone', '<span class="ltr">' + (c.driverPhone ? '0' + esc(c.driverPhone) : '—') + '</span>') +
+      kv('cl_pax', '<span class="num">' + (c.passengers || 1) + '</span>') + kv('cl_vno', '<span class="num">' + esc(c.violationNo || '—') + '</span>') + '</div>' +
+      '<h3 class="rh3">' + cd('r_res') + '</h3><div class="cnarr"><div class="k">' + cd('r_how') + '</div><div>' + esc(outTxt) + '</div><div class="k">' + cd('r_notes') + '</div><div>' + esc(c.notes || '-') + '</div>' +
+      ((c.transfers || []).length ? '<div class="k">' + cd('trlog') + '</div><div>' + c.transfers.map(esc).join('<br>') + '</div>' : '') +
+      (T.patrol_called ? '<div class="k">' + cd('r_patrol') + '</div><div>' + (c.policeNo ? cd('police') + ': <b class="num">' + esc(c.policeNo) + '</b> · ' : '') + cd('r_call') + ': <b class="ltr">' + cdT(T.patrol_called) + '</b> · ' + cd('r_parr') + ': <b>' + (T.patrol_arrived ? '<span class="ltr">' + cdT(T.patrol_arrived) + '</span> (' + cd('r_after') + ' ' + cdDur(cdMins(T.patrol_called, T.patrol_arrived)) + ')' : cd('r_notarr')) + '</b>' + (c.outcomes.indexOf('nocoop') >= 0 ? ' · <b class="tbad">' + cd('os_nocoop') + '</b>' : '') + '</div>' : '') +
+      '<div class="k">' + cd('r_dur') + '</div><div>' + cd('r_toacc') + ': <b>' + cdDur(cdMins(T.requested, T.accepted)) + '</b> · ' + cd('r_toarr') + ': <b>' + (c.remote ? cd('notreq') : cdDur(cdMins(T.requested, T.arrived))) + '</b> · ' + cd('r_total') + ': <b>' + cdDur(cdMins(T.requested, T.closed)) + '</b></div></div>' +
+      '<h3 class="rh3">' + cd('r_tl') + '</h3><div class="ctl" style="grid-template-columns:repeat(' + RS.length + ',1fr)">' + tl + '</div>' +
+      ((c.photos || []).length ? '<h3 class="rh3">' + cd('r_photos') + '</h3><div class="cphotos">' + c.photos.map(function (p) { return '<figure>' + (C.photos[p.id] ? '<img src="' + C.photos[p.id] + '" alt="">' : '<div class="cphph" data-pid="' + esc(p.id) + '">' + cd('loadph') + '</div>') + '<figcaption class="ltr">' + esc(p.name || '') + '</figcaption></figure>'; }).join('') + '</div>' : '') +
+      '<div class="rfoot muted"><span>MBCO · CDC</span><span class="ltr">' + esc(c.caseNo) + ' · ' + cdD(T.requested) + '</span></div></div>';
+    document.getElementById('cdBack').onclick = function () { C.view = null; cdGo(false); };
+    document.getElementById('cdPrint').onclick = function () { window.print(); };
+    b.querySelectorAll('[data-pid]').forEach(function (el) {
+      var pid = el.getAttribute('data-pid');
+      capi('photo', { fileId: pid }).then(function (r) { C.photos[pid] = r.data; if (el.isConnected) { var img = document.createElement('img'); img.src = r.data; img.alt = ''; el.replaceWith(img); } }, function () { if (el.isConnected) el.textContent = cd('phfail'); });
+    });
+  }
+
+  /* ================= المستخدمين (إدارة CDC فقط) ================= */
+  function cdUsers() {
+    var C = st.cdc;
+    if (!C.users) {
+      capi('users').then(function (u) { C.users = u; if (route() === 'cdc' && C.tab === 'users') cdDraw(); }).catch(function (e) { var b = document.getElementById('cdBody'); if (b) failBox(b, e, function () { cdDraw(); }); });
+      return '<div class="loading"><div class="spin"></div>' + t('loading') + '</div>';
+    }
+    var ord = { pending: -1, admin: 0, ops: 1, insp: 2, rejected: 3 };
+    var L = C.users.slice().sort(function (a, b) { return ((ord[a.role] === undefined ? 4 : ord[a.role]) - (ord[b.role] === undefined ? 4 : ord[b.role])) || (b.active - a.active) || String(a.name).localeCompare(String(b.name), 'ar'); });
+    var nP = L.filter(function (u) { return u.role === 'pending'; }).length;
+    var rl = function (r) { return r === 'pending' ? cd('u_pend') : r === 'rejected' ? '—' : cd('role_' + r); };
+    return (nP ? '<div class="romsg warn">' + esc(cd('u_npend', { n: nP })) + '</div>' : '') + '<div class="toolbar"><button type="button" class="btn primary sm" id="cdUAdd">' + cd('u_add') + '</button></div>' +
+      '<div class="tblwrap rtbl"><table class="tbl"><thead><tr>' + ['u_name', 'u_user', 'u_emp', 'u_role', 'u_tg', 'u_state', 'u_last', ''].map(function (k) { return '<th>' + (k ? esc(cd(k)) : '') + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      L.map(function (u) {
+        return '<tr><td><b>' + esc(u.name) + '</b></td><td class="ltr">' + esc(u.username) + '</td><td class="num">' + esc(u.employeeId || '—') + '</td><td>' + esc(rl(u.role)) + '</td><td>' + (u.telegram ? '<span class="tag b-acc">✓ ' + esc(u.telegram) + '</span>' : '<span class="muted">—</span>') + '</td>' +
+          '<td>' + (u.role === 'pending' ? '<span class="tag b-bad">' + cd('u_pend') + '</span>' : u.active ? (u.mustChange ? '<span class="tag b-warn">' + cd('u_must') + '</span>' : '<span class="tag b-ok">' + cd('u_active') + '</span>') : '<span class="tag b-muted">' + cd('u_off') + '</span>') + '</td>' +
+          '<td class="ltr">' + (u.lastLogin ? cdDT(u.lastLogin) : '—') + '</td><td class="nowrap"><button type="button" class="btn sm" data-ued="' + esc(u.username) + '">' + (u.role === 'pending' ? cd('u_approve') : cd('u_edit')) + '</button> <button type="button" class="btn sm ghost" data-utl="' + esc(u.username) + '">' + cd('u_link') + '</button></td></tr>';
+      }).join('') + '</tbody></table></div><p class="muted rmeta">' + cd('u_hint') + '</p>';
+  }
+  function cdUserBox(u) {
+    var isNew = !u; u = u ? Object.assign({}, u) : { username: '', name: '', employeeId: '', role: 'insp', active: true };
+    if (u.role === 'pending' || u.role === 'rejected') { u.role = 'insp'; u.active = true; }
+    cdModal('<h3>' + (isNew ? cd('u_new') : cd('u_ed') + esc(u.name)) + '</h3><form id="cdUf"><div class="cgrid2">' +
+      '<label class="field">' + cd('u_name') + '<input class="input" name="name" value="' + esc(u.name) + '" required></label><label class="field">' + cd('u_emp') + '<input class="input ltr" name="employee_id" value="' + esc(u.employeeId || '') + '"></label>' +
+      '<label class="field">' + cd('u_user') + '<input class="input ltr" name="username" value="' + esc(u.username) + '"' + (isNew ? '' : ' readonly') + ' autocapitalize="none" placeholder="f.alotaibi" required></label>' +
+      '<label class="field">' + cd('u_role') + '<select class="input" name="role">' + ['ops', 'insp', 'admin'].map(function (r) { return '<option value="' + r + '"' + (u.role === r ? ' selected' : '') + '>' + cd('role_' + r) + '</option>'; }).join('') + '</select></label>' +
+      '<label class="field">' + (isNew ? cd('u_pin_new') : cd('u_pin')) + '<input class="input ltr" name="pin" inputmode="numeric"' + (isNew ? ' required' : '') + '></label><label class="copt"><input type="checkbox" name="active"' + (u.active ? ' checked' : '') + '> ' + cd('u_isact') + '</label></div>' +
+      '<div class="mrow"><button type="button" class="btn" data-x>' + cd('cancel') + '</button><button type="submit" class="btn primary">' + cd('save') + '</button></div></form>',
+    function (ov) {
+      var f = ov.querySelector('#cdUf');
+      f.onsubmit = function (e) {
+        e.preventDefault();
+        var d = { isNew: isNew, username: f.username.value.trim().toLowerCase(), name: f.name.value.trim(), employee_id: cdDigits(f.employee_id.value.trim()), role: f.role.value, pin: cdDigits(f.pin.value.trim()), active: f.active.checked };
+        cdRun(f.querySelector('[type=submit]'), function () { return capi('saveUser', { user: d }).then(function (list) { st.cdc.users = list; cdModalClose(); cdDraw(); toast(cd('u_saved') + (d.pin ? ' — ' + d.username + ' · ' + d.pin : '')); }); });
+      };
+    });
+  }
+  function cdTgLink(u, btn) {
+    cdRun(btn, function () { return capi('tgLink', { username: u.username }).then(function (d) {
+      cdModal('<h3>' + cd('u_tl_t') + esc(u.name) + '</h3><p class="muted">' + esc(cd('u_tl_s', { h: d.hours })) + '</p><textarea class="input ltr" id="cdWa" readonly rows="2">' + esc(d.url) + '</textarea>' +
+        '<div class="mrow"><button type="button" class="btn" data-x>' + cd('done') + '</button><a class="btn" href="' + esc(d.url) + '" target="_blank" rel="noopener">Telegram</a><button type="button" class="btn primary" id="cdCp">' + cd('u_copy') + '</button></div>',
+      function (ov) { ov.querySelector('#cdCp').onclick = function () { cdCopy(ov.querySelector('#cdWa')); }; });
+    }); });
+  }
+
+  /* ================= الربط ================= */
+  function cdBind(b) {
+    var C = st.cdc;
+    b.querySelectorAll('[data-cf]').forEach(function (x) { x.onclick = function () { C.filter = x.getAttribute('data-cf'); cdDraw(); }; });
+    var q = b.querySelector('#cdQ'); if (q) q.oninput = function () { var p = q.selectionStart; C.bq = q.value; cdDraw(); var n = document.getElementById('cdQ'); if (n) { n.focus(); n.setSelectionRange(p, p); } };
+    b.querySelectorAll('[data-cact]').forEach(function (x) { x.onclick = function () { cdAct(x.getAttribute('data-cid'), x.getAttribute('data-cact'), x); }; });
+    b.querySelectorAll('[data-ccase]').forEach(function (x) { x.onclick = function () { cdOpenCase(x.getAttribute('data-ccase')); }; });
+    b.querySelectorAll('[data-cno]').forEach(function (x) { x.onclick = function () { cdCaseByNo(x.getAttribute('data-cno'), x.getAttribute('data-cdate')); }; });
+    b.querySelectorAll('[data-cgo]').forEach(function (x) { x.onclick = function () { var btn = document.querySelector('[data-ctab="' + x.getAttribute('data-cgo') + '"]'); if (btn) btn.click(); }; });
+    b.querySelectorAll('[data-csort]').forEach(function (th) { th.onclick = function () { var k = th.getAttribute('data-csort'); C.sort = { k: k, d: C.sort.k === k ? -C.sort.d : -1 }; cdDraw(); }; });
+    var lq = b.querySelector('#cdLq'); if (lq) lq.oninput = function () { var p = lq.selectionStart; C.q = lq.value; cdDraw(); var n = document.getElementById('cdLq'); if (n) { n.focus(); n.setSelectionRange(p, p); } };
+    var lx = b.querySelector('#cdLx'); if (lx) lx.onclick = function () { cdXlsx('log'); };
+    var ex = b.querySelector('#cdEmpX'); if (ex) ex.onclick = function () { cdXlsx('insp'); };
+    var dy = b.querySelector('#cdDay'); if (dy) dy.onchange = function () { if (dy.value) { C.day = dy.value; C.dayData = null; cdDraw(); } };
+    var pr = b.querySelector('#cdPrint'); if (pr) pr.onclick = function () { window.print(); };
+    var ua = b.querySelector('#cdUAdd'); if (ua) ua.onclick = function () { cdUserBox(null); };
+    b.querySelectorAll('[data-ued]').forEach(function (x) { x.onclick = function () { cdUserBox(C.users.filter(function (u) { return u.username === x.getAttribute('data-ued'); })[0]); }; });
+    b.querySelectorAll('[data-utl]').forEach(function (x) { x.onclick = function () { cdTgLink(C.users.filter(function (u) { return u.username === x.getAttribute('data-utl'); })[0], x); }; });
+    var pa = b.querySelector('#cdPaste'), frm = b.querySelector('#cdFrm');
+    if (pa && frm) {
+      var fill = function (d) { var n = 0; CD_FIELDS.forEach(function (f) { if (d[f[0]]) { frm.elements[f[0]].value = d[f[0]]; n++; } }); var m = document.getElementById('cdPmsg'); m.textContent = n ? cd('n_read', { n: n }) : cd('n_noread'); m.className = n ? 'tok' : 'tbad'; };
+      b.querySelector('#cdParse').onclick = function () { fill(cdParse(pa.value)); };
+      pa.addEventListener('paste', function () { setTimeout(function () { fill(cdParse(pa.value)); }, 30); });
+      frm.onsubmit = function (e) {
+        e.preventDefault(); var d = {}; CD_FIELDS.forEach(function (f) { d[f[0]] = frm.elements[f[0]].value.trim(); });
+        d.driverPhone = cdDigits(d.driverPhone).replace(/\D/g, '').replace(/^(966|0)/, '');
+        cdRun(frm.querySelector('[type=submit]'), function () { return capi('create', { 'case': d }).then(function (c) { cdUpsert(c); C.filter = 'open'; C.tab = 'board'; ls.set('mbco_cdc_tab', 'board'); cdTabBar(); cdDraw(); cdNotify(cdWaNew(c), c.caseNo + ' · ' + cd('nw')); }); });
+      };
+    }
+  }
+
   function loadSection(key) {
     var main = document.getElementById('main');
     var s = st.sec[key] || { from: '', to: '', q: '' };
@@ -2380,6 +3272,13 @@
         bindModeSwitch(key);
         if (st.user.role === 'Officer') { document.getElementById('ctlWrap').innerHTML = '<div class="ctlmsg"><p>' + esc(t('ctl_role')) + '</p></div>'; return; }
         renderCar(document.getElementById('ctlWrap'), false);
+        return;
+      }
+      if (key === 'cdc') {
+        main.innerHTML = title + '<div class="ctlnative" id="ctlWrap"></div>';
+        bindModeSwitch(key);
+        if (st.user.role === 'Officer') { document.getElementById('ctlWrap').innerHTML = '<div class="ctlmsg"><p>' + esc(t('ctl_role')) + '</p></div>'; return; }
+        renderCdc(document.getElementById('ctlWrap'), false);
         return;
       }
       if (key === 'ins') {

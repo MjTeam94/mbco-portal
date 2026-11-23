@@ -321,7 +321,108 @@ window.MBCO_DEMO = (function () {
     return { from: from, to: to, today: T, generated: T + ' ' + new Date().toTimeString().slice(0, 5), rdy: rdy, ins: ins, vio: vio, cov: cov, items: items, kpi: kpi, emps: [], shifts: [], dict: {}, systems: [] };
   }
 
+  /* بلاغات العمليات (v2.2): لوحة الـ Hub (cdcDash) + محاكاة واجهة CDC (board/step/close…) بنفس شكل الردود */
+  var CDCX = (function () {
+    var seed = 11, rnd = function () { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }, pick = function (a) { return a[Math.floor(rnd() * a.length)]; };
+    var INSP = [['sami', 'سامي الهوساوي', '10090'], ['emad', 'عماد برناوي', '10675'], ['sulaiman', 'سليمان الحازمي', '10171'], ['saadi', 'سعدي المالكي', '12272'], ['khaled', 'خالد العتيبي', '10101'], ['faisal', 'فيصل الغامدي', '10102']];
+    var ST = ['المروة', 'قطار الحرمين', 'جبل الكعبة', 'التنعيم', 'الأحوال المدنية (100)', 'شارع الحج (130)', 'العزيزية'], RT = ['1', '2', '3', '4', '5', '6', '7A', '7B', '8', '9', '10', '11', '12'];
+    var OPS = ['أحمد (CDC)', 'ناصر', 'محمد'], outs = ['offload', 'fine', 'valid', 'bought', 'left', 'false'];
+    var cases = [], nid = 1, no = 1500, now = Date.now();
+    var mk = function (minsAgo, status) {
+      var t0 = now - minsAgo * 60000, ins = pick(INSP), c = { id: nid++, caseNo: 'T-' + (no++), status: 'new', bus: (rnd() < .5 ? 'MA' : 'MS') + (1000 + Math.floor(rnd() * 80)), route: pick(RT), dest: pick(ST), type: 'ركاب بدون تذاكر',
+        driverId: String(11000 + Math.floor(rnd() * 900)), driverName: pick(['Amir Khan', 'Saleem Ali', 'Rashid Noor']), driverPhone: '5' + Math.floor(10000000 + rnd() * 89999999), opsName: pick(OPS), opsUser: 'ops1',
+        source: rnd() < .55 ? 'CDC app' : 'web', stationUrl: 'https://maps.google.com/', stationName: '', times: { requested: t0 }, outcomes: [], inspector: null, photos: [], transfers: [], passengers: 1 };
+      c.stationName = c.dest;
+      var flow = ['accepted', 'contacted', 'enroute', 'arrived', 'closed'], stop = flow.indexOf(status), t = t0;
+      if (status === 'closed') stop = 4;
+      for (var i = 0; i <= stop && stop >= 0; i++) { t += (2 + Math.floor(rnd() * (i === 2 ? 15 : 6))) * 60000; c.times[flow[i]] = Math.min(t, now - 30000); if (i === 0) c.inspector = { username: ins[0], name: ins[1], id: ins[2] }; }
+      c.status = stop >= 0 ? flow[stop] : 'new';
+      if (c.status === 'closed') { c.outcomes = [pick(outs)]; if (c.outcomes[0] === 'fine') c.violationNo = String(880000 + Math.floor(rnd() * 9999)); c.notes = 'تم التعامل مع الحالة'; if (rnd() < .2) { c.remote = true; delete c.times.enroute; delete c.times.arrived; } }
+      cases.push(c); return c;
+    };
+    mk(3, 'new'); mk(1, 'new'); mk(14, 'accepted'); mk(22, 'contacted'); mk(31, 'enroute'); var a = mk(40, 'arrived'); a.status = 'patrol_called'; a.times.patrol_called = now - 6 * 60000;
+    for (var k = 0; k < 9; k++) mk(60 + k * 45, 'closed');
+    var me = { username: 'majed', name: 'ماجد', role: 'admin' };
+    var users = [{ username: 'majed', name: 'ماجد', employeeId: '10190', role: 'admin', active: true, telegram: '@majed', lastLogin: now - 3600e3 },
+      { username: 'ops1', name: 'أحمد', employeeId: '20001', role: 'ops', active: true, lastLogin: now - 7200e3 }, { username: 'newguy', name: 'موظف جديد', employeeId: '', role: 'pending', active: false }]
+      .concat(INSP.map(function (x) { return { username: x[0], name: x[1], employeeId: x[2], role: 'insp', active: true, telegram: '@' + x[0], lastLogin: now - rnd() * 86400e3 }; }));
+    var get = function (id) { return cases.filter(function (c) { return String(c.id) === String(id); })[0]; };
+    var ok = function (d) { return Promise.resolve(JSON.parse(JSON.stringify(d))); };
+    var bad = function (m) { return Promise.reject(new Error(m)); };
+    return function (b) {
+      var c = b.id !== undefined ? get(b.id) : null, t = Date.now();
+      switch (b.action) {
+        case 'board': return ok({ cases: cases, tg: false });
+        case 'day': return ok({ date: b.date, cases: cases.filter(function (x) { var d = new Date(x.times.requested); return d.toISOString().slice(0, 10) === b.date || true; }) });
+        case 'getCase': return c ? ok(c) : bad('not found');
+        case 'photo': return ok({ data: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="320" height="200"><rect width="320" height="200" fill="#E9DDF0"/><text x="160" y="105" font-size="22" text-anchor="middle" fill="#7B1E8F">🚌 bus photo</text></svg>') });
+        case 'step':
+          if (b.step === 'accepted') c.inspector = { username: me.username, name: me.name, id: '10190' };
+          c.status = b.step; c.times[b.step] = t; return ok(c);
+        case 'arrive': c.status = 'arrived'; c.times.arrived = t; (b.photos || []).forEach(function (p, i) { c.photos.push({ id: 'p' + c.id + i, name: 'arrival_' + (i + 1) + '.jpg' }); }); return ok(c);
+        case 'close': c.status = 'closed'; c.times.closed = t; c.outcomes = b.outcomes; c.remote = !!b.remote; c.violationNo = b.violationNo; c.passengers = b.passengers; c.notes = b.notes; return ok(c);
+        case 'closeUnattended': c.status = 'closed'; c.times.closed = t; c.outcomes = ['not_taken']; c.inspector = { username: me.username, name: me.name }; return ok(c);
+        case 'closeUnreachable': c.status = 'closed'; c.times.closed = t; c.outcomes = ['unreachable']; return ok(c);
+        case 'cancel': c.status = 'cancelled'; c.cancelReason = b.reason; c.times.closed = t; return ok(c);
+        case 'policeNo': c.policeNo = (String(b.text).match(/\(([^)]+)\)/) || [0, b.text])[1]; return ok(c);
+        case 'inspectors': return ok(INSP.map(function (x) { return { username: x[0], name: x[1], employeeId: x[2] }; }));
+        case 'transfer':
+          if (b.direct) { var x = INSP.filter(function (i) { return i[0] === b.to; })[0]; c.inspector = { username: x[0], name: x[1], id: x[2] }; c.transfers.push('تعيين مباشر إلى ' + x[1]); }
+          else c.transferPending = { to: b.to, toName: b.to ? (INSP.filter(function (i) { return i[0] === b.to; })[0] || [])[1] : '', fromName: me.name };
+          return ok(c);
+        case 'transferAccept': c.inspector = { username: me.username, name: me.name }; delete c.transferPending; return ok(c);
+        case 'transferDecline': case 'transferCancel': delete c.transferPending; return ok(c);
+        case 'create': var n = mk(0, 'new'); Object.keys(b['case']).forEach(function (k) { if (b['case'][k]) n[k] = b['case'][k]; }); n.source = 'web'; return ok(n);
+        case 'users': return ok(users);
+        case 'saveUser': var u = users.filter(function (x) { return x.username === b.user.username; })[0]; if (!u) { u = { username: b.user.username }; users.push(u); }
+          u.name = b.user.name; u.employeeId = b.user.employee_id; u.role = b.user.role; u.active = b.user.active; return ok(users);
+        case 'tgLink': return ok({ url: 'https://t.me/CDC_tickets_bot?start=link_demo', hours: 6 });
+      }
+      return bad('unknown action');
+    };
+  })();
+  function cdcDashDemo(from, to) {
+    var T = opDay(); to = to || T; from = from || to;
+    var seed = 5, rnd = function () { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }, pick = function (a) { return a[Math.floor(rnd() * a.length)]; };
+    var INSP = [['10090', 'سامي الهوساوي'], ['10675', 'عماد برناوي'], ['10171', 'سليمان الحازمي'], ['12272', 'سعدي المالكي'], ['10101', 'خالد العتيبي'], ['10102', 'فيصل الغامدي']];
+    var ST = ['المروة', 'قطار الحرمين', 'جبل الكعبة', 'التنعيم', 'الأحوال المدنية (100)', 'شارع الحج (130)', 'العزيزية'], RT = ['1', '2', '3', '4', '5', '6', '7A', '7B', '8', '9', '10', '11', '12'];
+    var OW = [['offload', 30], ['fine', 18], ['valid', 14], ['bought', 12], ['left', 12], ['false', 5], ['unreachable', 4], ['not_taken', 3], ['left_patrol', 1], ['nocoop', 1]];
+    var wpick = function () { var s = 0, r = rnd() * 100; for (var i = 0; i < OW.length; i++) { s += OW[i][1]; if (r < s) return OW[i][0]; } return 'offload'; };
+    var pad = function (n) { return ('0' + n).slice(-2); }, plus = function (ts, m) { var x = new Date(ts.replace(' ', 'T') + ':00Z'); return new Date(x.getTime() + m * 60000).toISOString().slice(0, 16).replace('T', ' '); };
+    var rows = [], n = 1200;
+    for (var d = from; d <= to; d = add(d, 1)) {
+      var cnt = d === T ? 9 : 14 + Math.floor(rnd() * 8);
+      for (var i = 0; i < cnt; i++) {
+        var h = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 0][Math.floor(Math.pow(rnd(), 0.8) * 18)], ins = pick(INSP), time = (h < 7 ? add(d, 1) : d) + ' ' + pad(h) + ':' + pad(Math.floor(rnd() * 60));
+        var key = wpick(), take = key === 'not_taken' ? null : 2 + Math.floor(rnd() * rnd() * 22), remote = ['valid', 'left', 'false', 'bought'].indexOf(key) >= 0 && rnd() < .4, arr = remote || take === null ? null : take + 6 + Math.floor(rnd() * 28);
+        var open = d === T && i >= cnt - 3, canc = rnd() < .03, pc = key === 'left_patrol' || key === 'nocoop' || (key === 'fine' && rnd() < .2);
+        var close = take === null ? 25 : (arr || take) + 4 + Math.floor(rnd() * 15);
+        rows.push({ no: 'T-' + (n++), date: d, time: time, shift: h >= 15 ? '2' : h >= 7 ? '1' : '0', status: canc ? 'cancelled' : open ? pick(['new', 'accepted', 'enroute']) : 'closed', statusAr: '',
+          keys: open || canc ? [] : [key], route: pick(RT), station: pick(ST), bus: (rnd() < .5 ? 'MA' : 'MS') + (1000 + Math.floor(rnd() * 60)), dest: '',
+          emp: take === null ? '' : ins[0], empName: take === null ? '' : ins[1], taken: take === null ? '' : plus(time, take), contacted: '', enroute: '', arrived: arr === null ? '' : plus(time, arr),
+          pCalled: pc ? plus(time, (arr || 10) + 2) : '', pArrived: pc && key !== 'left_patrol' ? plus(time, (arr || 10) + 14 + Math.floor(rnd() * 15)) : '', closed: open ? '' : plus(time, close),
+          fine: key === 'fine' && !open ? String(880000 + Math.floor(rnd() * 9999)) : '', police: '', remote: remote, pax: 1 + (rnd() < .2 ? 1 : 0), ops: pick(['أحمد', 'ناصر', 'محمد']), driver: '', source: '', src: rnd() < .55 ? 'app' : rnd() < .6 ? 'tg' : 'web',
+          notes: '', cancelReason: canc ? 'بلاغ مكرر' : '', transferred: rnd() < .05, cancelled: canc, mTake: open && take > 15 ? null : take, mArrive: open ? null : arr, mClose: open ? null : close, mPatrol: pc && key !== 'left_patrol' ? 12 + Math.floor(rnd() * 15) : null });
+        if (open) { var r = rows[rows.length - 1]; if (r.status === 'new') { r.emp = ''; r.empName = ''; r.mTake = null; } }
+      }
+    }
+    rows.sort(function (a, b) { return String(b.time).localeCompare(String(a.time)); });
+    var live = rows.filter(function (r) { return !r.cancelled; }), m = {};
+    live.forEach(function (c) {
+      if (!c.emp) return; var p = m[c.emp] || (m[c.emp] = { id: c.emp, name: c.empName, n: 0, closed: 0, open: 0, remote: 0, fines: 0, notTaken: 0, unreachable: 0, pax: 0, take: { n: 0, avg: null, within: 0, rate: null, s: 0 }, arrive: { n: 0, avg: null, within: 0, rate: null, s: 0 }, close: { n: 0, avg: null, s: 0 }, patrol: { n: 0, avg: null }, outcomes: {} });
+      p.n++; if (c.status === 'closed') { p.closed++; p.pax += c.pax; } else p.open++; if (c.remote) p.remote++; if (c.keys[0] === 'fine') p.fines++; if (c.keys[0] === 'unreachable') p.unreachable++;
+      c.keys.forEach(function (k) { p.outcomes[k] = (p.outcomes[k] || 0) + 1; });
+      if (c.mTake !== null) { p.take.n++; p.take.s += c.mTake; if (c.mTake <= 10) p.take.within++; } if (c.mArrive !== null) { p.arrive.n++; p.arrive.s += c.mArrive; if (c.mArrive <= 30) p.arrive.within++; }
+      if (c.mClose !== null) { p.close.n++; p.close.s += c.mClose; } if (c.pCalled) p.patrol.n++;
+    });
+    var kpi = Object.keys(m).map(function (k) { var p = m[k]; ['take', 'arrive', 'close'].forEach(function (g) { p[g].avg = p[g].n ? Math.round(p[g].s / p[g].n) : null; delete p[g].s; });
+      p.take.rate = p.take.n ? Math.round(p.take.within / p.take.n * 100) : null; p.arrive.rate = p.arrive.n ? Math.round(p.arrive.within / p.arrive.n * 100) : null; return p; }).sort(function (a, b) { return b.n - a.n; });
+    return { from: from, to: to, today: T, generated: T + ' ' + new Date().toTimeString().slice(0, 5), rows: rows, kpi: kpi, targets: { takeMin: 10, arriveMin: 30, take: 90, arrive: 90 },
+      outcomes: {}, fields: ['pCalled', 'pArrived', 'remote', 'pax', 'ops'], dict: {}, systems: [] };
+  }
+
   return {
+    cdc: function (b) { return CDCX(b); },
     handle: function (p) {
       if (p.action === 'login') return p.emp_id === '10190' && p.pin === '1234' ? ok({ token: 'demo', user: USER, mustChange: false, sections: SECTIONS }) : fail('badpin');
       if (!p.token) return fail('auth');
@@ -340,6 +441,7 @@ window.MBCO_DEMO = (function () {
         case 'carDash': return ok({ data: carDemo(p.from, p.to), canAct: true, me: { id: '10190', name: USER.name } });
         case 'carAct': return ok({ result: carDemoAct(p) });
         case 'insDash': return ok({ data: insDemo(p.from, p.to) });
+        case 'cdcDash': return ok({ data: cdcDashDemo(p.from, p.to) });
         case 'rosterGet': return ok(rosDemoGet(p));
         case 'rosterSave': return ok(rosDemoSave(p));
         case 'rosterUndo': { var D0 = rosDemoInit(); if (D0.backup) { D0.codes = JSON.parse(D0.backup); D0.backup = null; } return ok({}); }
