@@ -425,7 +425,7 @@ window.MBCO_DEMO = (function () {
   function kpiDemo(from, to, emp) {
     kpnInit();
     var T = opDay(); to = to || T; from = from || to.slice(0, 8) + '01';
-    var S = { weights: { ENF: { att: 25, punc: 15, prod: 30, cdc: 20, notes: 10 }, STN: { att: 30, punc: 20, prod: 30, notes: 20 }, SUP: { att: 30, punc: 20, rate: 50 }, ADM: { att: 30, punc: 20, rate: 50 } }, target: 25, vioEq: 5, cdcMin: 30, bands: [90, 80, 70], notesOn: true, notesFrom: T.slice(0, 8) + '01' };
+    var S = { weights: { ENF: { att: 25, punc: 15, prod: 30, cdc: 20, notes: 10 }, STN: { att: 30, punc: 20, prod: 30, notes: 20 }, SUP: { att: 30, punc: 20, rate: 50 }, ADM: { att: 30, punc: 20, rate: 50 } }, target: 25, vioEq: 5, cdcMin: 30, bands: [90, 80, 70], sickW: 0.5, notesOn: true, notesFrom: T.slice(0, 8) + '01' };
     var P = [['10171', 'سليمان الحازمي', 'Sulaiman A. Alhazmi', 'ENF', 'قائد فريق الضبط', 'Enforcement Team Leader', '2021-09-07'], ['10090', 'سامي الهوساوي', 'Sami A. Alhawsawi', 'SUP', 'مشرف وردية', 'Shift Supervisor', '2021-01-06', 'ENF'],
       ['10675', 'عماد برناوي', 'Emad A. Barnawi', 'ENF', 'مفتش تذاكر', 'Ticket Inspector', '2022-03-14'], ['12272', 'سعدي المالكي', 'Sadi S. Almalki', 'ENF', 'مفتش تذاكر', 'Ticket Inspector', '2024-02-01'],
       ['10101', 'عبدالله عبدالمطلب', 'Abdullah Z. Abdulmuttalib', 'ENF', 'مفتش تذاكر', 'Ticket Inspector', '2021-01-06'], ['11686', 'عمر رمضان', 'Omar A. Ramadan', 'ENF', 'مفتش تذاكر', 'Ticket Inspector', '2023-05-20'],
@@ -469,6 +469,41 @@ window.MBCO_DEMO = (function () {
       }
     }
     return out;
+  }
+  /* 2.5: سجل الحضور التجريبي */
+  var ATL = null, ATLE = { '10090': ['سامي الهوساوي', 'Sami Alhawsawi', 'ENF'], '10101': ['عبدالله عبدالمطلب', 'Abdullah Abdulmuttalib', 'ENF'], '10171': ['سليمان الحازمي', 'Sulaiman Alhazmi', 'ENF'],
+    '10664': ['نواف فلمبان', 'Nawaf Filmban', 'ENF'], '11707': ['يوسف الزهراني', 'Yousef Alzahrani', 'ENF'], '12309': ['رامي مجلد', 'Rami Mjlid', 'STN'], '12402': ['نواف الجهني', 'Nawaf Aljohani', 'STN'],
+    '12293': ['متعب الحربي', 'Muteb Alharbi', 'STN'], '10131': ['مخلد العتيبي', 'Mukhlid Alotaibi', 'STN'], '11294': ['مهند الأمير', 'Muhannad Alamir', 'ADM'], '10660': ['عبدالله هوساوي', 'Abdullah Hawsawi', 'ENF'] };
+  function atlInit() {
+    if (ATL) return ATL; ATL = []; var T = opDay(), ids = Object.keys(ATLE), seed = 7, rnd = function () { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }, n = 0;
+    var mk = function (d, emp, st, lt, min, note, src, rev) { n++; ATL.push(['ATT-' + d.replace(/-/g, '') + '-' + n, d, emp, ATLE[emp][0], st, lt || '', min || '', '', note || '', src || 'أرشيف', rev || '', rev === 'مؤكد' ? 'ماجد الهاشمي' : '', '', '', '', '', '']); };
+    for (var i = 1; i <= 300; i++) {
+      var d = add(T, -i); if (d < T.slice(0, 4) + '-01-01') break;
+      ids.forEach(function (e) {
+        var x = rnd();
+        if (x < 0.012) mk(d, e, 'غياب');
+        else if (x < 0.04) mk(d, e, 'تأخير', '', [5, 8, 12, 20, 35][Math.floor(rnd() * 5)], 'IN ' + [5, 8, 12, 20, 35][Math.floor(rnd() * 5)] + ' min');
+        else if (x < 0.055) mk(d, e, 'استئذان', '', '', 'مستأذن من الساعة 11:00 إلى 13:00');
+        else if (x < 0.058) mk(d, e, 'انسحاب');
+        else if (x < 0.1) mk(d, e, 'إجازة', ['سنوية', 'سنوية', 'مرضية', 'يوم بديل'][Math.floor(rnd() * 4)]);
+      });
+    }
+    var p = function (d, e, sh) { n++; ATL.push(['ATT-P-' + n, d, e, ATLE[e][0], 'غياب', '', '', sh, '', 'تحضير', 'بانتظار المراجعة', '', '', '', '', sh, 'AB']); };
+    p(T, '10101', '1'); p(add(T, -1), '12309', '2'); p(add(T, -1), '10664', '3');
+    return ATL;
+  }
+  function atlDemo(from, to) {
+    var L = atlInit(), T = opDay(); from = from || T.slice(0, 8) + '01'; to = to || T;
+    var emps = {}; Object.keys(ATLE).forEach(function (k) { emps[k] = { ar: ATLE[k][0], en: ATLE[k][1], team: ATLE[k][2], active: true }; });
+    return { from: from, to: to, today: T, rows: L.filter(function (r) { return (r[1] >= from && r[1] <= to) || r[10] === 'بانتظار المراجعة'; }), emps: emps, canReview: true,
+      leaveTypes: ['سنوية', 'مرضية', 'يوم بديل', 'وفاة'], codes: { 'غياب': 'AB', 'سنوية': 'AL', 'مرضية': 'SL', 'يوم بديل': 'AD', 'وفاة': 'DV' }, sync: { added: 0 } };
+  }
+  function atlReviewDemo(p) {
+    var r = atlInit().filter(function (x) { return x[0] === p.id; })[0]; if (!r) return { ok: false, error: 'not found' };
+    if (p.act === 'confirm') { r[10] = 'مؤكد'; r[11] = USER.name; r[13] = p.note || ''; return { ok: true }; }
+    r[14] = r[14] || r[4] + (r[5] ? ' – ' + r[5] : ''); r[10] = 'معدّل'; r[11] = USER.name; r[13] = p.note || '';
+    if (p.status === 'حاضر') r[4] = 'ملغى'; else { r[4] = p.status; r[5] = p.status === 'إجازة' ? p.leave_type : ''; r[6] = p.status === 'تأخير' ? p.minutes : ''; }
+    return { ok: true, roster: 'updated' };
   }
   var KPN = [];
   function kpnInit() {
@@ -523,6 +558,9 @@ window.MBCO_DEMO = (function () {
         case 'kpiNoteAdd': { kpnInit(); var tg = kpDemoPeople().filter(function (x) { return x.id === p.emp; })[0] || {}; KPN.push({ id: 'NT-' + (KPN.length + 1), created: opDay() + ' ' + new Date().toTimeString().slice(0, 5), d: p.date, emp: p.emp, name: tg.name, kind: p.kind, cat: p.cat, text: p.text, by: '10190', byName: USER.name, src: 'portal', status: 'معتمدة', decBy: USER.name, decNote: '' }); return ok({ note: { status: 'معتمدة' } }); }
         case 'kpiNoteDecide': { kpnInit(); var n0 = KPN.filter(function (x) { return x.id === p.id; })[0]; if (n0) { n0.status = p.act === 'approve' ? 'معتمدة' : p.act === 'reject' ? 'مرفوضة' : 'بانتظار الاعتماد'; n0.decBy = p.act === 'reopen' ? '' : USER.name; n0.decNote = p.note || ''; } return ok({}); }
         case 'kpiRates': return ok({ data: kpiRatesDemo(p.month) });
+        case 'attLog': return ok({ data: atlDemo(p.from, p.to) });
+        case 'attReview': return ok(atlReviewDemo(p));
+        case 'attAdd': { atlInit(); var E0 = ATLE[p.emp] || ['', '', '']; ATL.push(['ATT-M-' + Date.now(), p.date, p.emp, E0[0], p.status, p.leave_type || '', p.minutes || '', '', p.note || '', 'البوابة', 'مؤكد', USER.name, '', '', '', '', '']); return ok({ id: 'x' }); }
         case 'kpiRateSave': { var sc0 = Math.round(p.items.reduce(function (a, v) { return a + v; }, 0) / p.items.length / 5 * 1000) / 10; (KPR[p.month] = KPR[p.month] || {})[p.emp] = { items: p.items, score: sc0, comment: p.comment, by: USER.name, at: opDay() + ' ' + new Date().toTimeString().slice(0, 5) }; return ok({ score: sc0 }); }
         case 'rosterGet': return ok(rosDemoGet(p));
         case 'rosterSave': return ok(rosDemoSave(p));

@@ -3276,12 +3276,12 @@
       id: 'الرقم الوظيفي', jtitle: 'المسمى الوظيفي', team: 'القسم', hire: 'تاريخ التعيين', rankOf: 'الترتيب في الفريق', of: 'من', teamAvg: 'متوسط الفريق',
       byMonth: 'الأداء الكلي حسب الشهر', byDay: 'الأداء الكلي حسب اليوم', breakdown: 'توزيع الدرجة على المعايير', facts: 'الأرقام', notesT: 'ملاحظات المشرفين المعتمدة', notesSoon: 'تتفعّل مع رفع الملاحظات من البوت واعتمادها من الإدارة.', notesNone: 'لا توجد ملاحظات معتمدة في الفترة.', notesLater: 'تتفعّل لاحقاً عبر البوت.',
       workDays: 'أيام العمل', insp: 'فحوصات', stnI: 'فحوصات المحطات', enfI: 'فحوصات التذاكر', vio: 'مخالفات', fines: 'قيمة المخالفات', ops: 'نقاط الإنتاجية', perDay: 'في اليوم', target: 'الهدف',
-      cdcN: 'بلاغات CDC', arrOk: 'وصول بالهدف', arrAvg: 'متوسط الوصول', present: 'حضور', absent: 'غياب', late: 'تأخير/استئذان', exTitle: 'خارج التقييم: أرقام تحتاج مراجعة', exUnk: 'أرقام مو موجودة في قائمة الموظفين', exUnkH: 'غالباً رقم مكتوب غلط، أو يوزر تجريبي، أو حساب بدون رقم وظيفي في نظام البلاغات. صحّح الرقم في سجل النظام أو في KpiHistory وتنضاف للموظف الصحيح.', exAdm: 'الفريق الإداري', exAdmH: 'مسجّلين ADM لكن ما ينطبق عليهم التقييم.', leave: 'أيام الإجازة', lvEx: 'مستبعدة من التقييم', sar: 'ريال', min: 'د', day: 'يوم',
+      cdcN: 'بلاغات CDC', arrOk: 'وصول بالهدف', arrAvg: 'متوسط الوصول', present: 'حضور', absent: 'غياب', late: 'تأخير/استئذان', exTitle: 'خارج التقييم: أرقام تحتاج مراجعة', exUnk: 'أرقام مو موجودة في قائمة الموظفين', exUnkH: 'غالباً رقم مكتوب غلط، أو يوزر تجريبي، أو حساب بدون رقم وظيفي في نظام البلاغات. صحّح الرقم في سجل النظام أو في KpiHistory وتنضاف للموظف الصحيح.', exAdm: 'الفريق الإداري', exAdmH: 'مسجّلين ADM لكن ما ينطبق عليهم التقييم.', leave: 'أيام الإجازة', sickN: 'منها {n} عذر طبي (يأثر جزئياً)', lvEx: 'مستبعدة من التقييم', sar: 'ريال', min: 'د', day: 'يوم',
       bandA: 'ممتاز', bandB: 'جيد جداً', bandC: 'جيد', bandD: 'يحتاج تحسين', noData: 'لا توجد بيانات', w: 'الوزن',
-      formula: 'الإنتاجية = (الفحوصات {vio}+ المخالفات × {eq}) ÷ (أيام العمل × {t}) · CDC = الوصول خلال {m} د · أيام الإجازة المعتمدة مستبعدة · المعيار بدون بيانات يُستبعد ويتوزع وزنه.', formulaS: 'الإنتاجية = فحوصات المحطات ÷ (أيام العمل × {t}) · الحضور = حاضر ÷ (حاضر + غائب) · أيام الإجازة المعتمدة مستبعدة · المعيار بدون بيانات يُستبعد ويتوزع وزنه.', vioPart: '',
+      formula: 'الإنتاجية = (الفحوصات {vio}+ المخالفات × {eq}) ÷ (أيام العمل × {t}) · CDC = الوصول خلال {m} د · الإجازة مستبعدة إلا العذر الطبي: يحسب على الحضور بوزن {sw} · المعيار بدون بيانات يُستبعد ويتوزع وزنه.', formulaS: 'الإنتاجية = فحوصات المحطات ÷ (أيام العمل × {t}) · الحضور = حاضر ÷ (حاضر + غائب + العذر الطبي × {sw}) · الإجازة مستبعدة إلا العذر الطبي: يحسب على الحضور بوزن {sw} · المعيار بدون بيانات يُستبعد ويتوزع وزنه.', vioPart: '',
       gen: 'أُنشئ', by: 'أعدّه', period: 'الفترة', hist: 'يشمل السجل التاريخي', choose: 'اختر موظفاً من الترتيب', n: 'موظف', open: 'التقرير',
       SUP: 'المشرفين', SUP1: 'مشرف', ADM: 'الفريق الإداري', rate: 'تقييم المسؤول', tabRank: 'الترتيب', tabNotes: 'الملاحظات', tabRate: 'التقييم الشهري',
-      formulaA: 'الدرجة = الحضور ÷ (حاضر + غائب) + الانضباط + تقييم المسؤول المباشر (متوسط البنود ÷ 5) · أيام الإجازة المعتمدة مستبعدة · المعيار بدون بيانات يُستبعد ويتوزع وزنه.',
+      formulaA: 'الدرجة = الحضور + الانضباط + تقييم المسؤول المباشر (متوسط البنود ÷ 5) · الإجازة مستبعدة إلا العذر الطبي: يحسب على الحضور بوزن {sw} · المعيار بدون بيانات يُستبعد ويتوزع وزنه.',
       addNote: 'ملاحظة جديدة', minor: 'بسيطة', medium: 'متوسطة', major: 'جسيمة', praise: 'إشادة', kind: 'النوع', cat: 'التصنيف', text: 'الوصف', ndate: 'تاريخ الواقعة', nby: 'رفعها', nst: 'الحالة', save: 'حفظ', cancel: 'إلغاء',
       approve: 'اعتماد', reject: 'رفض', withdraw: 'سحب', reopen: 'إرجاع للانتظار', rejReason: 'سبب الرفض (اختياري)', stP: 'بانتظار الاعتماد', stA: 'معتمدة', stR: 'مرفوضة', stAll: 'الكل', noNotes: 'لا توجد ملاحظات في الفترة.',
       notesHow: 'ملاحظات المشرفين تنتظر اعتماد الإدارة، والمعتمدة بس تأثر على معيار «الملاحظات». الإشادة تعوّض الخصم.', notesOff: 'معيار الملاحظات مطفأ حالياً: الملاحظات تنحفظ لكن ما تأثر على الدرجة إلا بعد ضبط KPI_NOTES بتاريخ البداية في الإعدادات.', noteSaved: 'تم رفع الملاحظة', noteSavedA: 'تم حفظ الملاحظة واعتمادها',
@@ -3295,12 +3295,12 @@
       id: 'Employee ID', jtitle: 'Job title', team: 'Division', hire: 'Hiring date', rankOf: 'Team rank', of: 'of', teamAvg: 'Team average',
       byMonth: 'Overall KPI by month', byDay: 'Overall KPI by day', breakdown: 'KPI breakdown', facts: 'Key figures', notesT: 'Approved supervisor notes', notesSoon: 'Enabled once notes are raised via the bot and approved by management.', notesNone: 'No approved notes in this period.', notesLater: 'coming soon via the bot.',
       workDays: 'Work days', insp: 'Inspections', stnI: 'Station inspections', enfI: 'Ticket inspections', vio: 'Violations', fines: 'Fines value', ops: 'Productivity points', perDay: 'per day', target: 'Target',
-      cdcN: 'CDC cases', arrOk: 'Arrived on target', arrAvg: 'Avg. arrival', present: 'Present', absent: 'Absent', late: 'Late/exit', exTitle: 'Not scored: IDs to review', exUnk: 'IDs not in the employee list', exUnkH: 'Usually a mistyped ID, a test user, or a CDC account without an employee ID. Fix the ID in the source system or KpiHistory and it moves to the right employee.', exAdm: 'Admin team', exAdmH: 'Registered as ADM but not scored.', leave: 'Leave days', lvEx: 'excluded from the score', sar: 'SAR', min: 'min', day: 'days',
+      cdcN: 'CDC cases', arrOk: 'Arrived on target', arrAvg: 'Avg. arrival', present: 'Present', absent: 'Absent', late: 'Late/exit', exTitle: 'Not scored: IDs to review', exUnk: 'IDs not in the employee list', exUnkH: 'Usually a mistyped ID, a test user, or a CDC account without an employee ID. Fix the ID in the source system or KpiHistory and it moves to the right employee.', exAdm: 'Admin team', exAdmH: 'Registered as ADM but not scored.', leave: 'Leave days', sickN: '{n} medical (partial effect)', lvEx: 'excluded from the score', sar: 'SAR', min: 'min', day: 'days',
       bandA: 'Excellent', bandB: 'Very good', bandC: 'Good', bandD: 'Needs improvement', noData: 'No data', w: 'Weight',
-      formula: 'Productivity = (inspections {vio}+ violations × {eq}) ÷ (work days × {t}) · CDC = arrival within {m} min · approved leave days are excluded · criteria without data are excluded and their weight redistributed.', formulaS: 'Productivity = station inspections ÷ (work days × {t}) · Attendance = present ÷ (present + absent) · approved leave days are excluded · criteria without data are excluded and their weight redistributed.', vioPart: '',
+      formula: 'Productivity = (inspections {vio}+ violations × {eq}) ÷ (work days × {t}) · CDC = arrival within {m} min · leave is excluded except medical excuses, which count against attendance at weight {sw} · criteria without data are excluded and their weight redistributed.', formulaS: 'Productivity = station inspections ÷ (work days × {t}) · Attendance = present ÷ (present + absent + medical × {sw}) · leave is excluded except medical excuses, which count against attendance at weight {sw} · criteria without data are excluded and their weight redistributed.', vioPart: '',
       gen: 'Generated', by: 'Prepared by', period: 'Period', hist: 'includes historical records', choose: 'Pick an employee from the ranking', n: 'employees', open: 'Report',
       SUP: 'Supervisors', SUP1: 'Supervisor', ADM: 'Admin team', rate: 'Manager rating', tabRank: 'Ranking', tabNotes: 'Notes', tabRate: 'Monthly rating',
-      formulaA: 'Score = attendance + punctuality + direct manager rating (average of items ÷ 5) · approved leave days are excluded · criteria without data are excluded and their weight redistributed.',
+      formulaA: 'Score = attendance + punctuality + direct manager rating (average of items ÷ 5) · leave is excluded except medical excuses, which count against attendance at weight {sw} · criteria without data are excluded and their weight redistributed.',
       addNote: 'New note', minor: 'Minor', medium: 'Medium', major: 'Major', praise: 'Praise', kind: 'Type', cat: 'Category', text: 'Description', ndate: 'Incident date', nby: 'Raised by', nst: 'Status', save: 'Save', cancel: 'Cancel',
       approve: 'Approve', reject: 'Reject', withdraw: 'Withdraw', reopen: 'Back to pending', rejReason: 'Reason (optional)', stP: 'Pending', stA: 'Approved', stR: 'Rejected', stAll: 'All', noNotes: 'No notes in this period.',
       notesHow: 'Supervisor notes wait for management approval; only approved notes affect the Notes criterion. Praise offsets deductions.', notesOff: 'The Notes criterion is off: notes are saved but do not affect scores until KPI_NOTES is set to a start date in Settings.', noteSaved: 'Note submitted', noteSavedA: 'Note saved and approved',
@@ -3389,7 +3389,7 @@
           '<td class="num">' + r.raw.workDays + '</td><td class="num">' + (r.raw.perDay === null ? '—' : r.raw.perDay) + '</td><td class="num">' + (r.team === 'ENF' ? r.raw.vio : '—') + '</td><td class="num">' + (r.raw.arrAvg === null ? '—' : r.raw.arrAvg + ' ' + kp('min')) + '</td>' +
           '<td><button type="button" class="btn sm ghost">' + kp('open') + '</button></td></tr>';
       }).join('') : '<tr><td colspan="' + (KP_RCOLS.length + 1) + '" class="empty">' + t('no_rows') + '</td></tr>') +
-      '</tbody></table></div><p class="muted rmeta">' + esc(kp('formula', { eq: S.vioEq, t: S.target, m: S.cdcMin, vio: '' })) + (D.sources && D.sources.historyRows ? ' · ' + kp('hist') : '') + '</p>' + kpExcluded(D.excluded);
+      '</tbody></table></div><p class="muted rmeta">' + esc(kp('formula', { eq: S.vioEq, t: S.target, m: S.cdcMin, vio: '', sw: S.sickW === undefined ? 0.5 : S.sickW })) + (D.sources && D.sources.historyRows ? ' · ' + kp('hist') : '') + '</p>' + kpExcluded(D.excluded);
   }
   function kpExcluded(X) {
     if (!X || (!X.adm.length && !X.unknown.length)) return '';
@@ -3457,12 +3457,12 @@
     var facts = fact(kp('workDays'), R.workDays) + (isA ?
       (lr ? fact(kp('lastRate'), lr.score + '%', esc(lr.m + ' · ' + lr.by)) : fact(kp('rate'), '—', kp('notRated'))) +
       (R.present || R.absent ? fact(kp('present') + ' / ' + kp('absent'), R.present + ' / ' + R.absent, R.late ? kp('late') + ' ' + R.late : '') : '') +
-      (R.leave ? fact(kp('leave'), R.leave, kp('lvEx')) : '') : '') + (isA ? '' :
+      (R.leave ? fact(kp('leave'), R.leave, R.sick ? kp('sickN', { n: R.sick }) : kp('lvEx')) : '') : '') + (isA ? '' :
       (p.team === 'STN' ? fact(kp('stnI'), R.stn) : fact(kp('enfI'), R.enf) + fact(kp('vio'), R.vio, R.fines ? R.fines.toLocaleString('en-US') + ' ' + kp('sar') : '')) +
       fact(kp('ops') + ' / ' + kp('perDay'), R.perDay === null ? '—' : R.perDay, kp('target') + ' ' + S.target) +
       (p.team === 'ENF' ? fact(kp('cdcN'), R.cdc, R.arrN ? kp('arrOk') + ' ' + R.arrOk + '/' + R.arrN + ' · ' + kp('arrAvg') + ' ' + R.arrAvg + ' ' + kp('min') : '') : '') +
       (R.present || R.absent ? fact(kp('present') + ' / ' + kp('absent'), R.present + ' / ' + R.absent, R.late ? kp('late') + ' ' + R.late : '') : '') +
-      (R.leave ? fact(kp('leave'), R.leave, kp('lvEx')) : ''));
+      (R.leave ? fact(kp('leave'), R.leave, R.sick ? kp('sickN', { n: R.sick }) : kp('lvEx')) : ''));
     var nl = X.notes.slice(0, 2).map(function (n) { return '<span class="kpnk ' + esc(n.kind) + '">' + esc(kp(n.kind)) + '</span> <span class="num">' + esc(n.d.slice(5)) + '</span> ' + esc(n.cat); }).join(' · ');
     return pick + '<div class="kpwrap"><div class="kpsheet" id="kpSheet">' +
       '<div class="kphead"><div class="kplogo"><b>MBCO</b><span>Modern Bus Company Limited</span></div><div class="kpht"><h1>' + kp('title') + '</h1><p>' + kp('sub') + ' — ' + esc(kpTeamL(p)) + ' · ' + esc(kp('period')) + ' <span class="ltr">' + esc(period) + '</span></p></div><div class="kpyear' + ysCls + '">' + esc(ys) + '</div></div>' +
@@ -3478,7 +3478,7 @@
       '<div class="kpcard"><div class="kpct big"><i></i>' + kp('facts') + '</div><div class="kpfacts">' + facts + '</div>' +
       '<div class="kpnoteline"><b>' + kp('notesT') + (X.notes.length ? ' (<span class="num">' + X.notes.length + '</span>)' : '') + ':</b> ' + (X.notes.length ? nl + (X.notes.length > 2 ? ' …' : '') : kp('notesNone')) + '</div></div>' +
       '<div class="kpbanner"><img src="kpi-banner.jpg" alt=""></div></div>' +
-      '<div class="kpfoot"><span>' + esc(kp(isA ? 'formulaA' : p.team === 'STN' ? 'formulaS' : 'formula', { eq: S.vioEq, t: S.target, m: S.cdcMin, vio: '' })) + '</span><span>' + kp('gen') + ' <span class="ltr">' + esc(D.generated) + '</span> · ' + kp('by') + ': ' + esc(st.user.name || '') + '</span></div>' +
+      '<div class="kpfoot"><span>' + esc(kp(isA ? 'formulaA' : p.team === 'STN' ? 'formulaS' : 'formula', { eq: S.vioEq, t: S.target, m: S.cdcMin, vio: '', sw: R.sickW === undefined ? 0.5 : R.sickW })) + '</span><span>' + kp('gen') + ' <span class="ltr">' + esc(D.generated) + '</span> · ' + kp('by') + ': ' + esc(st.user.name || '') + '</span></div>' +
       '</div></div>';
   }
   /* التقرير بعرض ثابت (A4 بالعرض = 1123 بكسل) ويتصغّر على الشاشة الصغيرة */
@@ -3518,9 +3518,216 @@
     var rows = kpRows();
     var a = document.createElement('a');
     a.href = URL.createObjectURL(X.write([{ name: 'KPI', rtl: st.lang !== 'en', freeze: 'D4', cols: cols.map(function (c, i) { return i === 2 ? 26 : 11; }), merges: ['A1:' + X.colName(cols.length - 1) + '1'],
-      rows: [[{ v: 'MBCO · ' + kp('title') + ' · ' + K.from + ' → ' + K.to, s: { b: true, sz: 14, color: '#7B1E8F' } }], [kp('formula', { eq: K.d.settings.vioEq, t: K.d.settings.target, m: K.d.settings.cdcMin, vio: '' })], cols.map(function (c) { return { v: c[0], s: head }; })]
+      rows: [[{ v: 'MBCO · ' + kp('title') + ' · ' + K.from + ' → ' + K.to, s: { b: true, sz: 14, color: '#7B1E8F' } }], [kp('formula', { eq: K.d.settings.vioEq, t: K.d.settings.target, m: K.d.settings.cdcMin, vio: '', sw: K.d.settings.sickW === undefined ? 0.5 : K.d.settings.sickW })], cols.map(function (c) { return { v: c[0], s: head }; })]
         .concat(rows.map(function (r, i) { return cols.map(function (c) { var v = c[1](r, i); return { v: v === null || v === undefined ? '' : v, s: cell }; }); })) }]));
     a.download = 'MBCO_KPI_' + K.from + '_' + K.to + '.xlsx'; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  }
+  /* =====================================================================
+   * 2.5: سجل الحضور (قسم الحضور والغياب ← تبويب «السجل»)
+   * ===================================================================== */
+  var AT = {
+    ar: { month: 'هذا الشهر', prev: 'الشهر السابق', year: 'هذه السنة', custom: 'فترة مخصصة', from: 'من', to: 'إلى', refresh: 'تحديث',
+      all: 'الكل', ENF: 'التذاكر', STN: 'المحطات', ADM: 'الإداري', abs: 'غياب', late: 'تأخير', per: 'استئذان', wd: 'انسحاب', lv: 'إجازة', pend: 'بانتظار المراجعة',
+      log: 'السجل', sum: 'الملخص حسب الموظف', date: 'التاريخ', emp: 'الموظف', team: 'الفريق', st: 'الحالة', det: 'التفاصيل', note: 'ملاحظة', src: 'المصدر', rev: 'المراجعة',
+      search: 'بحث بالاسم أو الرقم…', xlsx: 'تصدير Excel', add: 'تسجيل يدوي', more: 'عرض المزيد', none: 'لا توجد سجلات في الفترة.', min: 'د',
+      pendT: 'بانتظار مراجعتك', pendH: 'غياب سجّله المشرف في التحضير، والروستر تحدّث إلى غياب. أكّده، أو عدّله لو جاب الموظف عذر.',
+      confirm: 'تأكيد الغياب', edit: 'تعديل', save: 'حفظ', cancel: 'إلغاء', newSt: 'الحالة الصحيحة', present: 'حاضر (إلغاء السجل)', minutes: 'الدقائق',
+      sick: 'عذر طبي / إجازة مرضية', revNote: 'ملاحظة (مثلاً: رفع العذر في Mena-Me)', was: 'كان', by: 'بواسطة', rosterTo: 'الروستر يتحدث إلى',
+      done: 'تم الحفظ', doneR: 'تم الحفظ والروستر تحدّث', rErr: 'تم الحفظ، لكن الروستر ما تحدّث: ', total: 'الإجمالي', annual: 'سنوية', sickL: 'مرضية', death: 'وفاة', alt: 'يوم بديل',
+      cancelled: 'ملغى', confirmed: 'مؤكد', edited: 'معدّل', auto: 'ملغى تلقائياً', sync: 'آخر مزامنة مع التحضير', newRecs: 'سجلات جديدة', leaveType: 'نوع الإجازة',
+      addT: 'تسجيل حضور يدوي', empId: 'الرقم الوظيفي', recs: 'سجل', openLog: 'عرض سجله' },
+    en: { month: 'This month', prev: 'Last month', year: 'This year', custom: 'Custom', from: 'From', to: 'To', refresh: 'Refresh',
+      all: 'All', ENF: 'Tickets', STN: 'Stations', ADM: 'Admin', abs: 'Absent', late: 'Late', per: 'Permission', wd: 'Withdrawal', lv: 'Leave', pend: 'Pending review',
+      log: 'Log', sum: 'Summary by employee', date: 'Date', emp: 'Employee', team: 'Team', st: 'Status', det: 'Details', note: 'Note', src: 'Source', rev: 'Review',
+      search: 'Search name or ID…', xlsx: 'Export Excel', add: 'Add record', more: 'Show more', none: 'No records in this period.', min: 'min',
+      pendT: 'Waiting for your review', pendH: 'Absences recorded by supervisors; the roster was set to absent. Confirm, or edit if the employee brought an excuse.',
+      confirm: 'Confirm absence', edit: 'Edit', save: 'Save', cancel: 'Cancel', newSt: 'Correct status', present: 'Present (cancel record)', minutes: 'Minutes',
+      sick: 'Medical excuse / sick leave', revNote: 'Note (e.g. excuse filed in Mena-Me)', was: 'was', by: 'by', rosterTo: 'Roster becomes',
+      done: 'Saved', doneR: 'Saved and roster updated', rErr: 'Saved, but the roster was not updated: ', total: 'Total', annual: 'Annual', sickL: 'Sick', death: 'Bereavement', alt: 'Alt. day',
+      cancelled: 'Cancelled', confirmed: 'Confirmed', edited: 'Edited', auto: 'Auto-cancelled', sync: 'Last sync with attendance', newRecs: 'new records', leaveType: 'Leave type',
+      addT: 'Add attendance record', empId: 'Employee ID', recs: 'records', openLog: 'Open log' }
+  };
+  function at(k) { var L = AT[st.lang === 'en' ? 'en' : 'ar']; return k in L ? L[k] : (AT.ar[k] || k); }
+  var ATS = { 'غياب': 'abs', 'تأخير': 'late', 'استئذان': 'per', 'انسحاب': 'wd', 'إجازة': 'lv' };
+  var ATL_LT = { 'سنوية': 'annual', 'مرضية': 'sickL', 'وفاة': 'death', 'يوم بديل': 'alt' };
+  function atlMonth(off) { var d = new Date(todayStr() + 'T12:00:00'); d.setDate(1); d.setMonth(d.getMonth() + off); var a = d.toISOString().slice(0, 10), e = new Date(d); e.setMonth(e.getMonth() + 1); e.setDate(0); return [a, e.toISOString().slice(0, 10)]; }
+  function atlRange(p) { var T = todayStr(); if (p === 'month') return [T.slice(0, 8) + '01', T]; if (p === 'prev') return atlMonth(-1); if (p === 'year') return [T.slice(0, 4) + '-01-01', T]; return null; }
+  function atlRow(a) { return { id: a[0], d: a[1], emp: a[2], name: a[3], st: a[4], lt: a[5], min: a[6], code: a[7], note: a[8], src: a[9], rev: a[10], revBy: a[11], revAt: a[12], revNote: a[13], orig: a[14], rp: a[15], rc: a[16] }; }
+  function atlEmp(id, fb) { var E = st.atl.d && st.atl.d.emps[id]; if (!E) return { name: fb || id, team: '' }; return { name: (st.lang === 'en' ? E.en || E.ar : E.ar || E.en) || fb || id, team: E.team }; }
+  function atlTag(r) {
+    var k = r.st === 'ملغى' ? 'x' : ATS[r.st] || 'x';
+    return '<span class="atag a-' + k + '">' + esc(r.st === 'ملغى' ? at('cancelled') : at(ATS[r.st] || r.st)) + '</span>';
+  }
+  function atlRev(r) {
+    if (!r.rev) return '';
+    var c = r.rev === 'بانتظار المراجعة' ? 'warn' : r.rev === 'مؤكد' ? 'ok' : r.rev === 'معدّل' ? 'acc' : '';
+    var L = { 'بانتظار المراجعة': 'pend', 'مؤكد': 'confirmed', 'معدّل': 'edited', 'ملغى تلقائياً': 'auto' }[r.rev];
+    return '<span class="kpst ' + c + '">' + esc(L ? at(L) : r.rev) + '</span>' + (r.revBy ? '<div class="muted">' + esc(r.revBy) + '</div>' : '');
+  }
+  function atlDet(r) {
+    var x = [];
+    if (r.lt) x.push(esc(ATL_LT[r.lt] ? at(ATL_LT[r.lt]) : r.lt));
+    if (r.min) x.push('<span class="num">' + esc(r.min) + '</span> ' + at('min'));
+    if (r.orig) x.push('<span class="muted">' + at('was') + ': ' + esc(r.orig) + '</span>');
+    return x.join(' · ') || '—';
+  }
+
+  function renderAtl(wrap, force) {
+    if (!st.atl) st.atl = { p: 'month', from: '', to: '', team: 'ALL', f: '', q: '', view: 'log', lim: 300, d: null, key: '' };
+    var A = st.atl; if (!A.from) { var rg = atlRange(A.p) || atlRange('month'); A.from = rg[0]; A.to = rg[1]; }
+    if (!wrap.querySelector('#atlBody')) {
+      wrap.innerHTML = '<div class="card rsttools noprint"><div class="rstctl">' +
+        '<div class="seg">' + ['month', 'prev', 'year', 'custom'].map(function (p) { return '<button type="button" data-ap="' + p + '" class="' + (A.p === p ? 'on' : '') + '">' + at(p) + '</button>'; }).join('') + '</div>' +
+        '<label class="field">' + at('from') + '<input class="input num" type="date" id="aFrom" value="' + esc(A.from) + '"></label>' +
+        '<label class="field">' + at('to') + '<input class="input num" type="date" id="aTo" value="' + esc(A.to) + '"></label>' +
+        '<div class="seg teams">' + [['ALL', 'all'], ['ENF', 'ENF'], ['STN', 'STN'], ['ADM', 'ADM']].map(function (x) { return '<button type="button" data-at="' + x[0] + '" class="' + (A.team === x[0] ? 'on' : '') + '">' + at(x[1]) + '</button>'; }).join('') + '</div>' +
+        '<button type="button" class="btn sm" id="aRef">' + icon('refresh') + at('refresh') + '</button></div></div><div id="atlBody"><div class="loading"><div class="spin"></div>' + t('loading') + '</div></div>';
+      wrap.querySelectorAll('[data-ap]').forEach(function (b) { b.onclick = function () { A.p = b.getAttribute('data-ap'); wrap.querySelectorAll('[data-ap]').forEach(function (x) { x.classList.toggle('on', x === b); }); var rg = atlRange(A.p); if (rg) { A.from = rg[0]; A.to = rg[1]; wrap.querySelector('#aFrom').value = A.from; wrap.querySelector('#aTo').value = A.to; renderAtl(wrap, false); } }; });
+      ['aFrom', 'aTo'].forEach(function (id) { var el = wrap.querySelector('#' + id); el.onchange = function () { if (!el.value) return; A[id === 'aFrom' ? 'from' : 'to'] = el.value; A.p = 'custom'; wrap.querySelectorAll('[data-ap]').forEach(function (x) { x.classList.toggle('on', x.getAttribute('data-ap') === 'custom'); }); if (A.from <= A.to) renderAtl(wrap, false); }; });
+      wrap.querySelectorAll('[data-at]').forEach(function (b) { b.onclick = function () { A.team = b.getAttribute('data-at'); wrap.querySelectorAll('[data-at]').forEach(function (x) { x.classList.toggle('on', x === b); }); atlDraw(); }; });
+      wrap.querySelector('#aRef').onclick = function () { renderAtl(wrap, true); };
+    }
+    var ck = A.from + '|' + A.to;
+    if (A.d && A.key === ck && !force) return atlDraw();
+    var b = wrap.querySelector('#atlBody'); if (!A.d) b.innerHTML = '<div class="loading"><div class="spin"></div>' + t('loading') + '</div>';
+    setSync(true);
+    return api('attLog', { from: A.from, to: A.to, fresh: !!force }).then(function (j) { A.d = j.data; A.key = ck; A.lim = 300; if (route() === 'att') atlDraw(); })
+      .catch(function (e) { failBox(b, e, function () { renderAtl(wrap, true); }); }).then(function () { setSync(false); });
+  }
+  function atlRows() {
+    var A = st.atl, D = A.d, q = A.q.trim().toLowerCase();
+    return D.rows.map(atlRow).filter(function (r) {
+      var inR = r.d >= A.from && r.d <= A.to;
+      if (A.f === 'pend') { if (r.rev !== 'بانتظار المراجعة') return false; } else if (!inR) return false;
+      if (A.f && A.f !== 'pend' && r.st !== A.f) return false;
+      var E = atlEmp(r.emp, r.name);
+      if (A.team !== 'ALL' && E.team !== A.team) return false;
+      if (q && (r.emp + ' ' + E.name + ' ' + r.name).toLowerCase().indexOf(q) < 0) return false;
+      return true;
+    }).sort(function (a, b) { return b.d.localeCompare(a.d) || a.emp.localeCompare(b.emp); });
+  }
+  function atlDraw() {
+    var A = st.atl, D = A.d, b = document.getElementById('atlBody'); if (!b || !D) return;
+    var all = D.rows.map(atlRow).filter(function (r) { var E = atlEmp(r.emp, r.name); return A.team === 'ALL' || E.team === A.team; });
+    var inR = all.filter(function (r) { return r.d >= A.from && r.d <= A.to; });
+    var cnt = function (s) { return inR.filter(function (r) { return r.st === s; }).length; };
+    var pend = all.filter(function (r) { return r.rev === 'بانتظار المراجعة'; });
+    var rows = atlRows();
+    var cards = [['غياب', 'abs', 'bad'], ['تأخير', 'late', 'warn'], ['استئذان', 'per', ''], ['انسحاب', 'wd', 'bad'], ['إجازة', 'lv', 'acc']].map(function (x) {
+      return '<button type="button" class="atlk' + (A.f === x[0] ? ' on' : '') + '" data-af="' + x[0] + '">' + rKpi(at(x[1]), cnt(x[0]), x[2]) + '</button>'; }).join('') +
+      '<button type="button" class="atlk' + (A.f === 'pend' ? ' on' : '') + '" data-af="pend">' + rKpi(at('pend'), pend.length, pend.length ? 'warn' : 'ok') + '</button>';
+    var pendBox = D.canReview && pend.length && A.f !== 'pend' ? '<div class="card atlpend"><div class="chead"><h2>⏳ ' + at('pendT') + ' <span class="num">(' + pend.length + ')</span></h2></div><p class="muted">' + esc(at('pendH')) + '</p>' +
+      pend.slice(0, 8).map(function (r) { var E = atlEmp(r.emp, r.name); return '<div class="atlpr"><div><b>' + esc(E.name) + '</b> <span class="muted num">' + esc(r.emp) + '</span><div class="muted"><span class="num">' + esc(r.d) + '</span> · ' + esc(at(E.team) || '') + (r.code ? ' · ' + (st.lang === 'en' ? 'shift' : 'وردية') + ' ' + esc(r.code) : '') + (r.note ? ' · ' + esc(r.note) : '') + '</div></div>' +
+        '<div class="atlpa"><button type="button" class="btn sm ok" data-aok="' + esc(r.id) + '">✅ ' + at('confirm') + '</button><button type="button" class="btn sm" data-aed="' + esc(r.id) + '">✏️ ' + at('edit') + '</button></div></div>'; }).join('') +
+      (pend.length > 8 ? '<button type="button" class="btn sm ghost" data-af="pend">' + at('more') + ' (' + (pend.length - 8) + ')</button>' : '') + '</div>' : '';
+    var tools = '<div class="toolbar noprint"><div class="seg">' + [['log', 'log'], ['sum', 'sum']].map(function (x) { return '<button type="button" data-av="' + x[0] + '" class="' + (A.view === x[0] ? 'on' : '') + '">' + at(x[1]) + '</button>'; }).join('') + '</div>' +
+      '<label class="field search"><input class="input" type="search" id="aQ" placeholder="' + esc(at('search')) + '" value="' + esc(A.q) + '"></label><span class="sp"></span>' +
+      (D.canReview ? '<button type="button" class="btn sm" id="aAdd">' + icon('plus') + at('add') + '</button>' : '') +
+      '<button type="button" class="btn sm" id="aX">' + icon('download') + at('xlsx') + '</button></div>';
+    var syncL = D.sync && D.sync.added ? '<p class="muted atlsync">' + at('sync') + ': +' + D.sync.added + ' ' + at('newRecs') + '</p>' : '';
+    b.innerHTML = '<div class="kpis k6 atlks">' + cards + '</div>' + syncL + pendBox + '<div class="card">' + tools + (A.view === 'sum' ? atlSum(rows) : atlTable(rows)) + '</div>';
+    b.querySelectorAll('[data-af]').forEach(function (x) { x.onclick = function () { var v = x.getAttribute('data-af'); A.f = A.f === v ? '' : v; A.view = 'log'; atlDraw(); }; });
+    b.querySelectorAll('[data-av]').forEach(function (x) { x.onclick = function () { A.view = x.getAttribute('data-av'); atlDraw(); }; });
+    var q = b.querySelector('#aQ'); q.oninput = function () { A.q = q.value; clearTimeout(A.qt); A.qt = setTimeout(function () { atlDraw(); var nq = document.getElementById('aQ'); if (nq) { nq.focus(); nq.setSelectionRange(nq.value.length, nq.value.length); } }, 250); };
+    b.querySelector('#aX').onclick = atlXlsx;
+    var ad = b.querySelector('#aAdd'); if (ad) ad.onclick = atlAddModal;
+    b.querySelectorAll('[data-aok]').forEach(function (x) { x.onclick = function () { atlSend({ id: x.getAttribute('data-aok'), act: 'confirm' }, x); }; });
+    b.querySelectorAll('[data-aed]').forEach(function (x) { x.onclick = function () { atlEditModal(x.getAttribute('data-aed')); }; });
+    b.querySelectorAll('[data-aemp]').forEach(function (x) { x.onclick = function () { A.q = x.getAttribute('data-aemp'); A.view = 'log'; atlDraw(); }; });
+    var mo = b.querySelector('#aMore'); if (mo) mo.onclick = function () { A.lim += 300; atlDraw(); };
+  }
+  function atlTable(rows) {
+    var A = st.atl, D = A.d;
+    if (!rows.length) return '<div class="empty">' + at('none') + '</div>';
+    return '<div class="tblwrap rtbl"><table class="tbl atltbl"><thead><tr><th>' + at('date') + '</th><th>' + at('emp') + '</th><th>' + at('team') + '</th><th>' + at('st') + '</th><th>' + at('det') + '</th><th>' + at('note') + '</th><th>' + at('src') + '</th><th>' + at('rev') + '</th>' + (D.canReview ? '<th></th>' : '') + '</tr></thead><tbody>' +
+      rows.slice(0, A.lim).map(function (r) {
+        var E = atlEmp(r.emp, r.name);
+        return '<tr class="' + (r.st === 'ملغى' ? 'atlx' : '') + '"><td class="num nowrap">' + esc(r.d) + '</td><td class="nowrap"><b>' + esc(E.name) + '</b><div class="muted num">' + esc(r.emp) + '</div></td><td class="nowrap">' + esc(E.team ? at(E.team) : '') + '</td>' +
+          '<td>' + atlTag(r) + '</td><td class="nowrap">' + atlDet(r) + '</td><td class="atlnote">' + esc(r.note || '') + (r.revNote ? '<div class="muted">↳ ' + esc(r.revNote) + '</div>' : '') + '</td><td class="nowrap muted">' + esc(r.src) + '</td><td class="nowrap">' + atlRev(r) + '</td>' +
+          (D.canReview ? '<td class="nowrap">' + (r.rev === 'بانتظار المراجعة' ? '<button type="button" class="btn sm ok" data-aok="' + esc(r.id) + '">✅</button>' : '') + '<button type="button" class="btn sm ghost" data-aed="' + esc(r.id) + '">✏️</button></td>' : '') + '</tr>';
+      }).join('') + '</tbody></table></div>' + (rows.length > A.lim ? '<div class="atlmore"><button type="button" class="btn sm" id="aMore">' + at('more') + ' (' + (rows.length - A.lim) + ')</button></div>' : '');
+  }
+  function atlAgg(rows) {
+    var m = {};
+    rows.forEach(function (r) {
+      if (r.st === 'ملغى') return;
+      var x = m[r.emp] || (m[r.emp] = { emp: r.emp, name: r.name, abs: 0, late: 0, per: 0, wd: 0, lv: 0, annual: 0, sickL: 0, death: 0, alt: 0 });
+      var k = ATS[r.st]; if (k) x[k]++;
+      if (r.st === 'إجازة' && ATL_LT[r.lt]) x[ATL_LT[r.lt]]++;
+    });
+    return Object.keys(m).map(function (k) { var x = m[k]; x.total = x.abs + x.late + x.per + x.wd + x.lv; return x; }).sort(function (a, b) { return b.abs - a.abs || b.late - a.late || b.total - a.total; });
+  }
+  var ATL_SUMC = ['abs', 'late', 'per', 'wd', 'lv', 'annual', 'sickL', 'death', 'alt', 'total'];
+  function atlSum(rows) {
+    var L = atlAgg(rows);
+    if (!L.length) return '<div class="empty">' + at('none') + '</div>';
+    return '<div class="tblwrap rtbl"><table class="tbl atltbl"><thead><tr><th>' + at('emp') + '</th><th>' + at('team') + '</th>' + ATL_SUMC.map(function (k) { return '<th class="num">' + at(k) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+      L.map(function (x) { var E = atlEmp(x.emp, x.name); return '<tr class="click" data-aemp="' + esc(x.emp) + '" title="' + esc(at('openLog')) + '"><td class="nowrap"><b>' + esc(E.name) + '</b> <span class="muted num">' + esc(x.emp) + '</span></td><td>' + esc(E.team ? at(E.team) : '') + '</td>' +
+        ATL_SUMC.map(function (k) { var v = x[k]; return '<td class="num' + (k === 'abs' && v ? ' atlbad' : k === 'total' ? ' atltot' : '') + '">' + (v || '—') + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+  }
+  function atlSend(p, btn) {
+    if (btn) btn.disabled = true; setSync(true);
+    return api('attReview', p).then(function (j) {
+      cdModalClose(); toast(j.rosterMsg ? at('rErr') + j.rosterMsg : j.roster === 'updated' ? at('doneR') : at('done'));
+      st.atl.key = ''; if (st.kpi) st.kpi.key = ''; renderAtl(document.getElementById('attWrap'), false);
+    }).catch(function (e) { if (btn) btn.disabled = false; toast(errText(e)); }).then(function () { setSync(false); });
+  }
+  function atlOpts(D, r) {
+    var o = [['غياب', '', at('abs'), D.codes['غياب']], ['إجازة', 'مرضية', at('sick'), D.codes['مرضية']]];
+    D.leaveTypes.forEach(function (lt) { if (lt !== 'مرضية') o.push(['إجازة', lt, at('lv') + ' ' + (ATL_LT[lt] ? at(ATL_LT[lt]) : lt), D.codes[lt]]); });
+    o.push(['تأخير', '', at('late'), ''], ['استئذان', '', at('per'), ''], ['انسحاب', '', at('wd'), ''], ['حاضر', '', at('present'), r.rp || '']);
+    return o.filter(function (x) { return !(x[0] === r.st && (x[1] || '') === (r.lt || '')); });
+  }
+  function atlEditModal(id) {
+    var D = st.atl.d, r = D.rows.map(atlRow).filter(function (x) { return x.id === id; })[0]; if (!r) return;
+    var E = atlEmp(r.emp, r.name), O = atlOpts(D, r);
+    cdModal('<h3>' + at('edit') + ' · ' + esc(E.name) + ' <span class="muted num">' + esc(r.emp) + '</span></h3>' +
+      '<p class="muted"><span class="num">' + esc(r.d) + '</span> · ' + atlTag(r) + ' ' + atlDet(r) + (r.note ? ' · ' + esc(r.note) : '') + '</p>' +
+      (r.rev === 'بانتظار المراجعة' ? '<button type="button" class="btn ok atlbig" id="mOk">✅ ' + at('confirm') + '</button><p class="muted atlor">— ' + (st.lang === 'en' ? 'or change it to' : 'أو غيّرها إلى') + ' —</p>' : '<p class="muted">' + at('newSt') + ':</p>') +
+      '<div class="atlopts">' + O.map(function (x, i) { return '<label class="copt"><input type="radio" name="aSt" value="' + i + '"> <span>' + esc(x[2]) + (x[3] ? ' <span class="muted num">→ ' + esc(x[3]) + '</span>' : '') + '</span></label>'; }).join('') + '</div>' +
+      '<label class="field hide" id="mMinW">' + at('minutes') + '<input class="input num" type="number" min="1" max="600" id="mMin" value="' + esc(r.min || '') + '"></label>' +
+      '<label class="field">' + at('revNote') + '<textarea class="input" id="mNote" rows="2" maxlength="300"></textarea></label>' +
+      '<div class="mact"><button type="button" class="btn ghost" data-x>' + at('cancel') + '</button><button type="button" class="btn primary" id="mGo" disabled>' + at('save') + '</button></div>', function (ov) {
+        var sel = null;
+        ov.querySelectorAll('input[name=aSt]').forEach(function (i) { i.onchange = function () { sel = O[+i.value]; ov.querySelectorAll('.atlopts .copt').forEach(function (l) { l.classList.toggle('on', l.querySelector('input').checked); }); ov.querySelector('#mMinW').classList.toggle('hide', sel[0] !== 'تأخير'); ov.querySelector('#mGo').disabled = false; }; });
+        var ok = ov.querySelector('#mOk'); if (ok) ok.onclick = function () { atlSend({ id: id, act: 'confirm', note: ov.querySelector('#mNote').value.trim() }, ok); };
+        ov.querySelector('#mGo').onclick = function () { if (!sel) return; atlSend({ id: id, act: 'edit', status: sel[0], leave_type: sel[1], minutes: ov.querySelector('#mMin').value, note: ov.querySelector('#mNote').value.trim() }, this); };
+      });
+  }
+  function atlAddModal() {
+    var D = st.atl.d, T = D.today || todayStr();
+    var emps = Object.keys(D.emps).filter(function (k) { return D.emps[k].active; }).sort(function (a, b) { return (D.emps[a].ar || '').localeCompare(D.emps[b].ar || ''); });
+    var O = [['غياب', '', at('abs')], ['تأخير', '', at('late')], ['استئذان', '', at('per')], ['انسحاب', '', at('wd')]].concat(D.leaveTypes.map(function (lt) { return ['إجازة', lt, at('lv') + ' ' + (ATL_LT[lt] ? at(ATL_LT[lt]) : lt)]; }));
+    cdModal('<h3>' + at('addT') + '</h3><div class="kpform">' +
+      '<label class="field">' + at('emp') + '<select class="input" id="nE">' + emps.map(function (k) { var E = D.emps[k]; return '<option value="' + esc(k) + '">' + esc((st.lang === 'en' ? E.en || E.ar : E.ar || E.en) + ' (' + k + ')') + '</option>'; }).join('') + '</select></label>' +
+      '<label class="field">' + at('date') + '<input class="input num" type="date" id="nD" value="' + T + '"></label>' +
+      '<label class="field">' + at('st') + '<select class="input" id="nS">' + O.map(function (x, i) { return '<option value="' + i + '">' + esc(x[2]) + '</option>'; }).join('') + '</select></label>' +
+      '<label class="field hide" id="nMW">' + at('minutes') + '<input class="input num" type="number" min="1" max="600" id="nM"></label>' +
+      '<label class="field">' + at('note') + '<textarea class="input" id="nN" rows="2" maxlength="300"></textarea></label></div>' +
+      '<div class="mact"><button type="button" class="btn ghost" data-x>' + at('cancel') + '</button><button type="button" class="btn primary" id="nGo">' + at('save') + '</button></div>', function (ov) {
+        var s = ov.querySelector('#nS'); s.onchange = function () { ov.querySelector('#nMW').classList.toggle('hide', O[+s.value][0] !== 'تأخير'); };
+        ov.querySelector('#nGo').onclick = function () {
+          var x = O[+s.value], btn = this; btn.disabled = true; setSync(true);
+          api('attAdd', { emp: ov.querySelector('#nE').value, date: ov.querySelector('#nD').value, status: x[0], leave_type: x[1], minutes: ov.querySelector('#nM').value, note: ov.querySelector('#nN').value.trim() })
+            .then(function (j) { cdModalClose(); toast(j.rosterMsg ? at('rErr') + j.rosterMsg : at('done')); st.atl.key = ''; if (st.kpi) st.kpi.key = ''; renderAtl(document.getElementById('attWrap'), false); })
+            .catch(function (e) { btn.disabled = false; toast(errText(e)); }).then(function () { setSync(false); });
+        };
+      });
+  }
+  function atlXlsx() {
+    var X = window.MBCO_XLSX, A = st.atl; if (!X) return;
+    var head = { b: true, color: '#FFFFFF', fill: '#7B1E8F', h: 'center', border: 1, wrap: true }, cell = { border: 1 };
+    var rows = atlRows(), title = function (s) { return [{ v: 'MBCO · ' + s + ' · ' + A.from + ' → ' + A.to, s: { b: true, sz: 14, color: '#7B1E8F' } }]; };
+    var lc = [[at('date'), function (r) { return r.d; }], [at('empId'), function (r) { return r.emp; }], [at('emp'), function (r) { return atlEmp(r.emp, r.name).name; }], [at('team'), function (r) { var T = atlEmp(r.emp).team; return T ? at(T) : ''; }],
+      [at('st'), function (r) { return r.st === 'ملغى' ? at('cancelled') : at(ATS[r.st] || r.st); }], [at('leaveType'), function (r) { return r.lt ? (ATL_LT[r.lt] ? at(ATL_LT[r.lt]) : r.lt) : ''; }], [at('minutes'), function (r) { return r.min; }],
+      [at('note'), function (r) { return r.note; }], [at('src'), function (r) { return r.src; }], [at('rev'), function (r) { return r.rev; }], [at('by'), function (r) { return r.revBy; }], [at('was'), function (r) { return r.orig; }]];
+    var sum = atlAgg(rows), sc = [[at('empId'), function (x) { return x.emp; }], [at('emp'), function (x) { return atlEmp(x.emp, x.name).name; }], [at('team'), function (x) { var T = atlEmp(x.emp).team; return T ? at(T) : ''; }]]
+      .concat(ATL_SUMC.map(function (k) { return [at(k), function (x) { return x[k]; }]; }));
+    var sheet = function (name, cols, list, w) { return { name: name, rtl: st.lang !== 'en', freeze: 'A3', cols: cols.map(function (c, i) { return w[i] || 11; }), merges: ['A1:' + X.colName(cols.length - 1) + '1'],
+      rows: [title(name), cols.map(function (c) { return { v: c[0], s: head }; })].concat(list.map(function (r) { return cols.map(function (c) { var v = c[1](r); return { v: v === null || v === undefined ? '' : v, s: cell }; }); })) }; };
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(X.write([sheet(at('sum').split(' ')[0], sc, sum, [11, 26]), sheet(at('log'), lc, rows, [11, 11, 26, 10, 10, 11, 9, 44, 12, 14, 14, 16])]));
+    a.download = 'MBCO_Attendance_' + A.from + '_' + A.to + '.xlsx'; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 800);
   }
   /* ---------- 2.4: التبويبات + الملاحظات + التقييم الشهري ---------- */
   function kpTabs() {
@@ -3662,6 +3869,13 @@
       main.innerHTML = title + '<div class="ctlnative" id="kpiWrap"></div>';
       if (st.user.role === 'Officer') { document.getElementById('kpiWrap').innerHTML = '<div class="ctlmsg"><p>' + esc(t('ctl_role')) + '</p></div>'; return; }
       renderKpi(document.getElementById('kpiWrap'), false);
+      return;
+    }
+    if (key === 'att' && mode === 'rec') {   // 2.5: سجل الحضور
+      main.innerHTML = title + '<div class="ctlnative" id="attWrap"></div>';
+      bindModeSwitch(key);
+      if (st.user.role === 'Officer') { document.getElementById('attWrap').innerHTML = '<div class="ctlmsg"><p>' + esc(t('ctl_role')) + '</p></div>'; return; }
+      renderAtl(document.getElementById('attWrap'), false);
       return;
     }
     if (mode === 'ctl') {

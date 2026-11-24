@@ -545,3 +545,21 @@ td.nowrap{white-space:nowrap}
 .kprf{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px}
 .kprc textarea{resize:vertical}
 .kpcircles.n6{gap:6px}.kpcircles.n6 .kpct{font-size:11.5px;gap:4px;padding:0 2px}.kpcircles.n6 .kpcv svg{width:22px;height:22px}.kpcircles.n6 .kpcv b{font-size:12.5px}.kpcircles.n6 .kpc.big .kpcv b{font-size:16px}.kpcircles.n6 .kpcw{font-size:10.5px}
+/* v2.5 سجل الحضور */
+.atag{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.atag.a-abs{background:rgba(239,68,68,.15);color:#e04343}.atag.a-late{background:rgba(245,158,11,.16);color:#d98a04}
+.atag.a-per{background:rgba(59,130,246,.15);color:#3b82f6}.atag.a-wd{background:rgba(249,115,22,.16);color:#ea6a10}
+.atag.a-lv{background:rgba(168,85,247,.16);color:#a855f7}.atag.a-x{background:var(--surface);color:var(--muted);text-decoration:line-through}
+.kpst.acc{color:var(--accent-ink);border-color:currentColor}
+.atlks{margin-bottom:12px}.atlk{all:unset;cursor:pointer;display:block;border-radius:14px}.atlk .kpi{height:100%;box-sizing:border-box}
+.atlk.on .kpi{outline:2px solid var(--accent);outline-offset:-2px}.atlk:focus-visible{outline:2px solid var(--accent)}
+.atlpend{border-color:rgba(245,158,11,.5);margin-bottom:12px}.atlpend .chead h2{font-size:15px}.atlpend>p{margin:0 0 8px;font-size:12.5px}
+.atlpr{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}.atlpr .muted{font-size:12px}
+.atlpa{display:flex;gap:6px;flex-wrap:wrap}
+.atltbl td{vertical-align:top}.atltbl .atlnote{min-width:160px;max-width:360px;white-space:normal;font-size:12.5px}
+.atltbl tr.atlx td{opacity:.55}.atltbl .btn{margin-inline-end:4px}
+.atltbl tr.click{cursor:pointer}.atltbl tr.click:hover td{background:var(--tint2)}
+.atlbad{color:var(--bad);font-weight:800}.atltot{font-weight:800}
+.atlmore{text-align:center;padding:12px}.atlsync{font-size:12px;margin:-4px 0 10px}
+.atlopts{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;margin:6px 0 10px}
+.atlbig{width:100%;justify-content:center;padding:12px;font-size:15px;margin-top:6px}.atlor{text-align:center;margin:10px 0 2px}
