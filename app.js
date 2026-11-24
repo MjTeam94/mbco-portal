@@ -120,6 +120,7 @@
   /* ---------------- الأيقونات ---------------- */
   var ICONS = {
     home: 'M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z',
+    plus: 'M12 5v14M5 12h14',
     cdc: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21h4',
     ins: 'M9 3h6v3H9zM7 4.5H5V21h14V4.5h-2M9 13l2 2 4-4',
     car: 'M5 16h14M6 16l1.5-6h9L18 16M5 16v3h3v-3M16 16v3h3v-3',
@@ -3275,10 +3276,17 @@
       id: 'الرقم الوظيفي', jtitle: 'المسمى الوظيفي', team: 'القسم', hire: 'تاريخ التعيين', rankOf: 'الترتيب في الفريق', of: 'من', teamAvg: 'متوسط الفريق',
       byMonth: 'الأداء الكلي حسب الشهر', byDay: 'الأداء الكلي حسب اليوم', breakdown: 'توزيع الدرجة على المعايير', facts: 'الأرقام', notesT: 'ملاحظات المشرفين المعتمدة', notesSoon: 'تتفعّل مع رفع الملاحظات من البوت واعتمادها من الإدارة.', notesNone: 'لا توجد ملاحظات معتمدة في الفترة.', notesLater: 'تتفعّل لاحقاً عبر البوت.',
       workDays: 'أيام العمل', insp: 'فحوصات', stnI: 'فحوصات المحطات', enfI: 'فحوصات التذاكر', vio: 'مخالفات', fines: 'قيمة المخالفات', ops: 'نقاط الإنتاجية', perDay: 'في اليوم', target: 'الهدف',
-      cdcN: 'بلاغات CDC', arrOk: 'وصول بالهدف', arrAvg: 'متوسط الوصول', present: 'حضور', absent: 'غياب', late: 'تأخير/استئذان', leave: 'إجازة', sar: 'ريال', min: 'د', day: 'يوم',
+      cdcN: 'بلاغات CDC', arrOk: 'وصول بالهدف', arrAvg: 'متوسط الوصول', present: 'حضور', absent: 'غياب', late: 'تأخير/استئذان', exTitle: 'خارج التقييم: أرقام تحتاج مراجعة', exUnk: 'أرقام مو موجودة في قائمة الموظفين', exUnkH: 'غالباً رقم مكتوب غلط، أو يوزر تجريبي، أو حساب بدون رقم وظيفي في نظام البلاغات. صحّح الرقم في سجل النظام أو في KpiHistory وتنضاف للموظف الصحيح.', exAdm: 'الفريق الإداري', exAdmH: 'مسجّلين ADM لكن ما ينطبق عليهم التقييم.', leave: 'أيام الإجازة', lvEx: 'مستبعدة من التقييم', sar: 'ريال', min: 'د', day: 'يوم',
       bandA: 'ممتاز', bandB: 'جيد جداً', bandC: 'جيد', bandD: 'يحتاج تحسين', noData: 'لا توجد بيانات', w: 'الوزن',
-      formula: 'الإنتاجية = (الفحوصات {vio}+ المخالفات × {eq}) ÷ (أيام العمل × {t}) · CDC = الوصول خلال {m} د · المعيار بدون بيانات يُستبعد ويتوزع وزنه.', formulaS: 'الإنتاجية = فحوصات المحطات ÷ (أيام العمل × {t}) · الحضور = حاضر ÷ (حاضر + غائب) · المعيار بدون بيانات يُستبعد ويتوزع وزنه.', vioPart: '',
-      gen: 'أُنشئ', by: 'أعدّه', period: 'الفترة', hist: 'يشمل السجل التاريخي', choose: 'اختر موظفاً من الترتيب', n: 'موظف', open: 'التقرير'
+      formula: 'الإنتاجية = (الفحوصات {vio}+ المخالفات × {eq}) ÷ (أيام العمل × {t}) · CDC = الوصول خلال {m} د · أيام الإجازة المعتمدة مستبعدة · المعيار بدون بيانات يُستبعد ويتوزع وزنه.', formulaS: 'الإنتاجية = فحوصات المحطات ÷ (أيام العمل × {t}) · الحضور = حاضر ÷ (حاضر + غائب) · أيام الإجازة المعتمدة مستبعدة · المعيار بدون بيانات يُستبعد ويتوزع وزنه.', vioPart: '',
+      gen: 'أُنشئ', by: 'أعدّه', period: 'الفترة', hist: 'يشمل السجل التاريخي', choose: 'اختر موظفاً من الترتيب', n: 'موظف', open: 'التقرير',
+      SUP: 'المشرفين', SUP1: 'مشرف', ADM: 'الفريق الإداري', rate: 'تقييم المسؤول', tabRank: 'الترتيب', tabNotes: 'الملاحظات', tabRate: 'التقييم الشهري',
+      formulaA: 'الدرجة = الحضور ÷ (حاضر + غائب) + الانضباط + تقييم المسؤول المباشر (متوسط البنود ÷ 5) · أيام الإجازة المعتمدة مستبعدة · المعيار بدون بيانات يُستبعد ويتوزع وزنه.',
+      addNote: 'ملاحظة جديدة', minor: 'بسيطة', medium: 'متوسطة', major: 'جسيمة', praise: 'إشادة', kind: 'النوع', cat: 'التصنيف', text: 'الوصف', ndate: 'تاريخ الواقعة', nby: 'رفعها', nst: 'الحالة', save: 'حفظ', cancel: 'إلغاء',
+      approve: 'اعتماد', reject: 'رفض', withdraw: 'سحب', reopen: 'إرجاع للانتظار', rejReason: 'سبب الرفض (اختياري)', stP: 'بانتظار الاعتماد', stA: 'معتمدة', stR: 'مرفوضة', stAll: 'الكل', noNotes: 'لا توجد ملاحظات في الفترة.',
+      notesHow: 'ملاحظات المشرفين تنتظر اعتماد الإدارة، والمعتمدة بس تأثر على معيار «الملاحظات». الإشادة تعوّض الخصم.', notesOff: 'معيار الملاحظات مطفأ حالياً: الملاحظات تنحفظ لكن ما تأثر على الدرجة إلا بعد ضبط KPI_NOTES بتاريخ البداية في الإعدادات.', noteSaved: 'تم رفع الملاحظة', noteSavedA: 'تم حفظ الملاحظة واعتمادها',
+      pts: 'نقطة', rmonth: 'الشهر', rateHow: 'قيّم كل بند من 1 إلى 5. الدرجة = متوسط البنود ÷ 5 (مثلاً 4 = 80%).', rateNone: 'ما عندك أحد تقيّمه.', rateSaved: 'تم حفظ التقييم', rateMiss: 'اختر درجة لكل البنود', comment: 'تعليق (اختياري)',
+      rateAll: 'متابعة التقييمات للشهر', rater: 'المقيّم', notRated: 'لم يُقيّم بعد', r1: 'ضعيف', r2: 'مقبول', r3: 'جيد', r4: 'جيد جداً', r5: 'ممتاز', lastRate: 'آخر تقييم', notesN: 'الملاحظات المعتمدة'
     },
     en: {
       rank: 'Ranking', profile: 'Employee report', week: 'This week', month: 'This month', pmonth: 'Last month', year: 'This year', custom: 'Custom',
@@ -3287,21 +3295,29 @@
       id: 'Employee ID', jtitle: 'Job title', team: 'Division', hire: 'Hiring date', rankOf: 'Team rank', of: 'of', teamAvg: 'Team average',
       byMonth: 'Overall KPI by month', byDay: 'Overall KPI by day', breakdown: 'KPI breakdown', facts: 'Key figures', notesT: 'Approved supervisor notes', notesSoon: 'Enabled once notes are raised via the bot and approved by management.', notesNone: 'No approved notes in this period.', notesLater: 'coming soon via the bot.',
       workDays: 'Work days', insp: 'Inspections', stnI: 'Station inspections', enfI: 'Ticket inspections', vio: 'Violations', fines: 'Fines value', ops: 'Productivity points', perDay: 'per day', target: 'Target',
-      cdcN: 'CDC cases', arrOk: 'Arrived on target', arrAvg: 'Avg. arrival', present: 'Present', absent: 'Absent', late: 'Late/exit', leave: 'Leave', sar: 'SAR', min: 'min', day: 'days',
+      cdcN: 'CDC cases', arrOk: 'Arrived on target', arrAvg: 'Avg. arrival', present: 'Present', absent: 'Absent', late: 'Late/exit', exTitle: 'Not scored: IDs to review', exUnk: 'IDs not in the employee list', exUnkH: 'Usually a mistyped ID, a test user, or a CDC account without an employee ID. Fix the ID in the source system or KpiHistory and it moves to the right employee.', exAdm: 'Admin team', exAdmH: 'Registered as ADM but not scored.', leave: 'Leave days', lvEx: 'excluded from the score', sar: 'SAR', min: 'min', day: 'days',
       bandA: 'Excellent', bandB: 'Very good', bandC: 'Good', bandD: 'Needs improvement', noData: 'No data', w: 'Weight',
-      formula: 'Productivity = (inspections {vio}+ violations × {eq}) ÷ (work days × {t}) · CDC = arrival within {m} min · criteria without data are excluded and their weight redistributed.', formulaS: 'Productivity = station inspections ÷ (work days × {t}) · Attendance = present ÷ (present + absent) · criteria without data are excluded and their weight redistributed.', vioPart: '',
-      gen: 'Generated', by: 'Prepared by', period: 'Period', hist: 'includes historical records', choose: 'Pick an employee from the ranking', n: 'employees', open: 'Report'
+      formula: 'Productivity = (inspections {vio}+ violations × {eq}) ÷ (work days × {t}) · CDC = arrival within {m} min · approved leave days are excluded · criteria without data are excluded and their weight redistributed.', formulaS: 'Productivity = station inspections ÷ (work days × {t}) · Attendance = present ÷ (present + absent) · approved leave days are excluded · criteria without data are excluded and their weight redistributed.', vioPart: '',
+      gen: 'Generated', by: 'Prepared by', period: 'Period', hist: 'includes historical records', choose: 'Pick an employee from the ranking', n: 'employees', open: 'Report',
+      SUP: 'Supervisors', SUP1: 'Supervisor', ADM: 'Admin team', rate: 'Manager rating', tabRank: 'Ranking', tabNotes: 'Notes', tabRate: 'Monthly rating',
+      formulaA: 'Score = attendance + punctuality + direct manager rating (average of items ÷ 5) · approved leave days are excluded · criteria without data are excluded and their weight redistributed.',
+      addNote: 'New note', minor: 'Minor', medium: 'Medium', major: 'Major', praise: 'Praise', kind: 'Type', cat: 'Category', text: 'Description', ndate: 'Incident date', nby: 'Raised by', nst: 'Status', save: 'Save', cancel: 'Cancel',
+      approve: 'Approve', reject: 'Reject', withdraw: 'Withdraw', reopen: 'Back to pending', rejReason: 'Reason (optional)', stP: 'Pending', stA: 'Approved', stR: 'Rejected', stAll: 'All', noNotes: 'No notes in this period.',
+      notesHow: 'Supervisor notes wait for management approval; only approved notes affect the Notes criterion. Praise offsets deductions.', notesOff: 'The Notes criterion is off: notes are saved but do not affect scores until KPI_NOTES is set to a start date in Settings.', noteSaved: 'Note submitted', noteSavedA: 'Note saved and approved',
+      pts: 'pts', rmonth: 'Month', rateHow: 'Rate each item from 1 to 5. Score = average ÷ 5 (e.g. 4 = 80%).', rateNone: 'Nobody to rate.', rateSaved: 'Rating saved', rateMiss: 'Pick a score for every item', comment: 'Comment (optional)',
+      rateAll: 'Ratings status this month', rater: 'Rater', notRated: 'Not rated yet', r1: 'Poor', r2: 'Fair', r3: 'Good', r4: 'Very good', r5: 'Excellent', lastRate: 'Latest rating', notesN: 'Approved notes'
     }
   };
   function kp(k, rep) { var L = KP[st.lang] || KP.ar, s = k in L ? L[k] : (KP.ar[k] || k); if (rep) Object.keys(rep).forEach(function (x) { s = s.split('{' + x + '}').join(rep[x]); }); return s; }
   var KP_COL = { A: '#22c55e', B: '#b45bff', C: '#f59e0b', D: '#ef4444' };
   var KP_ICON = { overall: 'M12 2a10 10 0 1 0 10 10M12 6a6 6 0 1 0 6 6M12 10a2 2 0 1 0 2 2M14 10l6-6M17 4h3v3', att: 'M16 11a3 3 0 1 0-3-3M8 11a3 3 0 1 0-3-3M2 20c0-3 3-5 6-5s6 2 6 5M12 20c0-3 3-5 6-5s4 2 4 4',
     punc: 'M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 10v4l2 2M10 2h4M19 5l2 2', prod: 'M4 20V14M9 20V10M14 20V6M19 20V3', cdc: 'M5 4h4l2 5-3 2a11 11 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2',
-    notes: 'M6 2h9l5 5v15H6zM14 2v6h6M9 13h8M9 17h6' };
+    notes: 'M6 2h9l5 5v15H6zM14 2v6h6M9 13h8M9 17h6', rate: 'M12 2l3 7h7l-5.5 4.5 2 7.5-6.5-4-6.5 4 2-7.5L2 9h7z' };
+  function kpTeamL(p) { return p.team === 'SUP' ? kp('SUP1') + ' · ' + kp(p.base) : kp(p.team); }
   function kpBand(v) { var b = (st.kpi.d && st.kpi.d.settings.bands) || [90, 80, 70]; return v === null || v === undefined ? '' : v >= b[0] ? 'A' : v >= b[1] ? 'B' : v >= b[2] ? 'C' : 'D'; }
   function kpName(p) { return st.lang === 'en' ? (p.name_en || tr(p.name)) : p.name; }
   function kpState() {
-    if (!st.kpi) st.kpi = { view: 'rank', preset: ls.get('mbco_kpi_preset') || 'month', from: '', to: '', team: '', q: '', sort: { k: 'overall', d: -1 }, emp: '', d: null, key: '', photos: {} };
+    if (!st.kpi) st.kpi = { tab: 'rank', nst: 'P', rm: '', view: 'rank', preset: ls.get('mbco_kpi_preset') || 'month', from: '', to: '', team: '', q: '', sort: { k: 'overall', d: -1 }, emp: '', d: null, key: '', photos: {} };
     return st.kpi;
   }
   function kpRange(preset, today) {
@@ -3317,13 +3333,13 @@
     wrap.innerHTML = '<div class="card rsttools noprint"><div class="rstctl">' +
       '<div class="ichips">' + ['week', 'month', 'pmonth', 'year', 'custom'].map(function (p) { return '<button type="button" class="ichip' + (K.preset === p ? ' on' : '') + '" data-kp="' + p + '">' + kp(p) + '</button>'; }).join('') + '</div>' +
       '<label class="field">' + kp('from') + '<input class="input num" type="date" id="kFrom" value="' + esc(K.from) + '"></label><label class="field">' + kp('to') + '<input class="input num" type="date" id="kTo" value="' + esc(K.to) + '"></label>' +
-      '<button type="button" class="btn sm" id="kRef">' + icon('refresh') + rt('refresh') + '</button></div></div><div id="kpiBody"><div class="loading"><div class="spin"></div>' + t('loading') + '</div></div>';
+      '<button type="button" class="btn sm" id="kRef">' + icon('refresh') + rt('refresh') + '</button></div></div><div class="seg kptabs noprint" id="kTabs"></div><div id="kpiBody"><div class="loading"><div class="spin"></div>' + t('loading') + '</div></div>';
     wrap.querySelectorAll('[data-kp]').forEach(function (b) {
       b.onclick = function () { var p = b.getAttribute('data-kp'); K.preset = p; ls.set('mbco_kpi_preset', p); if (p !== 'custom') { var r = kpRange(p, (K.d && K.d.today) || todayStr()); K.from = r[0]; K.to = r[1]; } renderKpi(wrap, false); };
     });
     var f = document.getElementById('kFrom'), tt = document.getElementById('kTo');
     f.onchange = tt.onchange = function () { K.preset = 'custom'; K.from = f.value; K.to = tt.value; renderKpi(wrap, false); };
-    document.getElementById('kRef').onclick = function () { kpLoad(true); };
+    document.getElementById('kRef').onclick = function () { st.kpi.nkey = ''; st.kpi.rkey = ''; kpLoad(true); };
     kpLoad(force);
   }
   function kpLoad(force) {
@@ -3338,6 +3354,9 @@
   }
   function kpDraw() {
     var K = st.kpi, b = document.getElementById('kpiBody'); if (!b || !K.d) return;
+    kpTabs();
+    if (K.tab === 'notes') return kpNotesLoad(false);
+    if (K.tab === 'rate') return kpRateLoad(false);
     b.innerHTML = K.view === 'emp' ? kpEmpView() : kpRankView();
     kpBind(b); kpFit();
     if (K.view === 'emp' && K.d.emp) kpPhoto(K.d.emp.profile.id);
@@ -3352,24 +3371,33 @@
       x = x === null || x === undefined ? -1 : x; y = y === null || y === undefined ? -1 : y; return (x > y ? 1 : x < y ? -1 : 0) * K.sort.d;
     });
   }
-  var KP_RCOLS = [['pos', '#'], ['name', 'emp'], ['team', 'team'], ['overall', 'overall'], ['scores.att', 'att'], ['scores.punc', 'punc'], ['scores.prod', 'prod'], ['scores.cdc', 'cdc'], ['raw.workDays', 'workDays'], ['raw.perDay', 'perDay'], ['raw.vio', 'vio'], ['raw.arrAvg', 'arrAvg']];
+  function kpSc(S) { return ['att', 'punc', 'prod', 'cdc', 'rate'].concat(S.notesOn ? ['notes'] : []); }
+  function kpCols(S) { return [['pos', '#'], ['name', 'emp'], ['team', 'team'], ['overall', 'overall']].concat(kpSc(S).map(function (k) { return ['scores.' + k, k]; })).concat([['raw.workDays', 'workDays'], ['raw.perDay', 'perDay'], ['raw.vio', 'vio'], ['raw.arrAvg', 'arrAvg']]); }
   function kpScoreCell(v) { if (v === null || v === undefined) return '<span class="muted">—</span>'; return '<span class="kpsc" style="--c:' + KP_COL[kpBand(v)] + '">' + v + '</span>'; }
   function kpRankView() {
-    var K = st.kpi, D = K.d, rows = kpRows(), S = D.settings;
-    var avg = function (t) { return D.teamAvg[t] === null ? '—' : D.teamAvg[t]; };
-    return '<div class="kpis k4">' + rKpi(kp('teamAvg') + ' · ' + kp('ENF'), avg('ENF')) + rKpi(kp('teamAvg') + ' · ' + kp('STN'), avg('STN')) +
+    var K = st.kpi, D = K.d, rows = kpRows(), S = D.settings, KP_RCOLS = kpCols(S);
+    var avg = function (t) { return D.teamAvg[t] === null || D.teamAvg[t] === undefined ? '—' : D.teamAvg[t]; };
+    return '<div class="kpis k6">' + ['ENF', 'STN', 'SUP', 'ADM'].map(function (t) { return rKpi(kp('teamAvg') + ' · ' + kp(t), avg(t)); }).join('') +
       rKpi(kp('bandA'), D.rank.filter(function (r) { return r.band === 'A'; }).length, 'ok') + rKpi(kp('bandD'), D.rank.filter(function (r) { return r.band === 'D'; }).length, 'bad') + '</div>' +
-      '<div class="toolbar noprint"><div class="seg teams">' + [['', 'all'], ['ENF', 'ENF'], ['STN', 'STN']].map(function (x) { return '<button type="button" data-kteam="' + x[0] + '" class="' + (K.team === x[0] ? 'on' : '') + '">' + kp(x[1]) + '</button>'; }).join('') + '</div>' +
+      '<div class="toolbar noprint"><div class="seg teams">' + [['', 'all'], ['ENF', 'ENF'], ['STN', 'STN'], ['SUP', 'SUP'], ['ADM', 'ADM']].map(function (x) { return '<button type="button" data-kteam="' + x[0] + '" class="' + (K.team === x[0] ? 'on' : '') + '">' + kp(x[1]) + '</button>'; }).join('') + '</div>' +
       '<input class="input" type="search" id="kQ" placeholder="' + esc(kp('search')) + '" value="' + esc(K.q) + '"><button type="button" class="btn sm" id="kX">' + icon('download') + kp('xlsx') + '</button><span class="muted"><span class="num">' + rows.length + '</span> ' + kp('n') + '</span></div>' +
       '<div class="tblwrap rtbl"><table class="tbl kprank"><thead><tr>' + KP_RCOLS.map(function (c) { return '<th' + (c[0] === 'pos' ? '' : ' data-ksort="' + c[0] + '"') + ' class="srt">' + esc(c[0] === 'pos' ? '#' : kp(c[1])) + (K.sort.k === c[0] ? (K.sort.d > 0 ? ' ▲' : ' ▼') : '') + '</th>'; }).join('') + '<th></th></tr></thead><tbody>' +
       (rows.length ? rows.map(function (r, i) {
-        return '<tr class="clk" data-kemp="' + esc(r.id) + '"><td class="num">' + (i + 1) + '</td><td><b>' + esc(kpName(r)) + '</b><div class="muted num">' + esc(r.id) + '</div></td><td>' + esc(kp(r.team)) + '</td>' +
+        return '<tr class="clk" data-kemp="' + esc(r.id) + '"><td class="num">' + (i + 1) + '</td><td><b>' + esc(kpName(r)) + '</b><div class="muted num">' + esc(r.id) + '</div></td><td>' + esc(kpTeamL(r)) + '</td>' +
           '<td><div class="kpbar"><i style="width:' + (r.overall || 0) + '%;background:' + (KP_COL[r.band] || '#888') + '"></i></div><b class="num">' + (r.overall === null ? '—' : r.overall) + '</b> <span class="kpband" style="--c:' + (KP_COL[r.band] || '#888') + '">' + (r.band ? kp('band' + r.band) : '') + '</span></td>' +
-          ['att', 'punc', 'prod', 'cdc'].map(function (k) { return '<td class="num">' + kpScoreCell(r.scores[k]) + '</td>'; }).join('') +
+          kpSc(S).map(function (k) { return '<td class="num">' + kpScoreCell(r.scores[k]) + '</td>'; }).join('') +
           '<td class="num">' + r.raw.workDays + '</td><td class="num">' + (r.raw.perDay === null ? '—' : r.raw.perDay) + '</td><td class="num">' + (r.team === 'ENF' ? r.raw.vio : '—') + '</td><td class="num">' + (r.raw.arrAvg === null ? '—' : r.raw.arrAvg + ' ' + kp('min')) + '</td>' +
           '<td><button type="button" class="btn sm ghost">' + kp('open') + '</button></td></tr>';
-      }).join('') : '<tr><td colspan="13" class="empty">' + t('no_rows') + '</td></tr>') +
-      '</tbody></table></div><p class="muted rmeta">' + esc(kp('formula', { eq: S.vioEq, t: S.target, m: S.cdcMin, vio: '' })) + (D.sources && D.sources.historyRows ? ' · ' + kp('hist') : '') + '</p>';
+      }).join('') : '<tr><td colspan="' + (KP_RCOLS.length + 1) + '" class="empty">' + t('no_rows') + '</td></tr>') +
+      '</tbody></table></div><p class="muted rmeta">' + esc(kp('formula', { eq: S.vioEq, t: S.target, m: S.cdcMin, vio: '' })) + (D.sources && D.sources.historyRows ? ' · ' + kp('hist') : '') + '</p>' + kpExcluded(D.excluded);
+  }
+  function kpExcluded(X) {
+    if (!X || (!X.adm.length && !X.unknown.length)) return '';
+    var act = function (r) { return [['stn', r.stn], ['enf', r.enf], ['vio', r.vio], ['cdcN', r.cdc]].filter(function (x) { return x[1]; }).map(function (x) { return kp(x[0] === 'stn' ? 'stnI' : x[0] === 'enf' ? 'enfI' : x[0]) + ' ' + x[1]; }).join(' · '); };
+    var row = function (r) { return '<tr><td class="num">' + esc(r.id) + '</td><td>' + esc((st.lang === 'en' ? r.name_en || r.name : r.name || r.name_en) || '—') + '</td><td class="muted">' + esc(act(r)) + '</td></tr>'; };
+    var block = function (title, hint, list) { return list.length ? '<div class="kpex"><h4>' + esc(title) + ' <span class="num">(' + list.length + ')</span></h4><p class="muted">' + esc(hint) + '</p><div class="tblwrap"><table class="tbl"><tbody>' + list.map(row).join('') + '</tbody></table></div></div>' : ''; };
+    return '<details class="kpexw noprint"><summary>' + esc(kp('exTitle')) + ' <span class="num">(' + (X.adm.length + X.unknown.length) + ')</span></summary>' +
+      block(kp('exUnk'), kp('exUnkH'), X.unknown) + block(kp('exAdm'), kp('exAdmH'), X.adm) + '</details>';
   }
 
   /* ---------- تقرير الموظف (بطاقة A4 بالعرض) ---------- */
@@ -3399,7 +3427,7 @@
       grid + area + '<path d="' + path + '" fill="none" stroke="#c45cff" stroke-width="3" style="filter:drop-shadow(0 0 5px #c45cff)"/>' + labels + ticks + '</svg>';
   }
   function kpDonut(contrib, overall) {
-    var cols = { att: '#22c55e', punc: '#3b82f6', prod: '#a855f7', cdc: '#f59e0b', notes: '#ef4444' }, ks = Object.keys(contrib), tot = ks.reduce(function (a, k) { return a + contrib[k]; }, 0) || 1;
+    var cols = { att: '#22c55e', punc: '#3b82f6', prod: '#a855f7', cdc: '#f59e0b', notes: '#ef4444', rate: '#ec4899' }, ks = Object.keys(contrib), tot = ks.reduce(function (a, k) { return a + contrib[k]; }, 0) || 1;
     var R = 70, r = 38, cx = 85, cy = 85, a0 = -Math.PI / 2, seg = '';
     ks.forEach(function (k) {
       var a1 = a0 + contrib[k] / tot * Math.PI * 2, la = a1 - a0 > Math.PI ? 1 : 0, p = function (rr, a) { return (cx + rr * Math.cos(a)).toFixed(1) + ' ' + (cy + rr * Math.sin(a)).toFixed(1); };
@@ -3425,26 +3453,32 @@
     var ysCls = ys === period ? ' sm' : '';
     var circles = [['overall', E.overall, null]].concat(Object.keys(W).filter(function (k) { return W[k] > 0 && (k !== 'notes' || S.notesOn); }).map(function (k) { return [k, E.scores[k], W[k]]; }));
     var fact = function (l, v, s) { return '<div class="kpf"><span>' + esc(l) + '</span><b class="num">' + v + '</b>' + (s ? '<small>' + s + '</small>' : '') + '</div>'; };
-    var facts = fact(kp('workDays'), R.workDays) +
+    var isA = p.team === 'SUP' || p.team === 'ADM', X = E.extra || { notes: [], rates: [] }, lr = X.rates.length ? X.rates[X.rates.length - 1] : null;
+    var facts = fact(kp('workDays'), R.workDays) + (isA ?
+      (lr ? fact(kp('lastRate'), lr.score + '%', esc(lr.m + ' · ' + lr.by)) : fact(kp('rate'), '—', kp('notRated'))) +
+      (R.present || R.absent ? fact(kp('present') + ' / ' + kp('absent'), R.present + ' / ' + R.absent, R.late ? kp('late') + ' ' + R.late : '') : '') +
+      (R.leave ? fact(kp('leave'), R.leave, kp('lvEx')) : '') : '') + (isA ? '' :
       (p.team === 'STN' ? fact(kp('stnI'), R.stn) : fact(kp('enfI'), R.enf) + fact(kp('vio'), R.vio, R.fines ? R.fines.toLocaleString('en-US') + ' ' + kp('sar') : '')) +
       fact(kp('ops') + ' / ' + kp('perDay'), R.perDay === null ? '—' : R.perDay, kp('target') + ' ' + S.target) +
       (p.team === 'ENF' ? fact(kp('cdcN'), R.cdc, R.arrN ? kp('arrOk') + ' ' + R.arrOk + '/' + R.arrN + ' · ' + kp('arrAvg') + ' ' + R.arrAvg + ' ' + kp('min') : '') : '') +
-      (R.present || R.absent ? fact(kp('present') + ' / ' + kp('absent'), R.present + ' / ' + R.absent, R.late ? kp('late') + ' ' + R.late : '') : '');
+      (R.present || R.absent ? fact(kp('present') + ' / ' + kp('absent'), R.present + ' / ' + R.absent, R.late ? kp('late') + ' ' + R.late : '') : '') +
+      (R.leave ? fact(kp('leave'), R.leave, kp('lvEx')) : ''));
+    var nl = X.notes.slice(0, 2).map(function (n) { return '<span class="kpnk ' + esc(n.kind) + '">' + esc(kp(n.kind)) + '</span> <span class="num">' + esc(n.d.slice(5)) + '</span> ' + esc(n.cat); }).join(' · ');
     return pick + '<div class="kpwrap"><div class="kpsheet" id="kpSheet">' +
-      '<div class="kphead"><div class="kplogo"><b>MBCO</b><span>Modern Bus Company Limited</span></div><div class="kpht"><h1>' + kp('title') + '</h1><p>' + kp('sub') + ' — ' + esc(kp(p.team)) + ' · ' + esc(kp('period')) + ' <span class="ltr">' + esc(period) + '</span></p></div><div class="kpyear' + ysCls + '">' + esc(ys) + '</div></div>' +
-      '<div class="kprow1"><div class="kpcard kpprof"><div class="kpphoto" id="kpPhoto">' + (K.photos[p.id] ? '<img src="' + K.photos[p.id] + '" alt="">' : '<span>' + esc(kpName(p).slice(0, 1)) + '</span>') + '</div><div class="kpinfo"><h2>' + esc(kpName(p)) + '</h2><div class="kprole">' + esc((st.lang === 'en' ? p.title_en : p.title_ar) || kp(p.team)) + '</div>' +
-      '<div class="kpline2"><span>' + kp('id') + '</span><b class="num">' + esc(p.id) + '</b></div><div class="kpline2"><span>' + kp('team') + '</span><b>' + esc(kp(p.team)) + '</b></div>' +
+      '<div class="kphead"><div class="kplogo"><b>MBCO</b><span>Modern Bus Company Limited</span></div><div class="kpht"><h1>' + kp('title') + '</h1><p>' + kp('sub') + ' — ' + esc(kpTeamL(p)) + ' · ' + esc(kp('period')) + ' <span class="ltr">' + esc(period) + '</span></p></div><div class="kpyear' + ysCls + '">' + esc(ys) + '</div></div>' +
+      '<div class="kprow1"><div class="kpcard kpprof"><div class="kpphoto" id="kpPhoto">' + (K.photos[p.id] ? '<img src="' + K.photos[p.id] + '" alt="">' : '<span>' + esc(kpName(p).slice(0, 1)) + '</span>') + '</div><div class="kpinfo"><h2>' + esc(kpName(p)) + '</h2><div class="kprole">' + esc((st.lang === 'en' ? p.title_en : p.title_ar) || kpTeamL(p)) + '</div>' +
+      '<div class="kpline2"><span>' + kp('id') + '</span><b class="num">' + esc(p.id) + '</b></div><div class="kpline2"><span>' + kp('team') + '</span><b>' + esc(kpTeamL(p)) + '</b></div>' +
       '<div class="kpline2"><span>' + kp('hire') + '</span><b class="num">' + esc(p.hire || '—') + '</b></div><div class="kpline2"><span>' + kp('rankOf') + '</span><b>' + (E.rank ? '<span class="num">' + E.rank + '</span> ' + kp('of') + ' <span class="num">' + E.of + '</span>' : '—') + '</b></div></div></div>' +
-      '<div class="kpcard kpcircles">' + circles.map(function (c) {
+      '<div class="kpcard kpcircles' + (circles.length >= 6 ? ' n6' : '') + '">' + circles.map(function (c) {
         var v = c[1], cc = c[0] === 'overall' ? col : (KP_COL[kpBand(v)] || '#666');
-        return '<div class="kpc' + (c[0] === 'overall' ? ' big' : '') + '"><div class="kpct"><i></i>' + kp(c[0]) + '</div><div class="kpcr">' + kpRing(v, v === null ? '#555' : cc, c[0] === 'overall' ? 112 : 96, '') + '<div class="kpcv">' + kpIco(c[0], v === null ? '#777' : cc) + '<b class="num">' + (v === null || v === undefined ? '—' : v + '%') + '</b></div></div><div class="kpcw">' + (c[2] ? kp('w') + ' ' + c[2] + '%' : (band ? '<span style="color:' + col + '">' + kp('band' + band) + '</span>' : '')) + '</div></div>';
+        return '<div class="kpc' + (c[0] === 'overall' ? ' big' : '') + '"><div class="kpct"><i></i>' + kp(c[0]) + '</div><div class="kpcr">' + kpRing(v, v === null ? '#555' : cc, circles.length >= 6 ? (c[0] === 'overall' ? 98 : 76) : (c[0] === 'overall' ? 112 : 96), '') + '<div class="kpcv">' + kpIco(c[0], v === null ? '#777' : cc) + '<b class="num">' + (v === null || v === undefined ? '—' : v + '%') + '</b></div></div><div class="kpcw">' + (c[2] ? kp('w') + ' ' + c[2] + '%' : (band ? '<span style="color:' + col + '">' + kp('band' + band) + '</span>' : '')) + '</div></div>';
       }).join('') + '</div></div>' +
       '<div class="kpcard kpchart"><div class="kpct big"><i></i>' + kp(E.unit === 'month' ? 'byMonth' : 'byDay') + (D.teamAvg[p.team] !== null ? '<span class="kpavg">' + kp('teamAvg') + ': <b class="num">' + D.teamAvg[p.team] + '%</b></span>' : '') + '</div>' + kpLine(E.series, E.unit) + '</div>' +
       '<div class="kprow3"><div class="kpcard"><div class="kpct big"><i></i>' + kp('breakdown') + '</div>' + kpDonut(E.contrib, E.overall) + '</div>' +
       '<div class="kpcard"><div class="kpct big"><i></i>' + kp('facts') + '</div><div class="kpfacts">' + facts + '</div>' +
-      '<div class="kpnoteline"><b>' + kp('notesT') + ':</b> ' + (S.notesOn ? (E.notes.length ? E.notes.length : kp('notesNone')) : kp('notesLater')) + '</div></div>' +
+      '<div class="kpnoteline"><b>' + kp('notesT') + (X.notes.length ? ' (<span class="num">' + X.notes.length + '</span>)' : '') + ':</b> ' + (X.notes.length ? nl + (X.notes.length > 2 ? ' …' : '') : kp('notesNone')) + '</div></div>' +
       '<div class="kpbanner"><img src="kpi-banner.jpg" alt=""></div></div>' +
-      '<div class="kpfoot"><span>' + esc(kp(p.team === 'STN' ? 'formulaS' : 'formula', { eq: S.vioEq, t: S.target, m: S.cdcMin, vio: '' })) + '</span><span>' + kp('gen') + ' <span class="ltr">' + esc(D.generated) + '</span> · ' + kp('by') + ': ' + esc(st.user.name || '') + '</span></div>' +
+      '<div class="kpfoot"><span>' + esc(kp(isA ? 'formulaA' : p.team === 'STN' ? 'formulaS' : 'formula', { eq: S.vioEq, t: S.target, m: S.cdcMin, vio: '' })) + '</span><span>' + kp('gen') + ' <span class="ltr">' + esc(D.generated) + '</span> · ' + kp('by') + ': ' + esc(st.user.name || '') + '</span></div>' +
       '</div></div>';
   }
   /* التقرير بعرض ثابت (A4 بالعرض = 1123 بكسل) ويتصغّر على الشاشة الصغيرة */
@@ -3475,9 +3509,9 @@
   function kpXlsx() {
     var X = window.MBCO_XLSX, K = st.kpi; if (!X) return;
     var head = { b: true, color: '#FFFFFF', fill: '#7B1E8F', h: 'center', border: 1, wrap: true }, cell = { border: 1 };
-    var cols = [['#', function (r, i) { return i + 1; }], [kp('id'), function (r) { return r.id; }], [kp('emp'), function (r) { return kpName(r); }], [kp('team'), function (r) { return kp(r.team); }],
+    var cols = [['#', function (r, i) { return i + 1; }], [kp('id'), function (r) { return r.id; }], [kp('emp'), function (r) { return kpName(r); }], [kp('team'), function (r) { return kpTeamL(r); }],
       [kp('overall'), function (r) { return r.overall; }], [kp('band' + 'A').slice(0, 0) + (st.lang === 'en' ? 'Band' : 'التقدير'), function (r) { return r.band ? kp('band' + r.band) : ''; }],
-      [kp('att'), function (r) { return r.scores.att; }], [kp('punc'), function (r) { return r.scores.punc; }], [kp('prod'), function (r) { return r.scores.prod; }], [kp('cdc'), function (r) { return r.scores.cdc; }],
+      [kp('att'), function (r) { return r.scores.att; }], [kp('punc'), function (r) { return r.scores.punc; }], [kp('prod'), function (r) { return r.scores.prod; }], [kp('cdc'), function (r) { return r.scores.cdc; }], [kp('rate'), function (r) { return r.scores.rate; }], [kp('notes'), function (r) { return r.scores.notes; }],
       [kp('workDays'), function (r) { return r.raw.workDays; }], [kp('stnI'), function (r) { return r.raw.stn; }], [kp('enfI'), function (r) { return r.raw.enf; }], [kp('vio'), function (r) { return r.raw.vio; }],
       [kp('fines'), function (r) { return r.raw.fines; }], [kp('ops'), function (r) { return r.raw.ops; }], [kp('perDay'), function (r) { return r.raw.perDay; }], [kp('cdcN'), function (r) { return r.raw.cdc; }],
       [kp('arrOk'), function (r) { return r.raw.arrN ? r.raw.arrOk + '/' + r.raw.arrN : ''; }], [kp('arrAvg'), function (r) { return r.raw.arrAvg; }], [kp('present'), function (r) { return r.raw.present; }], [kp('absent'), function (r) { return r.raw.absent; }]];
@@ -3487,6 +3521,121 @@
       rows: [[{ v: 'MBCO · ' + kp('title') + ' · ' + K.from + ' → ' + K.to, s: { b: true, sz: 14, color: '#7B1E8F' } }], [kp('formula', { eq: K.d.settings.vioEq, t: K.d.settings.target, m: K.d.settings.cdcMin, vio: '' })], cols.map(function (c) { return { v: c[0], s: head }; })]
         .concat(rows.map(function (r, i) { return cols.map(function (c) { var v = c[1](r, i); return { v: v === null || v === undefined ? '' : v, s: cell }; }); })) }]));
     a.download = 'MBCO_KPI_' + K.from + '_' + K.to + '.xlsx'; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  }
+  /* ---------- 2.4: التبويبات + الملاحظات + التقييم الشهري ---------- */
+  function kpTabs() {
+    var K = st.kpi, el = document.getElementById('kTabs'); if (!el) return;
+    var me = (K.d && K.d.me) || {}, tabs = [['rank', kp('tabRank')]];
+    if (me.note || me.approve) tabs.push(['notes', kp('tabNotes') + (me.pending ? ' <span class="kpbadge num">' + me.pending + '</span>' : '')]);
+    if (me.rate || me.approve) tabs.push(['rate', kp('tabRate')]);
+    if (tabs.length < 2) { el.innerHTML = ''; K.tab = 'rank'; return; }
+    el.innerHTML = tabs.map(function (x) { return '<button type="button" data-ktab="' + x[0] + '" class="' + (K.tab === x[0] ? 'on' : '') + '">' + x[1] + '</button>'; }).join('');
+    el.querySelectorAll('[data-ktab]').forEach(function (b) { b.onclick = function () { K.tab = b.getAttribute('data-ktab'); kpDraw(); }; });
+  }
+  function kpBusy(b) { b.innerHTML = '<div class="loading"><div class="spin"></div>' + t('loading') + '</div>'; }
+  function kpNotesLoad(force) {
+    var K = st.kpi, b = document.getElementById('kpiBody'), ck = K.from + '|' + K.to;
+    if (K.nd && K.nkey === ck && !force) return kpNotesDraw();
+    kpBusy(b); setSync(true);
+    return api('kpiNotes', { from: K.from, to: K.to }).then(function (j) { K.nd = j.data; K.nkey = ck; if (K.tab === 'notes' && route() === 'people') kpNotesDraw(); })
+      .catch(function (e) { failBox(b, e, function () { kpNotesLoad(true); }); }).then(function () { setSync(false); });
+  }
+  function kpNk(k) { return '<span class="kpnk ' + esc(k) + '">' + esc(kp(k)) + '</span>'; }
+  function kpNotesDraw() {
+    var K = st.kpi, N = K.nd, b = document.getElementById('kpiBody'); if (!b || !N) return;
+    var stK = { P: 'بانتظار الاعتماد', A: 'معتمدة', R: 'مرفوضة' }, cnt = function (k) { return N.notes.filter(function (n) { return n.status === stK[k]; }).length; };
+    var list = N.notes.filter(function (n) { return !K.nst || n.status === stK[K.nst]; });
+    var nm = function (id, name) { var t_ = N.targets.filter(function (x) { return x.id === id; })[0]; return esc(st.lang === 'en' && t_ && t_.name_en ? t_.name_en : name); };
+    var stCls = function (s_) { return s_ === stK.A ? 'ok' : s_ === stK.R ? 'bad' : s_ === stK.P ? 'warn' : ''; };
+    var stL = function (s_) { return s_ === stK.A ? kp('stA') : s_ === stK.R ? kp('stR') : s_ === stK.P ? kp('stP') : s_; };
+    b.innerHTML = '<div class="kpis k4">' + rKpi(kp('stP'), cnt('P'), 'warn') + rKpi(kp('stA'), cnt('A'), 'ok') + rKpi(kp('stR'), cnt('R'), 'bad') + rKpi(kp('tabNotes'), N.notes.length) + '</div>' +
+      '<p class="muted kphow">' + esc(kp('notesHow')) + (N.notesOn ? '' : ' <b>' + esc(kp('notesOff')) + '</b>') + '</p>' +
+      '<div class="toolbar noprint"><div class="seg">' + [['P', 'stP'], ['A', 'stA'], ['R', 'stR'], ['', 'stAll']].map(function (x) { return '<button type="button" data-knst="' + x[0] + '" class="' + (K.nst === x[0] ? 'on' : '') + '">' + kp(x[1]) + '</button>'; }).join('') + '</div><span class="sp"></span>' +
+      (N.targets.length ? '<button type="button" class="btn primary sm" id="kNew">' + icon('plus') + kp('addNote') + '</button>' : '') + '</div>' +
+      '<div class="tblwrap rtbl"><table class="tbl kpnotes"><thead><tr><th>' + kp('ndate') + '</th><th>' + kp('emp') + '</th><th>' + kp('kind') + '</th><th>' + kp('cat') + '</th><th>' + kp('text') + '</th><th>' + kp('nby') + '</th><th>' + kp('nst') + '</th><th></th></tr></thead><tbody>' +
+      (list.length ? list.map(function (n) {
+        var acts = '';
+        if (N.approve && n.status === stK.P) acts = '<button type="button" class="btn sm ok" data-nact="approve" data-nid="' + esc(n.id) + '">' + kp('approve') + '</button><button type="button" class="btn sm ghost" data-nact="reject" data-nid="' + esc(n.id) + '">' + kp('reject') + '</button>';
+        else if (N.approve && (n.status === stK.A || n.status === stK.R)) acts = '<button type="button" class="btn sm ghost" data-nact="reopen" data-nid="' + esc(n.id) + '">' + kp('reopen') + '</button>';
+        if (n.by === N.me && n.status === stK.P && !N.approve) acts += '<button type="button" class="btn sm ghost" data-nact="withdraw" data-nid="' + esc(n.id) + '">' + kp('withdraw') + '</button>';
+        return '<tr><td class="num nowrap">' + esc(n.d) + '</td><td class="nowrap"><b>' + nm(n.emp, n.name) + '</b><div class="muted num">' + esc(n.emp) + '</div></td><td>' + kpNk(n.kind) + '</td><td>' + esc(n.cat) + '</td>' +
+          '<td class="kpntext">' + esc(n.text || '—') + (n.decNote ? '<div class="muted">↳ ' + esc(n.decNote) + '</div>' : '') + '</td><td class="nowrap">' + esc(n.byName) + (n.src === 'bot' ? ' <span class="muted">· bot</span>' : '') + '</td>' +
+          '<td class="nowrap"><span class="rstat ' + stCls(n.status) + '">' + esc(stL(n.status)) + '</span>' + (n.decBy ? '<div class="muted">' + esc(n.decBy) + '</div>' : '') + '</td><td class="nowrap">' + acts + '</td></tr>';
+      }).join('') : '<tr><td colspan="8" class="empty">' + kp('noNotes') + '</td></tr>') + '</tbody></table></div>';
+    b.querySelectorAll('[data-knst]').forEach(function (x) { x.onclick = function () { K.nst = x.getAttribute('data-knst'); kpNotesDraw(); }; });
+    var nw = b.querySelector('#kNew'); if (nw) nw.onclick = kpNoteModal;
+    b.querySelectorAll('[data-nact]').forEach(function (x) {
+      x.onclick = function () {
+        var a = x.getAttribute('data-nact'), id = x.getAttribute('data-nid');
+        var go = function (note) { setSync(true); api('kpiNoteDecide', { id: id, act: a, note: note || '' }).then(function () { cdModalClose(); K.key = ''; kpRefreshMe(); kpNotesLoad(true); }).catch(function (e) { toast(errText(e)); }).then(function () { setSync(false); }); };
+        if (a !== 'reject') return go('');
+        cdModal('<h3>' + kp('reject') + '</h3><label class="field">' + kp('rejReason') + '<textarea class="input" id="kRej" rows="3"></textarea></label><div class="mact"><button type="button" class="btn ghost" data-x>' + kp('cancel') + '</button><button type="button" class="btn primary" id="kRejGo">' + kp('reject') + '</button></div>',
+          function (ov) { ov.querySelector('#kRejGo').onclick = function () { go(ov.querySelector('#kRej').value.trim()); }; });
+      };
+    });
+  }
+  function kpRefreshMe() { var K = st.kpi; return api('kpi', { from: K.from, to: K.to }).then(function (j) { K.d = j.data; K.key = K.from + '|' + K.to + '|'; kpTabs(); }).catch(function () {}); }
+  function kpNoteModal() {
+    var K = st.kpi, N = K.nd, today = (K.d && K.d.today) || todayStr();
+    var min = new Date(today + 'T12:00:00'); min.setDate(min.getDate() - 30); min = min.toISOString().slice(0, 10);
+    var grp = {}; N.targets.forEach(function (x) { var g = x.group === 'SUP' ? 'SUP' : x.group; (grp[g] = grp[g] || []).push(x); });
+    var opts = Object.keys(grp).map(function (g) { return '<optgroup label="' + esc(kp(g)) + '">' + grp[g].map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(kpName(x)) + ' (' + esc(x.id) + ')</option>'; }).join('') + '</optgroup>'; }).join('');
+    var kinds = Object.keys(N.types);
+    cdModal('<h3>' + kp('addNote') + '</h3><div class="kpform">' +
+      '<label class="field">' + kp('emp') + '<select class="input" id="nEmp">' + opts + '</select></label>' +
+      '<div class="field"><span>' + kp('kind') + '</span><div class="seg kpkinds">' + kinds.map(function (k, i) { var v = N.types[k]; return '<button type="button" data-nk="' + k + '" class="' + (i === 0 ? 'on' : '') + '">' + kp(k) + ' <span class="num muted">' + (v > 0 ? '+' : '') + v + '</span></button>'; }).join('') + '</div></div>' +
+      '<label class="field">' + kp('cat') + '<select class="input" id="nCat"></select></label>' +
+      '<label class="field">' + kp('ndate') + '<input class="input num" type="date" id="nDate" value="' + today + '" min="' + min + '" max="' + today + '"></label>' +
+      '<label class="field">' + kp('text') + '<textarea class="input" id="nText" rows="3" maxlength="600"></textarea></label></div>' +
+      '<div class="mact"><button type="button" class="btn ghost" data-x>' + kp('cancel') + '</button><button type="button" class="btn primary" id="nGo">' + kp('save') + '</button></div>', function (ov) {
+        var kind = kinds[0];
+        var fill = function () { var L = kind === 'praise' ? N.praiseCats : N.cats; ov.querySelector('#nCat').innerHTML = L.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join(''); };
+        fill();
+        ov.querySelectorAll('[data-nk]').forEach(function (b) { b.onclick = function () { kind = b.getAttribute('data-nk'); ov.querySelectorAll('[data-nk]').forEach(function (x) { x.classList.toggle('on', x === b); }); fill(); }; });
+        ov.querySelector('#nGo').onclick = function () {
+          var btn = this; btn.disabled = true; setSync(true);
+          api('kpiNoteAdd', { emp: ov.querySelector('#nEmp').value, kind: kind, cat: ov.querySelector('#nCat').value, date: ov.querySelector('#nDate').value, text: ov.querySelector('#nText').value.trim() })
+            .then(function (j) { cdModalClose(); toast(kp(j.note && j.note.status === 'معتمدة' ? 'noteSavedA' : 'noteSaved')); K.key = ''; kpRefreshMe(); kpNotesLoad(true); })
+            .catch(function (e) { btn.disabled = false; toast(errText(e)); }).then(function () { setSync(false); });
+        };
+      });
+  }
+  function kpRateLoad(force) {
+    var K = st.kpi, b = document.getElementById('kpiBody');
+    if (!K.rm) K.rm = ((K.d && K.d.today) || todayStr()).slice(0, 7);
+    if (K.rd && K.rkey === K.rm && !force) return kpRateDraw();
+    kpBusy(b); setSync(true);
+    return api('kpiRates', { month: K.rm }).then(function (j) { K.rd = j.data; K.rkey = K.rm; if (K.tab === 'rate' && route() === 'people') kpRateDraw(); })
+      .catch(function (e) { failBox(b, e, function () { kpRateLoad(true); }); }).then(function () { setSync(false); });
+  }
+  function kpRateDraw() {
+    var K = st.kpi, R = K.rd, b = document.getElementById('kpiBody'); if (!b || !R) return;
+    var maxM = ((K.d && K.d.today) || todayStr()).slice(0, 7);
+    var gl = function (x) { return x.group === 'SUP' ? kp('SUP1') + ' · ' + kp(x.base) : kp(x.group); };
+    var card = function (x) {
+      var r = x.rating || {}, it = r.items || [];
+      return '<div class="card kprc" data-remp="' + esc(x.id) + '"><div class="kprch"><div><b>' + esc(kpName(x)) + '</b><div class="muted"><span class="num">' + esc(x.id) + '</span> · ' + esc(gl(x)) + '</div></div><div class="kprsc num" data-rsc>' + (r.score ? r.score + '%' : '—') + '</div></div>' +
+        R.items.map(function (lab, i) { return '<div class="kpri"><span>' + esc(lab) + '</span><div class="seg kpr5">' + [1, 2, 3, 4, 5].map(function (v) { return '<button type="button" title="' + esc(kp('r' + v)) + '" data-ri="' + i + '" data-rv="' + v + '" class="' + (it[i] === v ? 'on' : '') + '">' + v + '</button>'; }).join('') + '</div></div>'; }).join('') +
+        '<textarea class="input" rows="2" data-rcm placeholder="' + esc(kp('comment')) + '">' + esc(r.comment || '') + '</textarea>' +
+        '<div class="kprf"><span class="muted">' + (r.at ? esc(r.by + ' · ' + r.at) : esc(kp('notRated'))) + '</span><button type="button" class="btn primary sm" data-rsave>' + kp('save') + '</button></div></div>';
+    };
+    b.innerHTML = '<div class="toolbar noprint"><label class="field">' + kp('rmonth') + '<input class="input num" type="month" id="kRm" value="' + esc(R.month) + '" max="' + maxM + '"></label><span class="muted kphow">' + esc(kp('rateHow')) + ' ' + [1, 2, 3, 4, 5].map(function (v) { return v + ' ' + kp('r' + v); }).join(' · ') + '</span></div>' +
+      (R.targets.length ? '<div class="kprgrid">' + R.targets.map(card).join('') + '</div>' : (R.all ? '' : '<div class="empty card">' + kp('rateNone') + '</div>')) +
+      (R.all ? '<h3 class="kph3">' + kp('rateAll') + '</h3><div class="tblwrap rtbl"><table class="tbl"><thead><tr><th>' + kp('emp') + '</th><th>' + kp('team') + '</th><th>' + kp('rater') + '</th><th>' + kp('rate') + '</th></tr></thead><tbody>' +
+        R.all.map(function (x) { return '<tr><td><b>' + esc(kpName(x)) + '</b> <span class="muted num">' + esc(x.id) + '</span></td><td>' + esc(gl(x)) + '</td><td>' + esc(R.names[x.rater] || x.rater || '—') + '</td><td>' + (x.rating ? kpScoreCell(x.rating.score) + (x.rating.comment ? ' <span class="muted">' + esc(x.rating.comment) + '</span>' : '') : '<span class="kpst warn">' + kp('notRated') + '</span>') + '</td></tr>'; }).join('') + '</tbody></table></div>' : '');
+    var m = b.querySelector('#kRm'); if (m) m.onchange = function () { if (m.value) { K.rm = m.value > maxM ? maxM : m.value; kpRateLoad(false); } };
+    b.querySelectorAll('.kprc').forEach(function (c) {
+      var calc = function () { var v = []; c.querySelectorAll('.kpri').forEach(function (row) { var on = row.querySelector('.on'); v.push(on ? +on.getAttribute('data-rv') : 0); }); return v; };
+      c.querySelectorAll('[data-ri]').forEach(function (btn) {
+        btn.onclick = function () { btn.parentNode.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === btn); }); var v = calc(); if (v.indexOf(0) < 0) c.querySelector('[data-rsc]').textContent = Math.round(v.reduce(function (a, x) { return a + x; }, 0) / v.length / 5 * 1000) / 10 + '%'; };
+      });
+      c.querySelector('[data-rsave]').onclick = function () {
+        var v = calc(), btn = this; if (v.indexOf(0) >= 0) return toast(kp('rateMiss'));
+        btn.disabled = true; setSync(true);
+        api('kpiRateSave', { emp: c.getAttribute('data-remp'), month: R.month, items: v, comment: c.querySelector('[data-rcm]').value.trim() })
+          .then(function () { toast(kp('rateSaved')); K.key = ''; kpRateLoad(true); }).catch(function (e) { btn.disabled = false; toast(errText(e)); }).then(function () { setSync(false); });
+      };
+    });
   }
   function kpBind(b) {
     var K = st.kpi;

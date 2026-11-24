@@ -423,15 +423,18 @@ window.MBCO_DEMO = (function () {
 
   /* معايير الأداء KPI (v2.3): نفس شكل رد kpi_ في Kpi.gs ببيانات تجريبية */
   function kpiDemo(from, to, emp) {
+    kpnInit();
     var T = opDay(); to = to || T; from = from || to.slice(0, 8) + '01';
-    var S = { weights: { ENF: { att: 25, punc: 15, prod: 30, cdc: 20, notes: 10 }, STN: { att: 30, punc: 20, prod: 30, notes: 20 } }, target: 25, vioEq: 5, cdcMin: 30, bands: [90, 80, 70], notesOn: false };
-    var P = [['10171', 'سليمان الحازمي', 'Sulaiman A. Alhazmi', 'ENF', 'قائد فريق الضبط', 'Enforcement Team Leader', '2021-09-07'], ['10090', 'سامي الهوساوي', 'Sami A. Alhawsawi', 'ENF', 'مشرف وردية', 'Shift Supervisor', '2021-01-06'],
+    var S = { weights: { ENF: { att: 25, punc: 15, prod: 30, cdc: 20, notes: 10 }, STN: { att: 30, punc: 20, prod: 30, notes: 20 }, SUP: { att: 30, punc: 20, rate: 50 }, ADM: { att: 30, punc: 20, rate: 50 } }, target: 25, vioEq: 5, cdcMin: 30, bands: [90, 80, 70], notesOn: true, notesFrom: T.slice(0, 8) + '01' };
+    var P = [['10171', 'سليمان الحازمي', 'Sulaiman A. Alhazmi', 'ENF', 'قائد فريق الضبط', 'Enforcement Team Leader', '2021-09-07'], ['10090', 'سامي الهوساوي', 'Sami A. Alhawsawi', 'SUP', 'مشرف وردية', 'Shift Supervisor', '2021-01-06', 'ENF'],
       ['10675', 'عماد برناوي', 'Emad A. Barnawi', 'ENF', 'مفتش تذاكر', 'Ticket Inspector', '2022-03-14'], ['12272', 'سعدي المالكي', 'Sadi S. Almalki', 'ENF', 'مفتش تذاكر', 'Ticket Inspector', '2024-02-01'],
       ['10101', 'عبدالله عبدالمطلب', 'Abdullah Z. Abdulmuttalib', 'ENF', 'مفتش تذاكر', 'Ticket Inspector', '2021-01-06'], ['11686', 'عمر رمضان', 'Omar A. Ramadan', 'ENF', 'مفتش تذاكر', 'Ticket Inspector', '2023-05-20'],
       ['10664', 'نواف فلمبان', 'Nawaf Y. Felmban', 'ENF', 'مفتش تذاكر', 'Ticket Inspector', '2022-08-01'], ['11653', 'أحمد بخاري', 'Ahmad M. Bogari', 'ENF', 'مفتش تذاكر', 'Ticket Inspector', '2023-01-15'],
-      ['10093', 'أنور اللحياني', 'Anwar M. Allahyani', 'STN', 'مشرف المحطات', 'Stations Supervisor', '2021-01-06'], ['12162', 'بديع ساعاتي', 'Badia A. Saati', 'STN', 'مفتش محطات', 'Station Inspector', '2024-06-01'],
+      ['10093', 'أنور اللحياني', 'Anwar M. Allahyani', 'SUP', 'مشرف وردية', 'Shift Supervisor', '2021-01-06', 'STN'], ['12162', 'بديع ساعاتي', 'Badia A. Saati', 'STN', 'مفتش محطات', 'Station Inspector', '2024-06-01'],
       ['12293', 'متعب الحربي', 'Muteb S. Alharbi', 'STN', 'مفتش محطات', 'Station Inspector', '2025-08-10'], ['12309', 'رامي مجلد', 'Rami G. Mjlid', 'STN', 'مفتش محطات', 'Station Inspector', '2025-08-10'],
-      ['12280', 'عماد عاشور', 'Emad Ashour', 'STN', 'مفتش محطات', 'Station Inspector', '2025-08-10'], ['12341', 'أمجد العوفي', 'Amjad K. Aloufi', 'STN', 'مفتش محطات', 'Station Inspector', '2025-10-01']];
+      ['12280', 'عماد عاشور', 'Emad Ashour', 'STN', 'مفتش محطات', 'Station Inspector', '2025-08-10'], ['12341', 'أمجد العوفي', 'Amjad K. Aloufi', 'STN', 'مفتش محطات', 'Station Inspector', '2025-10-01'],
+      ['10657', 'أشرف اللقماني', 'Ashraf A. Alluqmani', 'ADM', 'مشرف أول – فريق التذاكر', 'Senior Supervisor – Tickets', '2022-04-23', 'ENF'], ['10678', 'أحمد قدير', 'Ahmed Y. Qidair', 'ADM', 'مشرف أول – المحطات', 'Senior Supervisor – Stations', '2022-04-24', 'STN'],
+      ['11294', 'مهند الأمير', 'Muhannad E. Alamir', 'ADM', 'إداري عمليات', 'Operations Admin', '2023-04-16'], ['11935', 'علي الشهراني', 'Ali A. Alshahrani', 'ADM', 'إداري عمليات', 'Operations Admin', '2024-03-17']];
     var seed = 3, rnd = function () { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
     var days = Math.max(1, Math.round((new Date(to) - new Date(from)) / 864e5) + 1);
     var mk = function (q, team, n) {
@@ -439,19 +442,22 @@ window.MBCO_DEMO = (function () {
       var enf = team === 'ENF' ? Math.round(work * (12 + q * 12)) : 0, vio = team === 'ENF' ? Math.round(work * (0.6 + q * 1.8)) : 0, stn = team === 'STN' ? Math.round(work * (18 + q * 14)) : 0;
       var arrN = team === 'ENF' ? Math.round(work * (1 + rnd() * 2)) : 0, arrOk = Math.round(arrN * (0.75 + q * 0.24));
       var ops = team === 'STN' ? stn : enf + vio * 5, r1 = function (v) { return Math.round(v * 10) / 10; };
-      var sc = { att: r1(pres / (pres + abs) * 100), punc: r1(onT / Math.max(1, pres) * 100), prod: r1(Math.min(100, ops / (work * 25) * 100)), notes: null };
+      var isA = team === 'SUP' || team === 'ADM', nN = isA ? 0 : Math.round(rnd() * 2 * (1 - q) * 2);
+      var sc = isA ? { att: r1(pres / (pres + abs) * 100), punc: r1(onT / Math.max(1, pres) * 100), rate: r1(Math.round((3 + q * 2) * 5) / 5 / 5 * 100) }
+        : { att: r1(pres / (pres + abs) * 100), punc: r1(onT / Math.max(1, pres) * 100), prod: r1(Math.min(100, ops / (work * 25) * 100)), notes: 100 - nN * 5 };
       if (team === 'ENF') sc.cdc = arrN ? r1(arrOk / arrN * 100) : null;
+      if (isA) { enf = vio = stn = arrN = arrOk = 0; ops = 0; }
       var W = S.weights[team], sw = 0, sv = 0, contrib = {};
       Object.keys(W).forEach(function (k) { if (sc[k] !== null && sc[k] !== undefined) { sw += W[k]; sv += W[k] * sc[k]; } });
       Object.keys(W).forEach(function (k) { if (sc[k] !== null && sc[k] !== undefined) contrib[k] = r1(W[k] * sc[k] / sw); });
       var ov = r1(sv / sw), band = ov >= 90 ? 'A' : ov >= 80 ? 'B' : ov >= 70 ? 'C' : 'D';
-      return { overall: ov, band: band, scores: sc, contrib: contrib, raw: { workDays: work, activeDays: work, present: pres, absent: abs, leave: 0, onTime: onT, late: pres - onT, stn: stn, enf: enf, vio: vio, fines: vio * 140, ops: ops, perDay: r1(ops / work), cdc: arrN + 1, arrN: arrN, arrOk: arrOk, arrAvg: Math.round(8 + (1 - q) * 20) } };
+      return { overall: ov, band: band, scores: sc, contrib: contrib, raw: { workDays: work, activeDays: work, present: pres, absent: abs, leave: 0, onTime: onT, late: pres - onT, stn: stn, enf: enf, vio: vio, fines: vio * 140, ops: ops, perDay: r1(ops / work), cdc: isA ? 0 : arrN + 1, arrN: arrN, arrOk: arrOk, arrAvg: isA ? null : Math.round(8 + (1 - q) * 20), notesN: nN, notesPts: nN * 5 } };
     };
-    var qual = {}; P.forEach(function (p, i) { qual[p[0]] = [0.95, 0.85, 0.7, 0.9, 0.55, 0.8, 0.65, 0.75, 0.97, 0.88, 0.92, 0.6, 0.78, 0.83][i]; });
-    var rank = P.map(function (p) { var x = mk(qual[p[0]], p[3], days); return { id: p[0], name: p[1], name_en: p[2], team: p[3], overall: x.overall, band: x.band, scores: x.scores, raw: x.raw }; })
+    var qual = {}; P.forEach(function (p, i) { qual[p[0]] = [0.95, 0.85, 0.7, 0.9, 0.55, 0.8, 0.65, 0.75, 0.97, 0.88, 0.92, 0.6, 0.78, 0.83, 0.9, 0.86, 0.8, 0.7][i]; });
+    var rank = P.map(function (p) { var x = mk(qual[p[0]], p[3], days); return { id: p[0], name: p[1], name_en: p[2], team: p[3], base: p[7] || p[3], overall: x.overall, band: x.band, scores: x.scores, raw: x.raw }; })
       .sort(function (a, b) { return b.overall - a.overall; });
     var avg = function (t) { var l = rank.filter(function (r) { return r.team === t; }); return Math.round(l.reduce(function (a, r) { return a + r.overall; }, 0) / l.length * 10) / 10; };
-    var out = { from: from, to: to, today: T, generated: T + ' ' + new Date().toTimeString().slice(0, 5), settings: S, rank: rank, teamAvg: { ENF: avg('ENF'), STN: avg('STN') }, sources: { historyRows: 5164 }, dict: {} };
+    var out = { from: from, to: to, today: T, generated: T + ' ' + new Date().toTimeString().slice(0, 5), settings: S, rank: rank, teamAvg: { ENF: avg('ENF'), STN: avg('STN'), SUP: avg('SUP'), ADM: avg('ADM') }, sources: { historyRows: 5164 }, dict: {}, me: { id: '10190', group: 'MGR', approve: true, note: true, rate: true, pending: KPN.filter(function (n) { return n.status === 'بانتظار الاعتماد'; }).length }, excluded: { unknown: [{ id: '11035', name: '', name_en: '', stn: 0, enf: 0, vio: 0, cdc: 5 }, { id: 'مدير النظام', name: '', name_en: '', stn: 0, enf: 0, vio: 0, cdc: 1 }], adm: [] } };
     if (emp) {
       var p = P.filter(function (x) { return x[0] === emp; })[0];
       if (p) {
@@ -459,10 +465,34 @@ window.MBCO_DEMO = (function () {
         if (long) { for (var m = from.slice(0, 7); m <= to.slice(0, 7); m = add(m + '-28', 5).slice(0, 7)) series.push({ k: m, overall: Math.round(Math.min(100, (q0 * 100 - 8) + rnd() * 16) * 10) / 10 }); }
         else { for (var d = from; d <= to; d = add(d, 1)) series.push({ k: d, overall: rnd() < 0.15 ? null : Math.round(Math.min(100, (q0 * 100 - 15) + rnd() * 25) * 10) / 10 }); }
         var team = rank.filter(function (r) { return r.team === p[3]; }), pos = 0; team.forEach(function (r, i) { if (r.id === emp) pos = i + 1; });
-        out.emp = { profile: { id: p[0], team: p[3], name: p[1], name_en: p[2], role: '', hire: p[6], title_ar: p[4], title_en: p[5] }, overall: x.overall, band: x.band, scores: x.scores, contrib: x.contrib, raw: x.raw, series: series, unit: long ? 'month' : 'day', rank: pos, of: team.length, notes: [] };
+        out.emp = { extra: { notes: KPN.filter(function (n) { return n.emp === emp && n.status === 'معتمدة'; }).map(function (n) { return { d: n.d, kind: n.kind, cat: n.cat, text: n.text, by: n.byName }; }), rates: p[3] === 'SUP' || p[3] === 'ADM' ? [{ m: to.slice(0, 7), score: x.scores.rate, items: [4, 4, 5, 4, 4], by: p[3] === 'SUP' ? 'أشرف اللقماني' : 'ماجد الهاشمي', comment: '' }] : [] }, profile: { id: p[0], team: p[3], base: p[7] || p[3], name: p[1], name_en: p[2], role: '', hire: p[6], title_ar: p[4], title_en: p[5] }, overall: x.overall, band: x.band, scores: x.scores, contrib: x.contrib, raw: x.raw, series: series, unit: long ? 'month' : 'day', rank: pos, of: team.length, notes: [] };
       }
     }
     return out;
+  }
+  var KPN = [];
+  function kpnInit() {
+    if (KPN.length) return; var T = opDay(), d = function (n) { return add(T, -n); };
+    KPN.push({ id: 'NT-1', created: d(1) + ' 09:10', d: d(1), emp: '10101', name: 'عبدالله عبدالمطلب', kind: 'medium', cat: 'ترك الموقع بدون إذن', text: 'ترك محطة الحجون 40 دقيقة بدون إبلاغ', by: '10090', byName: 'سامي الهوساوي', src: 'bot', status: 'بانتظار الاعتماد', decBy: '', decNote: '' });
+    KPN.push({ id: 'NT-2', created: d(2) + ' 15:30', d: d(2), emp: '12309', name: 'رامي مجلد', kind: 'minor', cat: 'المظهر والزي', text: 'بدون البطاقة التعريفية', by: '10093', byName: 'أنور اللحياني', src: 'bot', status: 'بانتظار الاعتماد', decBy: '', decNote: '' });
+    KPN.push({ id: 'NT-3', created: d(4) + ' 11:00', d: d(4), emp: '10171', name: 'سليمان الحازمي', kind: 'praise', cat: 'أداء مميز', text: 'ضبط 6 حالات تزوير تذاكر في وردية واحدة', by: '10657', byName: 'أشرف اللقماني', src: 'portal', status: 'معتمدة', decBy: 'ماجد الهاشمي', decNote: '' });
+    KPN.push({ id: 'NT-4', created: d(6) + ' 08:20', d: d(6), emp: '10664', name: 'نواف فلمبان', kind: 'minor', cat: 'تأخر عن الموقع', text: '', by: '10090', byName: 'سامي الهوساوي', src: 'bot', status: 'مرفوضة', decBy: 'ماجد الهاشمي', decNote: 'التأخير بسبب تغيير التوزيع' });
+  }
+  var KPR = {};
+  function kpDemoPeople() { var r = kpiDemo().rank; return r.map(function (x) { return { id: x.id, name: x.name, name_en: x.name_en, group: x.team, base: x.base }; }); }
+  function kpiNotesDemo() {
+    kpnInit(); var P = kpDemoPeople();
+    return { from: '', to: '', notes: KPN.slice().sort(function (a, b) { return (a.status === 'بانتظار الاعتماد' ? 0 : 1) - (b.status === 'بانتظار الاعتماد' ? 0 : 1) || b.created.localeCompare(a.created); }), targets: P,
+      types: { minor: -5, medium: -10, major: -15, praise: 5 }, cats: 'تأخر عن الموقع,ترك الموقع بدون إذن,المظهر والزي,التعامل مع الركاب,استخدام الجوال أثناء العمل,تقصير في المهام,عدم الالتزام بالتعليمات,أخرى'.split(','),
+      praiseCats: 'أداء مميز,تعامل مميز مع الركاب,مبادرة,التزام مميز'.split(','), approve: true, me: '10190', notesOn: true, notesFrom: opDay().slice(0, 8) + '01' };
+  }
+  function kpiRatesDemo(month) {
+    month = month || opDay().slice(0, 7); var P = kpDemoPeople(), R = KPR[month] || {};
+    var items = 'الالتزام,جودة العمل,سرعة الإنجاز,التعاون,المبادرة'.split(',');
+    var rt = function (x) { return R[x.id] || null; };
+    return { month: month, items: items, targets: P.filter(function (x) { return x.group === 'ADM'; }).map(function (x) { return Object.assign({}, x, { rating: rt(x) }); }),
+      all: P.filter(function (x) { return x.group === 'ADM' || x.group === 'SUP'; }).map(function (x) { return Object.assign({}, x, { rater: x.group === 'ADM' ? '10190' : (x.base === 'ENF' ? '10657' : '10678'), rating: rt(x) }); }),
+      names: { '10190': 'ماجد الهاشمي', '10657': 'أشرف اللقماني', '10678': 'أحمد قدير' } };
   }
   var KPI_AVATAR = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9e4ef"/><stop offset="1" stop-color="#cfc6da"/></linearGradient></defs><rect width="400" height="500" fill="url(#g)"/><circle cx="200" cy="190" r="86" fill="#9d8fb0"/><path d="M40 500c10-120 80-180 160-180s150 60 160 180z" fill="#9d8fb0"/></svg>');
 
@@ -489,6 +519,11 @@ window.MBCO_DEMO = (function () {
         case 'cdcDash': return ok({ data: cdcDashDemo(p.from, p.to) });
         case 'kpi': return ok({ data: kpiDemo(p.from, p.to, p.emp) });
         case 'kpiPhoto': return ok({ data: KPI_AVATAR });
+        case 'kpiNotes': return ok({ data: kpiNotesDemo() });
+        case 'kpiNoteAdd': { kpnInit(); var tg = kpDemoPeople().filter(function (x) { return x.id === p.emp; })[0] || {}; KPN.push({ id: 'NT-' + (KPN.length + 1), created: opDay() + ' ' + new Date().toTimeString().slice(0, 5), d: p.date, emp: p.emp, name: tg.name, kind: p.kind, cat: p.cat, text: p.text, by: '10190', byName: USER.name, src: 'portal', status: 'معتمدة', decBy: USER.name, decNote: '' }); return ok({ note: { status: 'معتمدة' } }); }
+        case 'kpiNoteDecide': { kpnInit(); var n0 = KPN.filter(function (x) { return x.id === p.id; })[0]; if (n0) { n0.status = p.act === 'approve' ? 'معتمدة' : p.act === 'reject' ? 'مرفوضة' : 'بانتظار الاعتماد'; n0.decBy = p.act === 'reopen' ? '' : USER.name; n0.decNote = p.note || ''; } return ok({}); }
+        case 'kpiRates': return ok({ data: kpiRatesDemo(p.month) });
+        case 'kpiRateSave': { var sc0 = Math.round(p.items.reduce(function (a, v) { return a + v; }, 0) / p.items.length / 5 * 1000) / 10; (KPR[p.month] = KPR[p.month] || {})[p.emp] = { items: p.items, score: sc0, comment: p.comment, by: USER.name, at: opDay() + ' ' + new Date().toTimeString().slice(0, 5) }; return ok({ score: sc0 }); }
         case 'rosterGet': return ok(rosDemoGet(p));
         case 'rosterSave': return ok(rosDemoSave(p));
         case 'rosterUndo': { var D0 = rosDemoInit(); if (D0.backup) { D0.codes = JSON.parse(D0.backup); D0.backup = null; } return ok({}); }

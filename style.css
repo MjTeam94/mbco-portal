@@ -518,3 +518,30 @@ td.nowrap{white-space:nowrap}
   body.kpprint #kpPrint{display:block}
   body.kpprint #kpPrint .kpsheet{zoom:1!important;width:297mm;height:210mm;border-radius:0}
 }
+
+/* v2.3.2 خارج التقييم */
+.kpexw{margin-top:14px;border:1px solid var(--line,rgba(255,255,255,.12));border-radius:12px;padding:10px 14px;background:var(--card2,rgba(255,255,255,.02))}
+.kpexw summary{cursor:pointer;font-weight:700}
+.kpex{margin-top:12px}.kpex h4{margin:0 0 4px;font-size:14px}.kpex p{margin:0 0 8px;font-size:12.5px}
+.kpex .tbl td{padding:6px 10px}
+/* v2.4 الملاحظات والتقييم الشهري */
+.kptabs{margin:2px 0 14px}.kptabs:empty{display:none}
+.kpbadge{display:inline-block;min-width:18px;padding:0 5px;margin-inline-start:4px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;line-height:18px}
+.kpnk{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;background:rgba(245,158,11,.15);color:#d98a04}
+.kpnk.medium{background:rgba(249,115,22,.16);color:#ea6a10}.kpnk.major{background:rgba(239,68,68,.16);color:#e04343}.kpnk.praise{background:rgba(34,197,94,.16);color:#16a34a}
+.kpsheet .kpnk{font-size:9.5px;padding:0 6px}
+.kpst{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;background:var(--surface);border:1px solid var(--line)}
+.kpst.ok{color:var(--ok);border-color:currentColor}.kpst.bad{color:var(--bad);border-color:currentColor}.kpst.warn{color:var(--warn-ink);border-color:currentColor}
+.kpnotes td{vertical-align:top}.kpnotes .kpntext{min-width:180px;max-width:340px;white-space:normal}.kpnotes .btn{margin-inline-end:4px}
+.kphow{font-size:12.5px;margin:0 0 10px}.kph3{margin:22px 0 8px;font-size:15px}
+.mact{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.kpform{display:grid;gap:10px;margin-top:10px;min-width:min(440px,80vw)}.kpform .field>span{display:block;font-size:12.5px;color:var(--muted);margin-bottom:4px}
+.kpkinds{flex-wrap:wrap}.kpkinds button{padding:6px 12px}
+.kprgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px}
+.kprc{padding:14px;display:grid;gap:8px}
+.kprch{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.kprsc{font-size:22px;font-weight:800;color:var(--accent-ink)}
+.kpri{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13.5px}
+.kpr5 button{padding:5px 11px}
+.kprf{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px}
+.kprc textarea{resize:vertical}
+.kpcircles.n6{gap:6px}.kpcircles.n6 .kpct{font-size:11.5px;gap:4px;padding:0 2px}.kpcircles.n6 .kpcv svg{width:22px;height:22px}.kpcircles.n6 .kpcv b{font-size:12.5px}.kpcircles.n6 .kpc.big .kpcv b{font-size:16px}.kpcircles.n6 .kpcw{font-size:10.5px}
