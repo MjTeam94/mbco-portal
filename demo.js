@@ -421,6 +421,51 @@ window.MBCO_DEMO = (function () {
       outcomes: {}, fields: ['pCalled', 'pArrived', 'remote', 'pax', 'ops'], dict: {}, systems: [] };
   }
 
+  /* معايير الأداء KPI (v2.3): نفس شكل رد kpi_ في Kpi.gs ببيانات تجريبية */
+  function kpiDemo(from, to, emp) {
+    var T = opDay(); to = to || T; from = from || to.slice(0, 8) + '01';
+    var S = { weights: { ENF: { att: 25, punc: 15, prod: 30, cdc: 20, notes: 10 }, STN: { att: 30, punc: 20, prod: 30, notes: 20 } }, target: 25, vioEq: 5, cdcMin: 30, bands: [90, 80, 70], notesOn: false };
+    var P = [['10171', 'سليمان الحازمي', 'Sulaiman A. Alhazmi', 'ENF', 'قائد فريق الضبط', 'Enforcement Team Leader', '2021-09-07'], ['10090', 'سامي الهوساوي', 'Sami A. Alhawsawi', 'ENF', 'مشرف وردية', 'Shift Supervisor', '2021-01-06'],
+      ['10675', 'عماد برناوي', 'Emad A. Barnawi', 'ENF', 'مفتش تذاكر', 'Ticket Inspector', '2022-03-14'], ['12272', 'سعدي المالكي', 'Sadi S. Almalki', 'ENF', 'مفتش تذاكر', 'Ticket Inspector', '2024-02-01'],
+      ['10101', 'عبدالله عبدالمطلب', 'Abdullah Z. Abdulmuttalib', 'ENF', 'مفتش تذاكر', 'Ticket Inspector', '2021-01-06'], ['11686', 'عمر رمضان', 'Omar A. Ramadan', 'ENF', 'مفتش تذاكر', 'Ticket Inspector', '2023-05-20'],
+      ['10664', 'نواف فلمبان', 'Nawaf Y. Felmban', 'ENF', 'مفتش تذاكر', 'Ticket Inspector', '2022-08-01'], ['11653', 'أحمد بخاري', 'Ahmad M. Bogari', 'ENF', 'مفتش تذاكر', 'Ticket Inspector', '2023-01-15'],
+      ['10093', 'أنور اللحياني', 'Anwar M. Allahyani', 'STN', 'مشرف المحطات', 'Stations Supervisor', '2021-01-06'], ['12162', 'بديع ساعاتي', 'Badia A. Saati', 'STN', 'مفتش محطات', 'Station Inspector', '2024-06-01'],
+      ['12293', 'متعب الحربي', 'Muteb S. Alharbi', 'STN', 'مفتش محطات', 'Station Inspector', '2025-08-10'], ['12309', 'رامي مجلد', 'Rami G. Mjlid', 'STN', 'مفتش محطات', 'Station Inspector', '2025-08-10'],
+      ['12280', 'عماد عاشور', 'Emad Ashour', 'STN', 'مفتش محطات', 'Station Inspector', '2025-08-10'], ['12341', 'أمجد العوفي', 'Amjad K. Aloufi', 'STN', 'مفتش محطات', 'Station Inspector', '2025-10-01']];
+    var seed = 3, rnd = function () { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    var days = Math.max(1, Math.round((new Date(to) - new Date(from)) / 864e5) + 1);
+    var mk = function (q, team, n) {
+      var work = Math.max(1, Math.round(n * (0.75 + rnd() * 0.2))), pres = work - Math.round(rnd() * 2), abs = Math.round(rnd() * 2), onT = pres - Math.round(rnd() * 3 * (1 - q));
+      var enf = team === 'ENF' ? Math.round(work * (12 + q * 12)) : 0, vio = team === 'ENF' ? Math.round(work * (0.6 + q * 1.8)) : 0, stn = team === 'STN' ? Math.round(work * (18 + q * 14)) : 0;
+      var arrN = team === 'ENF' ? Math.round(work * (1 + rnd() * 2)) : 0, arrOk = Math.round(arrN * (0.75 + q * 0.24));
+      var ops = team === 'STN' ? stn : enf + vio * 5, r1 = function (v) { return Math.round(v * 10) / 10; };
+      var sc = { att: r1(pres / (pres + abs) * 100), punc: r1(onT / Math.max(1, pres) * 100), prod: r1(Math.min(100, ops / (work * 25) * 100)), notes: null };
+      if (team === 'ENF') sc.cdc = arrN ? r1(arrOk / arrN * 100) : null;
+      var W = S.weights[team], sw = 0, sv = 0, contrib = {};
+      Object.keys(W).forEach(function (k) { if (sc[k] !== null && sc[k] !== undefined) { sw += W[k]; sv += W[k] * sc[k]; } });
+      Object.keys(W).forEach(function (k) { if (sc[k] !== null && sc[k] !== undefined) contrib[k] = r1(W[k] * sc[k] / sw); });
+      var ov = r1(sv / sw), band = ov >= 90 ? 'A' : ov >= 80 ? 'B' : ov >= 70 ? 'C' : 'D';
+      return { overall: ov, band: band, scores: sc, contrib: contrib, raw: { workDays: work, activeDays: work, present: pres, absent: abs, leave: 0, onTime: onT, late: pres - onT, stn: stn, enf: enf, vio: vio, fines: vio * 140, ops: ops, perDay: r1(ops / work), cdc: arrN + 1, arrN: arrN, arrOk: arrOk, arrAvg: Math.round(8 + (1 - q) * 20) } };
+    };
+    var qual = {}; P.forEach(function (p, i) { qual[p[0]] = [0.95, 0.85, 0.7, 0.9, 0.55, 0.8, 0.65, 0.75, 0.97, 0.88, 0.92, 0.6, 0.78, 0.83][i]; });
+    var rank = P.map(function (p) { var x = mk(qual[p[0]], p[3], days); return { id: p[0], name: p[1], name_en: p[2], team: p[3], overall: x.overall, band: x.band, scores: x.scores, raw: x.raw }; })
+      .sort(function (a, b) { return b.overall - a.overall; });
+    var avg = function (t) { var l = rank.filter(function (r) { return r.team === t; }); return Math.round(l.reduce(function (a, r) { return a + r.overall; }, 0) / l.length * 10) / 10; };
+    var out = { from: from, to: to, today: T, generated: T + ' ' + new Date().toTimeString().slice(0, 5), settings: S, rank: rank, teamAvg: { ENF: avg('ENF'), STN: avg('STN') }, sources: { historyRows: 5164 }, dict: {} };
+    if (emp) {
+      var p = P.filter(function (x) { return x[0] === emp; })[0];
+      if (p) {
+        var x = mk(qual[emp], p[3], days), long = days > 62, series = [], q0 = qual[emp];
+        if (long) { for (var m = from.slice(0, 7); m <= to.slice(0, 7); m = add(m + '-28', 5).slice(0, 7)) series.push({ k: m, overall: Math.round(Math.min(100, (q0 * 100 - 8) + rnd() * 16) * 10) / 10 }); }
+        else { for (var d = from; d <= to; d = add(d, 1)) series.push({ k: d, overall: rnd() < 0.15 ? null : Math.round(Math.min(100, (q0 * 100 - 15) + rnd() * 25) * 10) / 10 }); }
+        var team = rank.filter(function (r) { return r.team === p[3]; }), pos = 0; team.forEach(function (r, i) { if (r.id === emp) pos = i + 1; });
+        out.emp = { profile: { id: p[0], team: p[3], name: p[1], name_en: p[2], role: '', hire: p[6], title_ar: p[4], title_en: p[5] }, overall: x.overall, band: x.band, scores: x.scores, contrib: x.contrib, raw: x.raw, series: series, unit: long ? 'month' : 'day', rank: pos, of: team.length, notes: [] };
+      }
+    }
+    return out;
+  }
+  var KPI_AVATAR = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9e4ef"/><stop offset="1" stop-color="#cfc6da"/></linearGradient></defs><rect width="400" height="500" fill="url(#g)"/><circle cx="200" cy="190" r="86" fill="#9d8fb0"/><path d="M40 500c10-120 80-180 160-180s150 60 160 180z" fill="#9d8fb0"/></svg>');
+
   return {
     cdc: function (b) { return CDCX(b); },
     handle: function (p) {
@@ -442,6 +487,8 @@ window.MBCO_DEMO = (function () {
         case 'carAct': return ok({ result: carDemoAct(p) });
         case 'insDash': return ok({ data: insDemo(p.from, p.to) });
         case 'cdcDash': return ok({ data: cdcDashDemo(p.from, p.to) });
+        case 'kpi': return ok({ data: kpiDemo(p.from, p.to, p.emp) });
+        case 'kpiPhoto': return ok({ data: KPI_AVATAR });
         case 'rosterGet': return ok(rosDemoGet(p));
         case 'rosterSave': return ok(rosDemoSave(p));
         case 'rosterUndo': { var D0 = rosDemoInit(); if (D0.backup) { D0.codes = JSON.parse(D0.backup); D0.backup = null; } return ok({}); }

@@ -3264,6 +3264,242 @@
     }
   }
 
+  /* ================= معايير الأداء والتقييم KPI (v2.3) =================
+     الترتيب لكل الموظفين + تقرير موظف بنفس التصميم المعتمد (A4 بالعرض → PDF).
+     الدرجات من الـ Hub (kpi_ في Kpi.gs) بمعايير كل فريق، والصورة من مجلد Drive (kpiPhoto). */
+  var KP = {
+    ar: {
+      rank: 'الترتيب', profile: 'تقرير الموظف', week: 'هذا الأسبوع', month: 'هذا الشهر', pmonth: 'الشهر السابق', year: 'هذه السنة', custom: 'فترة مخصصة',
+      from: 'من', to: 'إلى', all: 'كل الفرق', ENF: 'فريق التذاكر', STN: 'فريق المحطات', search: 'بحث بالاسم أو الرقم…', emp: 'الموظف', pdf: 'طباعة / حفظ PDF', xlsx: 'تصدير Excel', back: 'رجوع للترتيب',
+      title: 'تقييم أداء الموظف', sub: 'ملخص معايير الأداء', overall: 'الأداء الكلي', att: 'الحضور', punc: 'الانضباط', prod: 'الإنتاجية', cdc: 'بلاغات CDC', notes: 'الملاحظات',
+      id: 'الرقم الوظيفي', jtitle: 'المسمى الوظيفي', team: 'القسم', hire: 'تاريخ التعيين', rankOf: 'الترتيب في الفريق', of: 'من', teamAvg: 'متوسط الفريق',
+      byMonth: 'الأداء الكلي حسب الشهر', byDay: 'الأداء الكلي حسب اليوم', breakdown: 'توزيع الدرجة على المعايير', facts: 'الأرقام', notesT: 'ملاحظات المشرفين المعتمدة', notesSoon: 'تتفعّل مع رفع الملاحظات من البوت واعتمادها من الإدارة.', notesNone: 'لا توجد ملاحظات معتمدة في الفترة.', notesLater: 'تتفعّل لاحقاً عبر البوت.',
+      workDays: 'أيام العمل', insp: 'فحوصات', stnI: 'فحوصات المحطات', enfI: 'فحوصات التذاكر', vio: 'مخالفات', fines: 'قيمة المخالفات', ops: 'نقاط الإنتاجية', perDay: 'في اليوم', target: 'الهدف',
+      cdcN: 'بلاغات CDC', arrOk: 'وصول بالهدف', arrAvg: 'متوسط الوصول', present: 'حضور', absent: 'غياب', late: 'تأخير/استئذان', leave: 'إجازة', sar: 'ريال', min: 'د', day: 'يوم',
+      bandA: 'ممتاز', bandB: 'جيد جداً', bandC: 'جيد', bandD: 'يحتاج تحسين', noData: 'لا توجد بيانات', w: 'الوزن',
+      formula: 'الإنتاجية = (الفحوصات {vio}+ المخالفات × {eq}) ÷ (أيام العمل × {t}) · CDC = الوصول خلال {m} د · المعيار بدون بيانات يُستبعد ويتوزع وزنه.', formulaS: 'الإنتاجية = فحوصات المحطات ÷ (أيام العمل × {t}) · الحضور = حاضر ÷ (حاضر + غائب) · المعيار بدون بيانات يُستبعد ويتوزع وزنه.', vioPart: '',
+      gen: 'أُنشئ', by: 'أعدّه', period: 'الفترة', hist: 'يشمل السجل التاريخي', choose: 'اختر موظفاً من الترتيب', n: 'موظف', open: 'التقرير'
+    },
+    en: {
+      rank: 'Ranking', profile: 'Employee report', week: 'This week', month: 'This month', pmonth: 'Last month', year: 'This year', custom: 'Custom',
+      from: 'From', to: 'To', all: 'All teams', ENF: 'Tickets team', STN: 'Stations team', search: 'Search by name or ID…', emp: 'Employee', pdf: 'Print / save PDF', xlsx: 'Export Excel', back: 'Back to ranking',
+      title: 'Employee Performance', sub: 'KPI summary', overall: 'Overall KPI', att: 'Attendance', punc: 'Punctuality', prod: 'Productivity', cdc: 'CDC response', notes: 'Notes',
+      id: 'Employee ID', jtitle: 'Job title', team: 'Division', hire: 'Hiring date', rankOf: 'Team rank', of: 'of', teamAvg: 'Team average',
+      byMonth: 'Overall KPI by month', byDay: 'Overall KPI by day', breakdown: 'KPI breakdown', facts: 'Key figures', notesT: 'Approved supervisor notes', notesSoon: 'Enabled once notes are raised via the bot and approved by management.', notesNone: 'No approved notes in this period.', notesLater: 'coming soon via the bot.',
+      workDays: 'Work days', insp: 'Inspections', stnI: 'Station inspections', enfI: 'Ticket inspections', vio: 'Violations', fines: 'Fines value', ops: 'Productivity points', perDay: 'per day', target: 'Target',
+      cdcN: 'CDC cases', arrOk: 'Arrived on target', arrAvg: 'Avg. arrival', present: 'Present', absent: 'Absent', late: 'Late/exit', leave: 'Leave', sar: 'SAR', min: 'min', day: 'days',
+      bandA: 'Excellent', bandB: 'Very good', bandC: 'Good', bandD: 'Needs improvement', noData: 'No data', w: 'Weight',
+      formula: 'Productivity = (inspections {vio}+ violations × {eq}) ÷ (work days × {t}) · CDC = arrival within {m} min · criteria without data are excluded and their weight redistributed.', formulaS: 'Productivity = station inspections ÷ (work days × {t}) · Attendance = present ÷ (present + absent) · criteria without data are excluded and their weight redistributed.', vioPart: '',
+      gen: 'Generated', by: 'Prepared by', period: 'Period', hist: 'includes historical records', choose: 'Pick an employee from the ranking', n: 'employees', open: 'Report'
+    }
+  };
+  function kp(k, rep) { var L = KP[st.lang] || KP.ar, s = k in L ? L[k] : (KP.ar[k] || k); if (rep) Object.keys(rep).forEach(function (x) { s = s.split('{' + x + '}').join(rep[x]); }); return s; }
+  var KP_COL = { A: '#22c55e', B: '#b45bff', C: '#f59e0b', D: '#ef4444' };
+  var KP_ICON = { overall: 'M12 2a10 10 0 1 0 10 10M12 6a6 6 0 1 0 6 6M12 10a2 2 0 1 0 2 2M14 10l6-6M17 4h3v3', att: 'M16 11a3 3 0 1 0-3-3M8 11a3 3 0 1 0-3-3M2 20c0-3 3-5 6-5s6 2 6 5M12 20c0-3 3-5 6-5s4 2 4 4',
+    punc: 'M12 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM12 10v4l2 2M10 2h4M19 5l2 2', prod: 'M4 20V14M9 20V10M14 20V6M19 20V3', cdc: 'M5 4h4l2 5-3 2a11 11 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2',
+    notes: 'M6 2h9l5 5v15H6zM14 2v6h6M9 13h8M9 17h6' };
+  function kpBand(v) { var b = (st.kpi.d && st.kpi.d.settings.bands) || [90, 80, 70]; return v === null || v === undefined ? '' : v >= b[0] ? 'A' : v >= b[1] ? 'B' : v >= b[2] ? 'C' : 'D'; }
+  function kpName(p) { return st.lang === 'en' ? (p.name_en || tr(p.name)) : p.name; }
+  function kpState() {
+    if (!st.kpi) st.kpi = { view: 'rank', preset: ls.get('mbco_kpi_preset') || 'month', from: '', to: '', team: '', q: '', sort: { k: 'overall', d: -1 }, emp: '', d: null, key: '', photos: {} };
+    return st.kpi;
+  }
+  function kpRange(preset, today) {
+    var d = new Date(today + 'T12:00:00'), iso = function (x) { return x.toISOString().slice(0, 10); };
+    if (preset === 'week') { var s = new Date(d); s.setDate(d.getDate() - d.getDay()); return [iso(s), today]; }
+    if (preset === 'pmonth') { var a = new Date(d.getFullYear(), d.getMonth() - 1, 1, 12), z = new Date(d.getFullYear(), d.getMonth(), 0, 12); return [iso(a), iso(z)]; }
+    if (preset === 'year') return [today.slice(0, 4) + '-01-01', today];
+    return [today.slice(0, 8) + '01', today];
+  }
+  function renderKpi(wrap, force) {
+    var K = kpState();
+    if (!K.from) { var r = kpRange(K.preset, todayStr()); K.from = r[0]; K.to = r[1]; }
+    wrap.innerHTML = '<div class="card rsttools noprint"><div class="rstctl">' +
+      '<div class="ichips">' + ['week', 'month', 'pmonth', 'year', 'custom'].map(function (p) { return '<button type="button" class="ichip' + (K.preset === p ? ' on' : '') + '" data-kp="' + p + '">' + kp(p) + '</button>'; }).join('') + '</div>' +
+      '<label class="field">' + kp('from') + '<input class="input num" type="date" id="kFrom" value="' + esc(K.from) + '"></label><label class="field">' + kp('to') + '<input class="input num" type="date" id="kTo" value="' + esc(K.to) + '"></label>' +
+      '<button type="button" class="btn sm" id="kRef">' + icon('refresh') + rt('refresh') + '</button></div></div><div id="kpiBody"><div class="loading"><div class="spin"></div>' + t('loading') + '</div></div>';
+    wrap.querySelectorAll('[data-kp]').forEach(function (b) {
+      b.onclick = function () { var p = b.getAttribute('data-kp'); K.preset = p; ls.set('mbco_kpi_preset', p); if (p !== 'custom') { var r = kpRange(p, (K.d && K.d.today) || todayStr()); K.from = r[0]; K.to = r[1]; } renderKpi(wrap, false); };
+    });
+    var f = document.getElementById('kFrom'), tt = document.getElementById('kTo');
+    f.onchange = tt.onchange = function () { K.preset = 'custom'; K.from = f.value; K.to = tt.value; renderKpi(wrap, false); };
+    document.getElementById('kRef').onclick = function () { kpLoad(true); };
+    kpLoad(force);
+  }
+  function kpLoad(force) {
+    var K = st.kpi, ck = K.from + '|' + K.to + '|' + (K.view === 'emp' ? K.emp : '');
+    if (K.d && K.key === ck && !force) return kpDraw();
+    setSync(true);
+    return api('kpi', { from: K.from, to: K.to, emp: K.view === 'emp' ? K.emp : '', fresh: !!force }).then(function (j) {
+      K.d = j.data; K.key = ck; addDict(K.d.dict); K.from = K.d.from; K.to = K.d.to;
+      if (route() === 'people') kpDraw();
+    }).catch(function (e) { var b = document.getElementById('kpiBody'); if (b && route() === 'people') failBox(b, e, function () { kpLoad(true); }); })
+      .then(function () { setSync(false); });
+  }
+  function kpDraw() {
+    var K = st.kpi, b = document.getElementById('kpiBody'); if (!b || !K.d) return;
+    b.innerHTML = K.view === 'emp' ? kpEmpView() : kpRankView();
+    kpBind(b); kpFit();
+    if (K.view === 'emp' && K.d.emp) kpPhoto(K.d.emp.profile.id);
+  }
+
+  /* ---------- الترتيب ---------- */
+  function kpRows() {
+    var K = st.kpi, q = String(K.q || '').trim().toLowerCase();
+    return K.d.rank.filter(function (r) { return (!K.team || r.team === K.team) && (!q || (r.id + ' ' + r.name + ' ' + (r.name_en || '')).toLowerCase().indexOf(q) >= 0); }).slice().sort(function (a, b) {
+      var x = K.sort.k === 'name' ? kpName(a) : iGet(a, K.sort.k), y = K.sort.k === 'name' ? kpName(b) : iGet(b, K.sort.k);
+      if (K.sort.k === 'name') return String(x).localeCompare(String(y), 'ar') * K.sort.d;
+      x = x === null || x === undefined ? -1 : x; y = y === null || y === undefined ? -1 : y; return (x > y ? 1 : x < y ? -1 : 0) * K.sort.d;
+    });
+  }
+  var KP_RCOLS = [['pos', '#'], ['name', 'emp'], ['team', 'team'], ['overall', 'overall'], ['scores.att', 'att'], ['scores.punc', 'punc'], ['scores.prod', 'prod'], ['scores.cdc', 'cdc'], ['raw.workDays', 'workDays'], ['raw.perDay', 'perDay'], ['raw.vio', 'vio'], ['raw.arrAvg', 'arrAvg']];
+  function kpScoreCell(v) { if (v === null || v === undefined) return '<span class="muted">—</span>'; return '<span class="kpsc" style="--c:' + KP_COL[kpBand(v)] + '">' + v + '</span>'; }
+  function kpRankView() {
+    var K = st.kpi, D = K.d, rows = kpRows(), S = D.settings;
+    var avg = function (t) { return D.teamAvg[t] === null ? '—' : D.teamAvg[t]; };
+    return '<div class="kpis k4">' + rKpi(kp('teamAvg') + ' · ' + kp('ENF'), avg('ENF')) + rKpi(kp('teamAvg') + ' · ' + kp('STN'), avg('STN')) +
+      rKpi(kp('bandA'), D.rank.filter(function (r) { return r.band === 'A'; }).length, 'ok') + rKpi(kp('bandD'), D.rank.filter(function (r) { return r.band === 'D'; }).length, 'bad') + '</div>' +
+      '<div class="toolbar noprint"><div class="seg teams">' + [['', 'all'], ['ENF', 'ENF'], ['STN', 'STN']].map(function (x) { return '<button type="button" data-kteam="' + x[0] + '" class="' + (K.team === x[0] ? 'on' : '') + '">' + kp(x[1]) + '</button>'; }).join('') + '</div>' +
+      '<input class="input" type="search" id="kQ" placeholder="' + esc(kp('search')) + '" value="' + esc(K.q) + '"><button type="button" class="btn sm" id="kX">' + icon('download') + kp('xlsx') + '</button><span class="muted"><span class="num">' + rows.length + '</span> ' + kp('n') + '</span></div>' +
+      '<div class="tblwrap rtbl"><table class="tbl kprank"><thead><tr>' + KP_RCOLS.map(function (c) { return '<th' + (c[0] === 'pos' ? '' : ' data-ksort="' + c[0] + '"') + ' class="srt">' + esc(c[0] === 'pos' ? '#' : kp(c[1])) + (K.sort.k === c[0] ? (K.sort.d > 0 ? ' ▲' : ' ▼') : '') + '</th>'; }).join('') + '<th></th></tr></thead><tbody>' +
+      (rows.length ? rows.map(function (r, i) {
+        return '<tr class="clk" data-kemp="' + esc(r.id) + '"><td class="num">' + (i + 1) + '</td><td><b>' + esc(kpName(r)) + '</b><div class="muted num">' + esc(r.id) + '</div></td><td>' + esc(kp(r.team)) + '</td>' +
+          '<td><div class="kpbar"><i style="width:' + (r.overall || 0) + '%;background:' + (KP_COL[r.band] || '#888') + '"></i></div><b class="num">' + (r.overall === null ? '—' : r.overall) + '</b> <span class="kpband" style="--c:' + (KP_COL[r.band] || '#888') + '">' + (r.band ? kp('band' + r.band) : '') + '</span></td>' +
+          ['att', 'punc', 'prod', 'cdc'].map(function (k) { return '<td class="num">' + kpScoreCell(r.scores[k]) + '</td>'; }).join('') +
+          '<td class="num">' + r.raw.workDays + '</td><td class="num">' + (r.raw.perDay === null ? '—' : r.raw.perDay) + '</td><td class="num">' + (r.team === 'ENF' ? r.raw.vio : '—') + '</td><td class="num">' + (r.raw.arrAvg === null ? '—' : r.raw.arrAvg + ' ' + kp('min')) + '</td>' +
+          '<td><button type="button" class="btn sm ghost">' + kp('open') + '</button></td></tr>';
+      }).join('') : '<tr><td colspan="13" class="empty">' + t('no_rows') + '</td></tr>') +
+      '</tbody></table></div><p class="muted rmeta">' + esc(kp('formula', { eq: S.vioEq, t: S.target, m: S.cdcMin, vio: '' })) + (D.sources && D.sources.historyRows ? ' · ' + kp('hist') : '') + '</p>';
+  }
+
+  /* ---------- تقرير الموظف (بطاقة A4 بالعرض) ---------- */
+  function kpRing(v, color, size, label) {
+    var r = size / 2 - 7, C = 2 * Math.PI * r, p = v === null || v === undefined ? 0 : Math.max(0, Math.min(100, v));
+    return '<svg viewBox="0 0 ' + size + ' ' + size + '" width="' + size + '" height="' + size + '" class="kpring"><circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="9"/>' +
+      '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="9" stroke-linecap="round" stroke-dasharray="' + (C * p / 100).toFixed(1) + ' ' + C.toFixed(1) + '" transform="rotate(-90 ' + size / 2 + ' ' + size / 2 + ')" style="filter:drop-shadow(0 0 6px ' + color + ')"/>' + (label || '') + '</svg>';
+  }
+  function kpIco(k, color) { return '<svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="' + color + '" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="' + (KP_ICON[k] || KP_ICON.overall) + '"/></svg>'; }
+  function kpLine(series, unit) {
+    var W = 1040, H = 150, pl = 58, pr = 22, pt = 24, pb = 22, pts = series.filter(function (s) { return s.overall !== null; });
+    var x = function (i) { return pl + (series.length > 1 ? i * (W - pl - pr) / (series.length - 1) : (W - pl - pr) / 2); };
+    var lo = Math.max(0, Math.min.apply(null, [50].concat(pts.map(function (s) { return Math.floor(s.overall / 10) * 10; }))));
+    var y = function (v) { return pt + (100 - v) / (100 - lo) * (H - pt - pb); };
+    var grid = ''; for (var g = lo; g <= 100; g += 10) grid += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y(g) + '" y2="' + y(g) + '" stroke="rgba(255,255,255,.09)" stroke-dasharray="4 4"/><text x="' + (pl - 6) + '" y="' + (y(g) + 4) + '" fill="#b9aec8" font-size="11" text-anchor="end">' + g + '%</text>';
+    var path = '', area = '', last = null, labels = '', ticks = '', step = Math.ceil(series.length / 16);
+    series.forEach(function (s, i) {
+      var lab = unit === 'month' ? (st.lang === 'en' ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] : ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'])[+s.k.slice(5, 7) - 1] : s.k.slice(8);
+      if (i % step === 0 || i === series.length - 1) ticks += '<text x="' + x(i) + '" y="' + (H - 6) + '" fill="#d9cfe6" font-size="11.5" text-anchor="middle" font-weight="600">' + lab + '</text>';
+      if (s.overall === null) return;
+      var X = x(i), Y = y(s.overall); path += (last ? ' L' : 'M') + X.toFixed(1) + ' ' + Y.toFixed(1); last = [X, Y];
+      if (series.length <= 16) labels += '<text x="' + X + '" y="' + (Y - 10) + '" fill="#fff" font-size="12" font-weight="700" text-anchor="middle">' + s.overall + '%</text>';
+      labels += '<circle cx="' + X + '" cy="' + Y + '" r="4.5" fill="#fff" stroke="#c45cff" stroke-width="2.5"/>';
+    });
+    if (pts.length > 1) { var first = series.indexOf(pts[0]), lastI = series.lastIndexOf(pts[pts.length - 1]); area = '<path d="' + path + ' L' + x(lastI) + ' ' + (H - pb) + ' L' + x(first) + ' ' + (H - pb) + ' Z" fill="url(#kpArea)"/>'; }
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" class="kpline" preserveAspectRatio="none"><defs><linearGradient id="kpArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b44fd6" stop-opacity=".55"/><stop offset="1" stop-color="#7B1E8F" stop-opacity=".05"/></linearGradient></defs>' +
+      grid + area + '<path d="' + path + '" fill="none" stroke="#c45cff" stroke-width="3" style="filter:drop-shadow(0 0 5px #c45cff)"/>' + labels + ticks + '</svg>';
+  }
+  function kpDonut(contrib, overall) {
+    var cols = { att: '#22c55e', punc: '#3b82f6', prod: '#a855f7', cdc: '#f59e0b', notes: '#ef4444' }, ks = Object.keys(contrib), tot = ks.reduce(function (a, k) { return a + contrib[k]; }, 0) || 1;
+    var R = 70, r = 38, cx = 85, cy = 85, a0 = -Math.PI / 2, seg = '';
+    ks.forEach(function (k) {
+      var a1 = a0 + contrib[k] / tot * Math.PI * 2, la = a1 - a0 > Math.PI ? 1 : 0, p = function (rr, a) { return (cx + rr * Math.cos(a)).toFixed(1) + ' ' + (cy + rr * Math.sin(a)).toFixed(1); };
+      if (ks.length === 1) seg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R + r) / 2 + '" fill="none" stroke="' + cols[k] + '" stroke-width="' + (R - r) + '"/>';
+      else seg += '<path d="M' + p(R, a0) + ' A' + R + ' ' + R + ' 0 ' + la + ' 1 ' + p(R, a1) + ' L' + p(r, a1) + ' A' + r + ' ' + r + ' 0 ' + la + ' 0 ' + p(r, a0) + ' Z" fill="' + cols[k] + '" stroke="#1a1022" stroke-width="2"/>';
+      var am = (a0 + a1) / 2; if (contrib[k] / tot > .06) seg += '<text x="' + (cx + (R + r) / 2 * Math.cos(am)) + '" y="' + (cy + (R + r) / 2 * Math.sin(am) + 4) + '" fill="#fff" font-size="11" font-weight="800" text-anchor="middle">' + Math.round(contrib[k] / tot * 100) + '%</text>';
+      a0 = a1;
+    });
+    return '<div class="kpdon"><svg viewBox="0 0 170 170" width="170" height="170">' + seg + '<text x="85" y="91" fill="#fff" font-size="20" font-weight="800" text-anchor="middle">' + (overall === null ? '—' : overall) + '</text></svg>' +
+      '<div class="kplegend">' + ks.map(function (k) { return '<div><i style="background:' + cols[k] + '"></i><span>' + kp(k) + '</span><b class="num">' + contrib[k] + '</b></div>'; }).join('') + '</div></div>';
+  }
+  function kpEmpView() {
+    var K = st.kpi, D = K.d, E = D.emp;
+    var pick = '<div class="toolbar noprint"><button type="button" class="btn sm" id="kBack">→ ' + kp('back') + '</button><label class="field">' + kp('emp') + '<select class="input" id="kEmp">' +
+      D.rank.slice().sort(function (a, b) { return kpName(a).localeCompare(kpName(b), 'ar'); }).map(function (r) { return '<option value="' + esc(r.id) + '"' + (r.id === K.emp ? ' selected' : '') + '>' + esc(kpName(r)) + ' (' + esc(r.id) + ')</option>'; }).join('') +
+      '</select></label><span class="sp"></span><button type="button" class="btn primary sm" id="kPdf">' + icon('print') + kp('pdf') + '</button></div>';
+    if (!E) return pick + '<div class="empty card">' + kp('choose') + '</div>';
+    var p = E.profile, S = D.settings, W = S.weights[p.team] || {}, R = E.raw, band = E.band, col = KP_COL[band] || '#888';
+    var period = D.from === D.to ? D.from : D.from + ' → ' + D.to;
+    var MN = st.lang === 'en' ? ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] : ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+    var sameM = D.from.slice(0, 7) === D.to.slice(0, 7) && D.from.slice(8) === '01';
+    var ys = K.preset === 'year' && D.from.slice(0, 4) === D.to.slice(0, 4) ? D.from.slice(0, 4) : sameM ? MN[+D.from.slice(5, 7) - 1] + ' ' + D.from.slice(0, 4) : period;
+    var ysCls = ys === period ? ' sm' : '';
+    var circles = [['overall', E.overall, null]].concat(Object.keys(W).filter(function (k) { return W[k] > 0 && (k !== 'notes' || S.notesOn); }).map(function (k) { return [k, E.scores[k], W[k]]; }));
+    var fact = function (l, v, s) { return '<div class="kpf"><span>' + esc(l) + '</span><b class="num">' + v + '</b>' + (s ? '<small>' + s + '</small>' : '') + '</div>'; };
+    var facts = fact(kp('workDays'), R.workDays) +
+      (p.team === 'STN' ? fact(kp('stnI'), R.stn) : fact(kp('enfI'), R.enf) + fact(kp('vio'), R.vio, R.fines ? R.fines.toLocaleString('en-US') + ' ' + kp('sar') : '')) +
+      fact(kp('ops') + ' / ' + kp('perDay'), R.perDay === null ? '—' : R.perDay, kp('target') + ' ' + S.target) +
+      (p.team === 'ENF' ? fact(kp('cdcN'), R.cdc, R.arrN ? kp('arrOk') + ' ' + R.arrOk + '/' + R.arrN + ' · ' + kp('arrAvg') + ' ' + R.arrAvg + ' ' + kp('min') : '') : '') +
+      (R.present || R.absent ? fact(kp('present') + ' / ' + kp('absent'), R.present + ' / ' + R.absent, R.late ? kp('late') + ' ' + R.late : '') : '');
+    return pick + '<div class="kpwrap"><div class="kpsheet" id="kpSheet">' +
+      '<div class="kphead"><div class="kplogo"><b>MBCO</b><span>Modern Bus Company Limited</span></div><div class="kpht"><h1>' + kp('title') + '</h1><p>' + kp('sub') + ' — ' + esc(kp(p.team)) + ' · ' + esc(kp('period')) + ' <span class="ltr">' + esc(period) + '</span></p></div><div class="kpyear' + ysCls + '">' + esc(ys) + '</div></div>' +
+      '<div class="kprow1"><div class="kpcard kpprof"><div class="kpphoto" id="kpPhoto">' + (K.photos[p.id] ? '<img src="' + K.photos[p.id] + '" alt="">' : '<span>' + esc(kpName(p).slice(0, 1)) + '</span>') + '</div><div class="kpinfo"><h2>' + esc(kpName(p)) + '</h2><div class="kprole">' + esc((st.lang === 'en' ? p.title_en : p.title_ar) || kp(p.team)) + '</div>' +
+      '<div class="kpline2"><span>' + kp('id') + '</span><b class="num">' + esc(p.id) + '</b></div><div class="kpline2"><span>' + kp('team') + '</span><b>' + esc(kp(p.team)) + '</b></div>' +
+      '<div class="kpline2"><span>' + kp('hire') + '</span><b class="num">' + esc(p.hire || '—') + '</b></div><div class="kpline2"><span>' + kp('rankOf') + '</span><b>' + (E.rank ? '<span class="num">' + E.rank + '</span> ' + kp('of') + ' <span class="num">' + E.of + '</span>' : '—') + '</b></div></div></div>' +
+      '<div class="kpcard kpcircles">' + circles.map(function (c) {
+        var v = c[1], cc = c[0] === 'overall' ? col : (KP_COL[kpBand(v)] || '#666');
+        return '<div class="kpc' + (c[0] === 'overall' ? ' big' : '') + '"><div class="kpct"><i></i>' + kp(c[0]) + '</div><div class="kpcr">' + kpRing(v, v === null ? '#555' : cc, c[0] === 'overall' ? 112 : 96, '') + '<div class="kpcv">' + kpIco(c[0], v === null ? '#777' : cc) + '<b class="num">' + (v === null || v === undefined ? '—' : v + '%') + '</b></div></div><div class="kpcw">' + (c[2] ? kp('w') + ' ' + c[2] + '%' : (band ? '<span style="color:' + col + '">' + kp('band' + band) + '</span>' : '')) + '</div></div>';
+      }).join('') + '</div></div>' +
+      '<div class="kpcard kpchart"><div class="kpct big"><i></i>' + kp(E.unit === 'month' ? 'byMonth' : 'byDay') + (D.teamAvg[p.team] !== null ? '<span class="kpavg">' + kp('teamAvg') + ': <b class="num">' + D.teamAvg[p.team] + '%</b></span>' : '') + '</div>' + kpLine(E.series, E.unit) + '</div>' +
+      '<div class="kprow3"><div class="kpcard"><div class="kpct big"><i></i>' + kp('breakdown') + '</div>' + kpDonut(E.contrib, E.overall) + '</div>' +
+      '<div class="kpcard"><div class="kpct big"><i></i>' + kp('facts') + '</div><div class="kpfacts">' + facts + '</div>' +
+      '<div class="kpnoteline"><b>' + kp('notesT') + ':</b> ' + (S.notesOn ? (E.notes.length ? E.notes.length : kp('notesNone')) : kp('notesLater')) + '</div></div>' +
+      '<div class="kpbanner"><img src="kpi-banner.jpg" alt=""></div></div>' +
+      '<div class="kpfoot"><span>' + esc(kp(p.team === 'STN' ? 'formulaS' : 'formula', { eq: S.vioEq, t: S.target, m: S.cdcMin, vio: '' })) + '</span><span>' + kp('gen') + ' <span class="ltr">' + esc(D.generated) + '</span> · ' + kp('by') + ': ' + esc(st.user.name || '') + '</span></div>' +
+      '</div></div>';
+  }
+  /* التقرير بعرض ثابت (A4 بالعرض = 1123 بكسل) ويتصغّر على الشاشة الصغيرة */
+  function kpFit() {
+    var w = document.querySelector('.kpwrap'), s = document.getElementById('kpSheet'); if (!w || !s) return;
+    var z = Math.min(1, (w.clientWidth - 2) / 1123); s.style.zoom = z < 1 ? z.toFixed(3) : '';
+  }
+  window.addEventListener('resize', function () { if (st.kpi && st.kpi.view === 'emp') kpFit(); });
+  /* PDF: نسخة من التقرير في حاوية مستقلة + A4 بالعرض لهذي الطباعة فقط (باقي تقارير البوابة تبقى بالطول) */
+  function kpPrint() {
+    var sh = document.getElementById('kpSheet'); if (!sh) return;
+    var box = document.getElementById('kpPrint') || document.body.appendChild(Object.assign(document.createElement('div'), { id: 'kpPrint' }));
+    box.innerHTML = ''; var c = sh.cloneNode(true); c.removeAttribute('id'); c.style.zoom = ''; box.appendChild(c);
+    var pg = document.createElement('style'); pg.id = 'kpPage'; pg.textContent = '@page{size:A4 landscape;margin:0}'; document.head.appendChild(pg);
+    var t0 = document.title, E = st.kpi.d.emp; document.title = 'MBCO_KPI_' + (E ? E.profile.id : '') + '_' + st.kpi.from + '_' + st.kpi.to;
+    document.body.classList.add('kpprint');
+    var done = function () { document.body.classList.remove('kpprint'); pg.remove(); box.innerHTML = ''; document.title = t0; window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done);
+    var img = c.querySelector('.kpbanner img');
+    var go = function () { window.print(); setTimeout(done, 1500); };
+    if (img && !img.complete) { img.onload = img.onerror = go; } else go();
+  }
+  function kpPhoto(id) {
+    var K = st.kpi; if (K.photos[id] !== undefined) return;
+    K.photos[id] = null;
+    api('kpiPhoto', { emp: id }).then(function (j) { K.photos[id] = j.data || ''; var el = document.getElementById('kpPhoto'); if (el && j.data && K.emp === id) el.innerHTML = '<img src="' + j.data + '" alt="">'; }).catch(function () {});
+  }
+  function kpXlsx() {
+    var X = window.MBCO_XLSX, K = st.kpi; if (!X) return;
+    var head = { b: true, color: '#FFFFFF', fill: '#7B1E8F', h: 'center', border: 1, wrap: true }, cell = { border: 1 };
+    var cols = [['#', function (r, i) { return i + 1; }], [kp('id'), function (r) { return r.id; }], [kp('emp'), function (r) { return kpName(r); }], [kp('team'), function (r) { return kp(r.team); }],
+      [kp('overall'), function (r) { return r.overall; }], [kp('band' + 'A').slice(0, 0) + (st.lang === 'en' ? 'Band' : 'التقدير'), function (r) { return r.band ? kp('band' + r.band) : ''; }],
+      [kp('att'), function (r) { return r.scores.att; }], [kp('punc'), function (r) { return r.scores.punc; }], [kp('prod'), function (r) { return r.scores.prod; }], [kp('cdc'), function (r) { return r.scores.cdc; }],
+      [kp('workDays'), function (r) { return r.raw.workDays; }], [kp('stnI'), function (r) { return r.raw.stn; }], [kp('enfI'), function (r) { return r.raw.enf; }], [kp('vio'), function (r) { return r.raw.vio; }],
+      [kp('fines'), function (r) { return r.raw.fines; }], [kp('ops'), function (r) { return r.raw.ops; }], [kp('perDay'), function (r) { return r.raw.perDay; }], [kp('cdcN'), function (r) { return r.raw.cdc; }],
+      [kp('arrOk'), function (r) { return r.raw.arrN ? r.raw.arrOk + '/' + r.raw.arrN : ''; }], [kp('arrAvg'), function (r) { return r.raw.arrAvg; }], [kp('present'), function (r) { return r.raw.present; }], [kp('absent'), function (r) { return r.raw.absent; }]];
+    var rows = kpRows();
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(X.write([{ name: 'KPI', rtl: st.lang !== 'en', freeze: 'D4', cols: cols.map(function (c, i) { return i === 2 ? 26 : 11; }), merges: ['A1:' + X.colName(cols.length - 1) + '1'],
+      rows: [[{ v: 'MBCO · ' + kp('title') + ' · ' + K.from + ' → ' + K.to, s: { b: true, sz: 14, color: '#7B1E8F' } }], [kp('formula', { eq: K.d.settings.vioEq, t: K.d.settings.target, m: K.d.settings.cdcMin, vio: '' })], cols.map(function (c) { return { v: c[0], s: head }; })]
+        .concat(rows.map(function (r, i) { return cols.map(function (c) { var v = c[1](r, i); return { v: v === null || v === undefined ? '' : v, s: cell }; }); })) }]));
+    a.download = 'MBCO_KPI_' + K.from + '_' + K.to + '.xlsx'; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  }
+  function kpBind(b) {
+    var K = st.kpi;
+    b.querySelectorAll('[data-kteam]').forEach(function (x) { x.onclick = function () { K.team = x.getAttribute('data-kteam'); kpDraw(); }; });
+    b.querySelectorAll('[data-ksort]').forEach(function (th) { th.onclick = function () { var k = th.getAttribute('data-ksort'); K.sort = { k: k, d: K.sort.k === k ? -K.sort.d : -1 }; kpDraw(); }; });
+    var q = b.querySelector('#kQ'); if (q) q.oninput = function () { var p = q.selectionStart; K.q = q.value; kpDraw(); var n = document.getElementById('kQ'); if (n) { n.focus(); n.setSelectionRange(p, p); } };
+    var x = b.querySelector('#kX'); if (x) x.onclick = kpXlsx;
+    b.querySelectorAll('[data-kemp]').forEach(function (tr_) { tr_.onclick = function () { K.emp = tr_.getAttribute('data-kemp'); K.view = 'emp'; kpLoad(false); window.scrollTo(0, 0); }; });
+    var bk = b.querySelector('#kBack'); if (bk) bk.onclick = function () { K.view = 'rank'; kpLoad(false); };
+    var se = b.querySelector('#kEmp'); if (se) se.onchange = function () { K.emp = se.value; kpLoad(false); };
+    var pd = b.querySelector('#kPdf'); if (pd) pd.onclick = kpPrint;
+  }
+
   function loadSection(key) {
     var main = document.getElementById('main');
     var s = st.sec[key] || { from: '', to: '', q: '' };
@@ -3273,6 +3509,12 @@
     var title = '<div class="pagehead"><div><h1>' + esc(st.lang === 'en' ? sec.en : sec.ar) + '</h1></div>' + modeSwitch(key, mode) +
       (mode === 'ctl' ? '<button type="button" class="btn sm hide noprint" id="ctlNew">' + icon('external') + t('ctl_newwin') + '</button>' : '') +
       (DEMO ? '<span class="notice">' + t('demo') + '</span>' : '') + '</div>';
+    if (key === 'people') {
+      main.innerHTML = title + '<div class="ctlnative" id="kpiWrap"></div>';
+      if (st.user.role === 'Officer') { document.getElementById('kpiWrap').innerHTML = '<div class="ctlmsg"><p>' + esc(t('ctl_role')) + '</p></div>'; return; }
+      renderKpi(document.getElementById('kpiWrap'), false);
+      return;
+    }
     if (mode === 'ctl') {
       if (key === 'car') {
         main.innerHTML = title + '<div class="ctlnative" id="ctlWrap"></div>';
