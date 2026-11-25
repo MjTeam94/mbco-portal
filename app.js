@@ -1052,7 +1052,10 @@
       r_pen: 'اختر رمز ثم اضغط أو اسحب على الخانات', r_clear: 'مسح', r_sel: 'للموظفين المحددين:', r_replace: 'استبدل', r_with: 'بـ', r_apply: 'تطبيق',
       r_add: 'إضافة موظف للروستر', r_new: 'جديد', r_readonly: 'عرض فقط: تعديل الروستر للإدارة.', r_loading: 'جارِ تحميل الروستر…',
       r_filled: 'تمت التعبئة: {n} خانة. راجعها ثم اضغط «حفظ ونشر».', r_nopat: 'ما قدرت أستنتج نمط: {names}', r_loaded: 'تم قراءة الملف: {n} تعديل على {e} موظف ({d} يوم). راجع الخانات المظللة ثم اضغط «حفظ ونشر».',
-      r_newemps: 'موظفين غير موجودين في تبويب الموظفين بنظام الروستر (أضفهم هناك عشان البوت والتحضير): {names}', r_badcodes: 'رموز غير معروفة باللون الأحمر: {codes}. صححها قبل الحفظ.',
+      r_newemps: 'موظفين غير موجودين في تبويب الموظفين بنظام الروستر (أضفهم هناك عشان البوت والتحضير): {names}',
+      e_title: 'تغييرات الفرق والمناصب من الملف', e_hint: 'الملف فيه فرق أو مهام تختلف عن تبويب الموظفين. راجعها واعتمد المطلوب: تتحدث في الروستر والبوت والبوابة والتقييم، وترتيب الروستر يصير مثل الملف.',
+      e_apply: 'اعتماد التغييرات المحددة', e_skip: 'تجاهل', e_done: 'تم تحديث {n} موظف', e_miss: 'غير موجودين في تبويب الموظفين: {ids}', e_none: 'الفرق والمهام مطابقة للملف',
+      f_team: 'الفريق', f_role: 'الدور', f_position: 'المسمى', f_task: 'المهمة', f_lead_level: 'المسؤولية', f_lead_shift: 'وردية المسؤولية', TL: 'مسؤول وردية', STANDBY: 'احتياط المسؤول', none: 'بدون', e_all: 'تحديد الكل', r_badcodes: 'رموز غير معروفة باللون الأحمر: {codes}. صححها قبل الحفظ.',
       r_badfile: 'ما قدرت أقرأ الملف. تأكد إنه نفس شكل ملف الروستر الشهري (أعمدة ID و STAFF والتواريخ).', r_saved: 'تم الحفظ ✓ {n} خانة', r_undone: 'تم استرجاع النسخة السابقة ✓',
       m_save: 'حفظ ونشر الروستر', m_save_b: '{n} خانة تتغير في الروستر، ويشوفها الموظفين في البوت فوراً. تنحفظ نسخة احتياطية قبل الحفظ.',
       m_undo: 'استرجاع آخر نسخة', m_undo_b: 'يرجع الروستر مثل ما كان قبل آخر حفظ.', m_disc: 'تجاهل كل التعديلات غير المحفوظة؟',
@@ -1066,7 +1069,10 @@
       r_pen: 'Pick a code, then click or drag over cells', r_clear: 'Clear', r_sel: 'For selected staff:', r_replace: 'replace', r_with: 'with', r_apply: 'Apply',
       r_add: 'Add employee to roster', r_new: 'new', r_readonly: 'View only: roster editing is for admins.', r_loading: 'Loading roster…',
       r_filled: 'Filled {n} cells. Review them, then press "Save & publish".', r_nopat: 'No pattern found for: {names}', r_loaded: 'File read: {n} changes for {e} staff ({d} days). Review the highlighted cells, then press "Save & publish".',
-      r_newemps: 'Staff not in the roster system Employees tab (add them there for the bot and attendance): {names}', r_badcodes: 'Unknown codes in red: {codes}. Fix them before saving.',
+      r_newemps: 'Staff not in the roster system Employees tab (add them there for the bot and attendance): {names}',
+      e_title: 'Team & role changes from the file', e_hint: 'The file has teams or duties that differ from the Employees tab. Review and approve: they update the roster, bot, portal and KPI, and the roster order follows the file.',
+      e_apply: 'Apply selected changes', e_skip: 'Ignore', e_done: '{n} employees updated', e_miss: 'Not in the Employees tab: {ids}', e_none: 'Teams and duties match the file',
+      f_team: 'Team', f_role: 'Role', f_position: 'Title', f_task: 'Duty', f_lead_level: 'Lead', f_lead_shift: 'Lead shift', TL: 'Shift lead', STANDBY: 'Backup lead', none: 'none', e_all: 'Select all', r_badcodes: 'Unknown codes in red: {codes}. Fix them before saving.',
       r_badfile: 'Could not read the file. Make sure it has the monthly roster layout (ID, STAFF and date columns).', r_saved: 'Saved ✓ {n} cells', r_undone: 'Previous version restored ✓',
       m_save: 'Save & publish roster', m_save_b: '{n} cells change in the roster and staff see them on the bot right away. A backup is kept before saving.',
       m_undo: 'Restore previous version', m_undo_b: 'Returns the roster to how it was before the last save.', m_disc: 'Discard all unsaved changes?',
@@ -1147,6 +1153,7 @@
     if (!can) h += '<p class="muted rmeta">' + ro('r_readonly') + '</p>';
     R.msgs.forEach(function (m) { h += '<div class="romsg ' + (m[0] || '') + '">' + esc(m[1]) + '</div>'; });
     if (bad.length) h += '<div class="romsg bad">' + esc(ro('r_badcodes').replace('{codes}', bad.join('، '))) + '</div>';
+    h += rosEmpPanel();
     if (can) {
       h += '<div class="card rosbar' + (n ? ' dirty' : '') + '"><div class="ropal">' + J.shifts.map(function (s) {
         return '<button type="button" class="pal' + (R.pen === s.code ? ' on' : '') + '" data-pen="' + esc(s.code) + '" style="background:' + esc(s.color || '#fff') + '" title="' + esc(tr(s.name) + (s.start ? ' ' + s.start + '-' + s.end : '')) + '">' + esc(s.code) + '</button>';
@@ -1177,7 +1184,7 @@
     });
     h += '</tbody></table></div>';
     b.innerHTML = h;
-    rosBind(b);
+    rosBind(b); rosEmpBind(b);
   }
   function rosCell(id, d) {
     var R = st.ros, code = rosVal(id, d), s = rosShift(code), k = id + '|' + d, cls = 'cell';
@@ -1324,6 +1331,7 @@
         });
         R.msgs = [['ok', ro('r_loaded').replace('{n}', n).replace('{e}', Object.keys(emps).length).replace('{d}', parsed.dates.length) + ' · ' + file.name]];
         if (newOnes.length) R.msgs.push(['warn', ro('r_newemps').replace('{names}', newOnes.join('، '))]);
+        rosEmpDiff(parsed, target);
         rosDraw();
       };
       if (target !== R.month || parsed.dates[0] < rosRange(target).hist) {
@@ -1343,6 +1351,67 @@
       rosDraw();
     });
   }
+  /* v2.6: الفرق والمناصب من ملف الروستر الشهري (قسم Department + عمود Position + عمود Note) */
+  function rosEmpDiff(parsed, month) {
+    var R = st.ros; R.empChg = []; R.fileOrder = parsed.rows.map(function (r) { return r.id; });
+    if (!parsed.rows.length || !parsed.rows[0].fmt) return;
+    parsed.rows.forEach(function (r) {
+      var e = R.empMap[r.id]; if (!e) return;
+      var note = r.note, isLead = /responsible|مسؤول/i.test(note), lead = isLead ? (/backup|standby|احتياط|نائب/i.test(note) ? 'STANDBY' : 'TL') : '';
+      var cnt = {}; Object.keys(r.codes).forEach(function (d) { var c = r.codes[d]; if (d.slice(0, 7) === month && /^\d+$/.test(c)) cnt[c] = (cnt[c] || 0) + 1; });
+      var lshift = lead ? (Object.keys(cnt).sort(function (a, b) { return cnt[b] - cnt[a]; })[0] || e.lshift || '') : '';
+      var team = r.team || e.team, role = team === 'ADM' ? (e.role || 'Admin') : (e.role === 'Admin' && !/^(ADM)$/.test(e.team) ? 'Admin' : lead ? 'Supervisor' : 'Officer');
+      var want = { team: team, role: role, position: r.position || e.position, task: note || e.task, lead_level: lead, lead_shift: lshift };
+      var cur = { team: e.team, role: e.role, position: e.position, task: e.task, lead_level: e.lead || '', lead_shift: e.lshift || '' };
+      var ch = {}; Object.keys(want).forEach(function (k) { if (String(want[k] || '') !== String(cur[k] || '')) ch[k] = [cur[k] || '', want[k] || '']; });
+      if (Object.keys(ch).length) R.empChg.push({ id: r.id, ch: ch, on: true });
+    });
+    var orderChanged = R.fileOrder.filter(function (id) { return R.rowMap[id]; }).join(',') !== R.data.rows.map(function (x) { return x.id; }).filter(function (id) { return R.fileOrder.indexOf(id) >= 0; }).join(',');
+    R.orderChg = orderChanged;
+  }
+  function rosEmpVal(k, v) {
+    if (!v) return '—';
+    if (k === 'team') return t('tm_' + v) || v;
+    if (k === 'lead_level') return ro(v);
+    return v;
+  }
+  function rosEmpPanel() {
+    var R = st.ros; if (!R.empChg || (!R.empChg.length && !R.orderChg) || !R.data.canEdit || st.user.role !== 'Admin') return '';
+    var order = ['team', 'role', 'lead_level', 'lead_shift', 'task', 'position'];
+    return '<div class="card roemp"><div class="chead"><h2>👥 ' + ro('e_title') + ' <span class="num">(' + R.empChg.length + ')</span></h2></div><p class="muted">' + esc(ro('e_hint')) + '</p>' +
+      (R.empChg.length ? '<div class="tblwrap"><table class="tbl"><thead><tr><th><input type="checkbox" id="roeAll" checked aria-label="' + esc(ro('e_all')) + '"></th><th>' + esc(t('col_emp')) + '</th><th>' + ro('f_team') + '</th><th>' + ro('f_role') + '</th><th>' + ro('f_lead_level') + '</th><th>' + ro('f_task') + '</th></tr></thead><tbody>' +
+        R.empChg.map(function (c, i) {
+          var cell = function (ks) { return ks.map(function (k) { var x = c.ch[k]; return x ? '<div><span class="muted">' + esc(rosEmpVal(k, x[0])) + '</span> ← <b>' + esc(rosEmpVal(k, x[1])) + '</b>' + (k === 'lead_shift' ? ' <span class="muted">(' + ro('f_lead_shift') + ')</span>' : '') + '</div>' : ''; }).join('') || '<span class="muted">—</span>'; };
+          return '<tr><td><input type="checkbox" data-roe="' + i + '"' + (c.on ? ' checked' : '') + '></td><td class="nowrap"><b>' + esc(rosName(c.id)) + '</b> <span class="muted num">' + esc(c.id) + '</span></td>' +
+            '<td>' + cell(['team']) + '</td><td>' + cell(['role']) + '</td><td>' + cell(['lead_level', 'lead_shift']) + '</td><td>' + cell(['task', 'position']) + '</td></tr>';
+        }).join('') + '</tbody></table></div>' : '') +
+      '<div class="mact"><button type="button" class="btn ghost sm" id="roeSkip">' + ro('e_skip') + '</button><button type="button" class="btn primary sm" id="roeGo">' + ro('e_apply') + '</button></div></div>';
+  }
+  function rosEmpBind(b) {
+    var R = st.ros, go = b.querySelector('#roeGo'); if (!go) return;
+    var all = b.querySelector('#roeAll');
+    if (all) all.onchange = function () { R.empChg.forEach(function (c) { c.on = all.checked; }); b.querySelectorAll('[data-roe]').forEach(function (x) { x.checked = all.checked; }); };
+    b.querySelectorAll('[data-roe]').forEach(function (x) { x.onchange = function () { R.empChg[+x.getAttribute('data-roe')].on = x.checked; }; });
+    b.querySelector('#roeSkip').onclick = function () { R.empChg = []; R.orderChg = false; rosDraw(); };
+    go.onclick = function () {
+      var upd = R.empChg.filter(function (c) { return c.on; }).map(function (c) { var o = { id: c.id }; Object.keys(c.ch).forEach(function (k) { o[k] = c.ch[k][1]; }); return o; });
+      go.disabled = true; setSync(true);
+      api('empUpdate', { upd: upd, order: R.fileOrder }).then(function (j) {
+        // حدّث الحالة محلياً بدون إعادة تحميل (عشان تعديلات الخانات المرفوعة ما تضيع)
+        upd.forEach(function (o) {
+          var e = R.empMap[o.id]; if (e) { if (o.team) e.team = o.team; if ('role' in o) e.role = o.role; if ('position' in o) e.position = o.position; if ('task' in o) e.task = o.task; if ('lead_level' in o) e.lead = o.lead_level; if ('lead_shift' in o) e.lshift = o.lead_shift; }
+          if (o.team && R.rowMap[o.id]) R.rowMap[o.id].team = o.team;
+        });
+        var pos = {}; R.fileOrder.forEach(function (id, i) { pos[id] = i; });
+        var idx = {}; R.data.rows.forEach(function (x, i) { idx[x.id] = i; });
+        R.data.rows.sort(function (a, b2) { return (a.id in pos ? pos[a.id] : 1e6 + idx[a.id]) - (b2.id in pos ? pos[b2.id] : 1e6 + idx[b2.id]); });
+        R.empChg = []; R.orderChg = false;
+        R.msgs.push(['ok', ro('e_done').replace('{n}', upd.length)]);
+        if (j.missing && j.missing.length) R.msgs.push(['warn', ro('e_miss').replace('{ids}', j.missing.join('، '))]);
+        rosDraw();
+      }).catch(function (e) { go.disabled = false; toast(errText(e)); }).then(function () { setSync(false); });
+    };
+  }
   function rosParse(rows) {
     var X = MBCO_XLSX, out = { dates: [], rows: [] }, dset = {}, team = '', cols = null;
     var code = function (v) { if (v === null || v === undefined) return ''; if (typeof v === 'number') return String(Math.round(v)); return String(v).trim().toUpperCase(); };
@@ -1360,13 +1429,15 @@
         var start = /^emp_id$/i.test(a) ? 3 : 5; cols = [];
         for (var c = start; c < r.length; c++) { var d = asDate(r[c]); if (d) { cols.push([c, d]); if (!dset[d]) { dset[d] = 1; out.dates.push(d); } } }
         cols.idCol = /^emp_id$/i.test(a) ? 0 : 1; cols.nameCol = cols.idCol + 1; cols.teamCol = /^emp_id$/i.test(a) ? 2 : -1;
+        cols.posCol = /^emp_id$/i.test(a) ? -1 : 3; cols.noteCol = /^emp_id$/i.test(a) ? -1 : 4;
         return;
       }
       if (!cols) return;
       var idv = r[cols.idCol], id = String(idv === undefined || idv === null ? '' : idv).replace(/\.0+$/, '').replace(/\D/g, '');
       if (!id || id.length < 3 || !String(r[cols.nameCol] || '').trim()) return;
       var codes = {}; cols.forEach(function (p) { codes[p[1]] = code(r[p[0]]); });
-      out.rows.push({ id: id, name: String(r[cols.nameCol]).trim(), team: cols.teamCol >= 0 ? teamOf(r[cols.teamCol]) : team, codes: codes });
+      var txt = function (c) { return c >= 0 && r[c] !== null && r[c] !== undefined ? String(r[c]).trim() : ''; };
+      out.rows.push({ id: id, name: String(r[cols.nameCol]).trim(), team: cols.teamCol >= 0 ? teamOf(r[cols.teamCol]) : team, codes: codes, position: txt(cols.posCol), note: txt(cols.noteCol), fmt: cols.posCol >= 0 });
     });
     out.dates.sort();
     return out;
@@ -4032,13 +4103,15 @@
       api('users').then(function (j) {
         document.getElementById('usersOut').innerHTML = '<div class="tblwrap"><table class="tbl"><thead><tr><th>' + t('emp_id') + '</th><th>' + t('col_emp') + '</th><th>' + t('col_team') + '</th><th>' + t('role') + '</th><th>' + t('access') + '</th><th>' + t('last_login') + '</th><th></th></tr></thead><tbody>' +
           j.users.map(function (u) {
-            return '<tr><td class="num">' + esc(u.emp_id) + '</td><td><b>' + esc(u.name) + '</b></td><td>' + esc(u.team) + '</td>' +
+            return '<tr><td class="num">' + esc(u.emp_id) + '</td><td><b>' + esc(u.name) + '</b></td><td><select class="input" style="min-width:110px;height:36px" data-uteam="' + esc(u.emp_id) + '" aria-label="' + esc(t('col_team')) + '">' + (/^(ADM|ENF|STN)$/.test(u.team) ? '' : '<option value="" selected>' + esc(u.team || '—') + '</option>') + ['ENF', 'STN', 'ADM'].map(function (x) { return '<option value="' + x + '"' + (x === u.team ? ' selected' : '') + '>' + esc(t('tm_' + x)) + '</option>'; }).join('') + '</select></td>' +
               '<td><select class="input" style="min-width:120px;height:36px" data-role="' + esc(u.emp_id) + '" aria-label="' + esc(t('role')) + '">' + ['Admin', 'Supervisor', 'Officer'].map(function (r) { return '<option' + (r === u.role ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select></td>' +
               '<td><button type="button" class="btn sm ' + (u.access === 'لا' ? '' : 'on') + '" data-access="' + esc(u.emp_id) + '" data-v="' + (u.access === 'لا' ? 'نعم' : 'لا') + '" aria-pressed="' + (u.access !== 'لا') + '">' + (u.access === 'لا' ? t('no') : t('yes')) + '</button></td>' +
               '<td class="num muted"><span class="ltr">' + esc(u.last_login || '—') + '</span></td><td><button type="button" class="btn sm" data-reset="' + esc(u.emp_id) + '">' + t('new_pin_btn') + '</button></td></tr>';
           }).join('') + '</tbody></table></div>';
         var out = document.getElementById('usersOut');
-        out.querySelectorAll('[data-role]').forEach(function (s) { s.onchange = function () { api('setUser', { emp_id: s.getAttribute('data-role'), role: s.value }).then(function () { toast('✓'); }); }; });
+        var saved = function (j) { toast(j && j.roster && j.roster !== 'ok' ? (j.roster === 'not_in_roster' ? t('u_notros') : '⚠️ ' + j.roster) : t('u_saved')); };
+        out.querySelectorAll('[data-role]').forEach(function (s) { s.onchange = function () { api('setUser', { emp_id: s.getAttribute('data-role'), role: s.value }).then(saved).catch(function (e) { toast(errText(e)); }); }; });
+        out.querySelectorAll('[data-uteam]').forEach(function (s) { s.onchange = function () { if (!s.value) return; api('setUser', { emp_id: s.getAttribute('data-uteam'), team: s.value }).then(saved).catch(function (e) { toast(errText(e)); }); }; });
         out.querySelectorAll('[data-access]').forEach(function (b) { b.onclick = function () { api('setUser', { emp_id: b.getAttribute('data-access'), access: b.getAttribute('data-v') }).then(users); }; });
         out.querySelectorAll('[data-reset]').forEach(function (b) {
           b.onclick = function () { api('setUser', { emp_id: b.getAttribute('data-reset'), resetPin: true }).then(function (j2) { b.outerHTML = '<span class="tag b-accent num" title="' + esc(t('pin_for')) + '">PIN: ' + esc(j2.pin) + '</span>'; }); };

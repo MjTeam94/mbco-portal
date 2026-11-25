@@ -194,7 +194,7 @@ window.MBCO_DEMO = (function () {
       }
       if (k === 3) ['2026-11-20', '2026-11-21', '2026-11-22'].forEach(function (d) { c[d] = 'AL'; });
     });
-    ROS_DEMO = { shifts: shifts, emps: emps.map(function (e) { return { id: e[0], en: e[1], ar: e[2], team: e[3], position: e[4], task: e[5], def: e[6], active: true }; }), names: emps, codes: codes, backup: null };
+    ROS_DEMO = { shifts: shifts, emps: emps.map(function (e) { var lead = /Responsible/.test(e[5]) ? (/Backup|Standby/.test(e[5]) ? 'STANDBY' : 'TL') : ''; return { id: e[0], en: e[1], ar: e[2], team: e[3], position: e[4], task: e[5], role: e[3] === 'ADM' ? 'Admin' : lead ? 'Supervisor' : 'Officer', lead: lead, lshift: lead ? e[6] : '', def: e[6], active: true }; }), names: emps, codes: codes, backup: null };
     ROS_DEMO.emps.push({ id: '12999', en: 'New K. Employee', ar: 'موظف جديد', team: 'STN', position: 'Bus Operation Attendant', task: 'Station Team', def: '2', active: true });
     return ROS_DEMO;
   }
@@ -564,6 +564,7 @@ window.MBCO_DEMO = (function () {
         case 'kpiRateSave': { var sc0 = Math.round(p.items.reduce(function (a, v) { return a + v; }, 0) / p.items.length / 5 * 1000) / 10; (KPR[p.month] = KPR[p.month] || {})[p.emp] = { items: p.items, score: sc0, comment: p.comment, by: USER.name, at: opDay() + ' ' + new Date().toTimeString().slice(0, 5) }; return ok({ score: sc0 }); }
         case 'rosterGet': return ok(rosDemoGet(p));
         case 'rosterSave': return ok(rosDemoSave(p));
+        case 'empUpdate': { var RD = rosDemoInit(); (p.upd || []).forEach(function (o) { var e = RD.emps.filter(function (x) { return x.id === o.id; })[0]; if (e) { if (o.team) e.team = o.team; if ('role' in o) e.role = o.role; if ('task' in o) e.task = o.task; if ('lead_level' in o) e.lead = o.lead_level; if ('lead_shift' in o) e.lshift = o.lead_shift; } }); return ok({ cells: (p.upd || []).length, grid: true, missing: [] }); }
         case 'rosterUndo': { var D0 = rosDemoInit(); if (D0.backup) { D0.codes = JSON.parse(D0.backup); D0.backup = null; } return ok({}); }
         case 'sendReport': window.__sentReport = { filename: p.filename, size: (p.pdf || '').length, caption: p.caption }; return ok({});
         default: return fail('unknown');

@@ -49,6 +49,7 @@ window.MBCO_I18N = {
     pin_saved: 'تم حفظ الرمز الجديد', pin_mismatch: 'الرمزان غير متطابقين',
     e_badpin: 'الرقم الوظيفي أو الرمز غير صحيح', e_locked: 'تم قفل الدخول مؤقتاً بسبب محاولات كثيرة. حاول بعد 15 دقيقة', e_weakpin: 'الرمز ضعيف: 4–8 أرقام وغير متسلسل أو مكرر',
     e_auth: 'انتهت الجلسة، سجّل الدخول من جديد', e_forbidden: 'ليس لديك صلاحية لهذا القسم', e_net: 'تعذر الاتصال بالخادم. تأكد من الإنترنت ورابط الـ Hub', e_generic: 'حدث خطأ',
+    u_saved: '✓ تم الحفظ (البوابة والروستر)', u_notros: 'تم الحفظ في البوابة، لكن الموظف مو موجود في تبويب Employees بالروستر', tm_ENF: 'التذاكر', tm_STN: 'المحطات', tm_ADM: 'المكتب',
     users: 'المستخدمون', role: 'الدور', access: 'الدخول', last_login: 'آخر دخول', new_pin_btn: 'PIN جديد', yes: 'نعم', no: 'لا',
     pin_for: 'PIN المبدئي للموظف', systems_status: 'حالة الربط بالأنظمة', test: 'فحص', my_account: 'حسابي',
     sys_ok: 'متصل', sys_fail: 'غير متصل', loading: 'جاري التحميل…', retry: 'إعادة المحاولة'
@@ -101,6 +102,7 @@ window.MBCO_I18N = {
     pin_saved: 'New PIN saved', pin_mismatch: 'PINs do not match',
     e_badpin: 'Wrong employee ID or PIN', e_locked: 'Too many attempts. Try again in 15 minutes', e_weakpin: 'Weak PIN: 4–8 digits, not sequential or repeated',
     e_auth: 'Session expired, please sign in again', e_forbidden: 'You do not have access to this section', e_net: 'Cannot reach the server. Check the internet and Hub URL', e_generic: 'Something went wrong',
+    u_saved: '✓ Saved (portal and roster)', u_notros: 'Saved in the portal, but this employee is not in the roster Employees tab', tm_ENF: 'Tickets', tm_STN: 'Stations', tm_ADM: 'Office',
     users: 'Users', role: 'Role', access: 'Access', last_login: 'Last sign-in', new_pin_btn: 'New PIN', yes: 'Yes', no: 'No',
     pin_for: 'Initial PIN for employee', systems_status: 'System connections', test: 'Test', my_account: 'My account',
     sys_ok: 'Connected', sys_fail: 'Not connected', loading: 'Loading…', retry: 'Retry'
