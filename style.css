@@ -563,3 +563,51 @@ td.nowrap{white-space:nowrap}
 .atlmore{text-align:center;padding:12px}.atlsync{font-size:12px;margin:-4px 0 10px}
 .atlopts{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;margin:6px 0 10px}
 .atlbig{width:100%;justify-content:center;padding:12px;font-size:15px;margin-top:6px}.atlor{text-align:center;margin:10px 0 2px}
+
+/* ---------------- التقرير اليومي المطوّر (v2.7) ---------------- */
+:root{--info:#1E4C8A;--info-bg:#E8F0FB}
+[data-theme="dark"]{--info:#8DB8EE;--info-bg:#182A40}
+.b-info{background:var(--info-bg);color:var(--info)}
+.reppage{display:flex;flex-direction:column;gap:18px}
+.pgsep{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin:6px 0}
+.pgsep::before,.pgsep::after{content:"";flex:1;border-top:2px dashed var(--line)}
+.kpis.rx6{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.pdfsheet .kpis.rx6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.kpis.rx6 .v{font-size:24px}
+.rxsub{font-size:11px;font-weight:600}
+.rxd.t-muted{color:var(--muted)}
+.rxremark{margin:4px 0 0;font-size:13.5px;line-height:1.8;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+.rxact{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px}
+.rxact .tag{font-size:12.5px;border-radius:14px;padding:3px 11px}
+.rxrdy{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.rxrdy>div{border-radius:7px;padding:5px 2px;text-align:center;display:flex;flex-direction:column;font-size:11.5px}
+.rxrdy b{font-size:17px;line-height:1.2}
+.rxsec{border-inline-start:5px solid var(--accent)}
+.rxsec.s-a{border-inline-start-color:var(--bad)}.rxsec.s-b{border-inline-start-color:var(--info)}.rxsec.s-d{border-inline-start-color:var(--ok)}
+.rxl{font-size:17px;font-weight:800;color:var(--accent-text)}
+.s-a .rxl{color:var(--bad)}.s-b .rxl{color:var(--info)}.s-d .rxl{color:var(--ok)}
+.rxto{margin-inline-start:auto}
+.rxt td,.rxt th{padding:7px 10px}
+.rxb{display:inline-block;min-width:22px;text-align:center;font-weight:800;border-radius:11px;padding:0 7px;background:var(--row);color:var(--text);direction:ltr;unicode-bidi:isolate}
+.rxb.warm{background:var(--warn-bg);color:var(--warn-ink)}
+.rxb.hot{background:var(--bad);color:#fff}
+.rxco{display:inline-block;font-size:10.5px;font-weight:700;background:var(--tint);color:var(--accent-ink);border-radius:5px;padding:0 6px;margin-inline-start:6px;direction:ltr;unicode-bidi:isolate;vertical-align:1px}
+.rxnote{font-size:12px;line-height:1.7}
+.rx2{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:18px}
+.pdfsheet .rx2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.rxh{font-size:13px;font-weight:700}
+.rxbars{display:flex;flex-direction:column;gap:7px}
+.rxbar{display:grid;grid-template-columns:110px 1fr 34px;align-items:center;gap:8px;font-size:13px}
+.rxbar.hot{grid-template-columns:110px 1fr 30px 72px}
+.rxbar>div{height:12px;background:var(--track);border-radius:4px;overflow:hidden}
+.rxbar>div i{display:block;height:100%;border-radius:4px;background:var(--ok)}
+.rxbar em{font-style:normal;font-size:12px;font-weight:600}
+.rxchips{display:flex;flex-wrap:wrap;gap:6px}
+.rxsug{background:var(--ok-bg);border-radius:8px;padding:8px 12px;font-size:13px;line-height:1.7}
+@media print{
+  .reppage+.reppage{break-before:page;page-break-before:always}
+  .pgsep{display:none}
+  .kpis.rx6{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .rx2{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.rxchips .tag::first-letter{text-transform:uppercase}

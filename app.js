@@ -66,7 +66,18 @@
   function esc(v) { return String(v === null || v === undefined ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function fmtN(n) { return n === null || n === undefined || n === '' ? '—' : (typeof n === 'number' ? n.toLocaleString('en') : esc(n)); }
   function todayStr() { var d = new Date(Date.now() + 3 * 3600e3 - 7 * 3600e3); return d.toISOString().slice(0, 10); } // اليوم التشغيلي بتوقيت الرياض
-  function route() { var h = (location.hash || '').replace(/^#\/?/, ''); return h || 'home'; }
+  function route() {
+    var h = (location.hash || '').replace(/^#\/?/, '');
+    var q = h.indexOf('?');
+    if (q >= 0) {   // رابط من تلقرام: #/reports?date=2026-11-25
+      var m = h.slice(q).match(/date=(\d{4}-\d{2}-\d{2})/);
+      h = h.slice(0, q);
+      if (m) st.date = m[1];
+      try { history.replaceState(null, '', location.pathname + location.search + '#/' + h); } catch (e) {}
+    }
+    return h || 'home';
+  }
+  function tf(k, o) { return t(k).replace(/\{(\w+)\}/g, function (_, x) { return o && o[x] !== undefined ? o[x] : ''; }); }
   function toneColor(tone) { return { ok: 'var(--ok)', warn: 'var(--warn)', bad: 'var(--bad)', accent: 'var(--accent)', muted: 'var(--muted)' }[tone] || 'var(--accent)'; }
 
   /* ---------------- الاتصال بالـ Hub ---------------- */
@@ -286,20 +297,35 @@
           '<span id="repStatus" class="muted" role="status" style="font-size:13px"></span>' +
           '<button type="button" class="btn" id="repDl">' + icon('download') + t('rep_download') + '</button>' +
           '<button type="button" class="btn primary" id="repSend">' + icon('send') + t('rep_send') + '</button></div>' +
-          '<div class="sheet" id="reportSheet">' + homeHTML(d, true) + '</div>'
+          '<div class="sheet" id="reportSheet">' + reportPages(d).map(function (p, i) {
+            return (i ? '<div class="pgsep noprint"><span>' + t('rx_page2') + '</span></div>' : '') + '<div class="reppage">' + p + '</div>';
+          }).join('') + '</div>'
         : homeHTML(d, false);
       bindHome(isReport);
+    };
+    var loadRx = function (d, force) {
+      var rk = 'rx|' + d.date, mem = st.rx && st.rx.date === d.date ? st.rx : null;
+      if (!mem) { var cc = ccGet(rk); if (cc) { st.rx = cc; st.rxAt = 0; mem = cc; st.rxErr = ''; draw(d); } }
+      if (mem && !force && Date.now() - (st.rxAt || 0) < 60000) return;
+      api('reportX', { date: d.date, fresh: !!force }).then(function (j) {
+        st.rx = j.data; st.rxAt = Date.now(); st.rxErr = ''; ccSet(rk, j.data);
+        if (route() === 'reports' && st.home && st.home.date === d.date) draw(st.home);
+      }).catch(function (e) {
+        st.rxErr = errText(e);
+        if (route() === 'reports' && st.home && st.home.date === d.date && !mem) draw(st.home);
+      });
     };
     var go = function (force) {
       var mem = st.home && st.homeKey === key ? st.home : null;
       var shown = mem || ccGet(ck);
-      if (shown && !force) { addDict(shown.dict); draw(shown); if (!mem) { st.home = shown; st.homeKey = key; setBadges(); } }
+      if (shown && !force) { addDict(shown.dict); draw(shown); if (!mem) { st.home = shown; st.homeKey = key; setBadges(); } if (isReport) loadRx(shown, false); }
       if (mem && !force && !st.fresh && Date.now() - st.homeAt < 60000) return;
       var fresh = st.fresh; st.fresh = false;
       setSync(true);
       api('home', { date: st.date || '', heatDays: st.heatDays, fresh: fresh }).then(function (j) {
         addDict(j.data.dict); st.home = j.data; st.homeKey = key; st.homeAt = Date.now(); ccSet(ck, j.data); setBadges();
         draw(j.data);
+        if (isReport) loadRx(j.data, fresh);
       }).catch(function (e) {
         if (shown) toast(errText(e)); else if (route() === page) failBox(main, e, function () { go(true); });
       }).then(function () { setSync(false); });
@@ -333,6 +359,7 @@
         '<div class="reptitle"><b>' + t('report_title') + '</b><span>' + t('report_sub') + '</span></div><span class="spacer"></span>' +
         '<div class="repmeta"><span class="tag b-accent ltr">' + t('daily') + ' · ' + esc(d.date) + '</span>' +
         '<span class="muted">' + t('prepared') + ' <span class="num ltr">' + esc(d.updated || '') + '</span>' + (st.user ? ' · ' + esc(st.user.name) : '') + '</span></div></div>';
+      h += rxSummaryHTML(rxFor(d), d);
     } else {
       h += '<div class="pagehead"><div><h1>' + t('home_title') + '</h1><div class="sub num">' + esc(d.date) + (d.isToday ? ' · ' + t('last_update') + ' ' + esc(d.updated) : '') + '</div></div>' +
         (DEMO ? '<span class="notice">' + t('demo') + '</span>' : '') + '</div>';
@@ -380,9 +407,10 @@
       '<div class="kpis"><div class="kpi"><span class="l">' + t('inspections') + '</span><span class="v num">' + fmtN(ins.inspections) + '</span></div>' +
       '<div class="kpi"><span class="l">' + t('violations') + '</span><span class="v num">' + fmtN(ins.violations) + '</span></div>' +
       '<div class="kpi"><span class="l">' + t('fines') + '</span><span class="v num">' + fmtN(ins.fines) + ' <small>' + t('sar') + '</small></span></div></div>' +
-      '<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:600">' + t('last7') + '</span>' +
+      (isReport && ins.rdy && ins.rdy.n ? '' : '<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:600">' + t('last7') + '</span>' +
       '<div class="bars">' + ins.last7.map(function (x, i) { return '<span class="' + (i === 6 ? 'cur' : '') + '" style="height:' + Math.round(x.n / max7 * 100) + '%" title="' + esc(x.date) + ': ' + x.n + '"></span>'; }).join('') + '</div>' +
-      '<div class="barlbl">' + ins.last7.map(function (x, i) { var p = x.date.split('-'); var wd = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])).getUTCDay(); return '<span' + (i === 6 ? ' style="color:var(--text);font-weight:700"' : '') + '>' + (i === 6 && d.isToday ? t('today') : dayN[wd]) + '</span>'; }).join('') + '</div></div>' +
+      '<div class="barlbl">' + ins.last7.map(function (x, i) { var p = x.date.split('-'); var wd = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])).getUTCDay(); return '<span' + (i === 6 ? ' style="color:var(--text);font-weight:700"' : '') + '>' + (i === 6 && d.isToday ? t('today') : dayN[wd]) + '</span>'; }).join('') + '</div></div>') +
+      rdyChipsHTML(ins.rdy) +
       '<div class="cfoot"><span class="muted">' + t('coverage') + '</span><b class="num">' + fmtN(ins.coverageH) + ' ' + t('hours') + '</b></div></section>';
 
     // الروستر
@@ -441,6 +469,7 @@
       '<div class="chead"><span class="bar4"></span><h2>' + t('repeat_buses') + '</h2></div><div class="list">' +
       (d.buses.length ? d.buses.map(function (b) { return '<div class="it"><b class="ltr" style="flex:1 1 auto">' + esc(b.no) + '</b><span class="muted">' + esc(tr(b.what)) + '</span><b class="num">' + b.n + '</b></div>'; }).join('') : '<div class="empty">' + t('no_data') + '</div>') +
       '</div></section></div>';
+    if (isReport && rxFor(d)) h = h.replace(/<div class="row2"><section class="card wide">[\s\S]*$/, '');
 
     // الموظفون
     if (!isReport) {
@@ -451,7 +480,147 @@
         return '<tr><td><b>' + esc(tr(p.name)) + '</b> <span class="muted num">' + esc(p.id) + '</span></td><td>' + esc(tr(p.team)) + '</td><td>' + esc(tr(p.post) || '—') + '</td><td class="b num">' + p.cdc + '</td><td class="b num">' + p.ins + '</td><td class="b num">' + p.vio + '</td><td class="ltr num">' + esc(p.car || '—') + '</td><td>' + (p.att ? '<span class="tag b-' + p.attTone + '">' + esc(tr(p.att)) + '</span>' : '—') + '</td></tr>';
       }).join('') : '<tr><td colspan="8" class="empty">' + t('no_data') + '</td></tr>') + '</tbody></table></div></section>';
     }
-    if (isReport) h += '<div class="repfoot"><span>' + t('source') + '</span><span class="ltr">MBCO · Modern Bus Company Limited · ' + esc(d.date) + '</span></div>';
+    if (isReport) h += '<div class="repfoot"><span>' + t('source') + '</span><span class="ltr">MBCO · Modern Bus Company Limited · ' + esc(d.date) + (rxFor(d) ? ' · 1 / 2' : '') + '</span></div>';
+    return h;
+  }
+
+  /* ---------------- التقرير اليومي المطوّر (v2.7): الملخص + نقاط كل قسم ---------------- */
+  function rxFor(d) { return st.rx && d && st.rx.date === d.date ? st.rx : null; }
+  function reportPages(d) {
+    var rx = rxFor(d);
+    var p2 = rx ? rxDeptHTML(rx, d) : '<section class="card"><div class="' + (st.rxErr ? 'err' : 'empty') + '">' + (st.rxErr ? esc(t('rx_fail') + st.rxErr) : t('rx_loading')) + '</div></section>';
+    return [homeHTML(d, true), p2];
+  }
+  function rxDelta(n, avg, unit, upBad) {
+    if (n === null || n === undefined || avg === null || avg === undefined) return '';
+    var dv = Math.round((n - avg) * 10) / 10;
+    if (!dv) return '<span class="rxd t-muted">' + t('rx_same') + '</span>';
+    var bad = upBad ? dv > 0 : dv < 0;
+    return '<span class="rxd t-' + (bad ? 'bad' : 'ok') + '">' + (dv > 0 ? '▲ ' : '▼ ') + Math.abs(dv) + (unit ? ' ' + unit : '') + '</span>';
+  }
+  function rxBadge(n, min) {
+    if (n === null || n === undefined) return '<span class="muted">—</span>';
+    return '<span class="rxb ' + (n >= min ? 'hot' : n >= 2 ? 'warm' : '') + '">' + n + '</span>';
+  }
+  function rxOpen(n) { return n <= 0 ? t('rx_today') : n === 1 ? t('rx_day1') : n === 2 ? t('rx_days2') : tf('rx_days', { n: n }); }
+  function rdyChipsHTML(r) {
+    if (!r || !r.n) return '';
+    var tone = { cctv: 'b-bad', screens: 'b-warn', validator: 'b-warn' };
+    return '<div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:600">' + t('rx_rdy') + ' · <span class="num">' + r.n + '</span></span><div class="rxrdy">' +
+      r.items.map(function (x) { return '<div class="' + (x.n ? tone[x.k] || 'b-muted' : 'b-muted') + '"><b class="num">' + x.n + '</b><span>' + t('rx_f_' + x.k) + '</span></div>'; }).join('') + '</div></div>';
+  }
+  function rxRemark(rx) {
+    var s = rx.sum, en = st.lang === 'en', P = [];
+    var top = s.top, st0 = rx.hot && rx.hot.stations[0];
+    var dCdc = s.cdc.n - s.cdc.avg7;
+    if (en) {
+      P.push((dCdc > 1 ? 'Reports were above normal today (' + s.cdc.n + ' vs ' + s.cdc.avg7 + ' avg)' : dCdc < -1 ? 'A quieter day than usual (' + s.cdc.n + ' reports vs ' + s.cdc.avg7 + ' avg)' : 'Reports were in the usual range (' + s.cdc.n + ')') +
+        (top ? ', concentrated on Route ' + top.route + ' (' + top.col + ')' + (st0 ? ' and around ' + tr(st0.name) : '') : ''));
+      if (s.eff.rate !== null) {
+        var c = [];
+        if (s.unreach.n) c.push(s.unreach.n + ' cases where the driver could not be reached');
+        if (rx.cdcq.reasons.valid) c.push(rx.cdcq.reasons.valid + ' valid-ticket cases (validator fault)');
+        P.push('The effective-report rate was ' + s.eff.rate + '%' + (s.eff.avg7 !== null && s.eff.rate !== s.eff.avg7 ? ' (' + (s.eff.rate < s.eff.avg7 ? 'down ' : 'up ') + Math.abs(s.eff.rate - s.eff.avg7) + ' pts)' : '') + (c.length ? ', driven by ' + c.join(' and ') : ''));
+      }
+      var tail = [];
+      if (s.repeaters.length) tail.push(s.repeaters.length + ' driver' + (s.repeaters.length > 1 ? 's have' : ' has') + ' been flagged ' + rx.repeatMin + '+ times in the last 30 days');
+      if (s.oldest && s.oldest.open >= 3) tail.push('bus ' + s.oldest.bus + ' has had an open ' + s.oldest.faults.map(function (f) { return t('rx_f_' + f); }).join('/') + ' fault for ' + s.oldest.open + ' days');
+      if (tail.length) P.push(tail.join(', and '));
+      return P.join('. ') + '.';
+    }
+    P.push((dCdc > 1 ? 'يوم أعلى من المعتاد في البلاغات (' + s.cdc.n + ' مقابل متوسط ' + s.cdc.avg7 + ')' : dCdc < -1 ? 'يوم أهدأ من المعتاد في البلاغات (' + s.cdc.n + ' مقابل متوسط ' + s.cdc.avg7 + ')' : 'البلاغات ضمن المعتاد (' + s.cdc.n + ')') +
+      (top ? '، وتركّز معظمها على مسار ' + top.route + ' بين ' + top.col + (st0 ? ' ومحطة ' + st0.name : '') : ''));
+    if (s.eff.rate !== null) {
+      var ca = [];
+      if (s.unreach.n) ca.push(s.unreach.n + ' حالات تعذّر فيها الوصول للسائق');
+      if (rx.cdcq.reasons.valid) ca.push(rx.cdcq.reasons.valid + ' حالات تذكرة فعّالة (عطل جهاز التذاكر)');
+      P.push('نسبة البلاغات الفعّالة ' + s.eff.rate + '%' + (s.eff.avg7 !== null && s.eff.rate !== s.eff.avg7 ? ' (' + (s.eff.rate < s.eff.avg7 ? 'أقل' : 'أعلى') + ' من المعتاد بـ ' + Math.abs(s.eff.rate - s.eff.avg7) + ' نقاط)' : '') + (ca.length ? ' بسبب ' + ca.join(' و') : ''));
+    }
+    var ta = [];
+    var nR = s.repeaters.length;
+    if (nR) ta.push((nR === 1 ? 'سائق واحد تكرر رصده ' : nR === 2 ? 'سائقان تكرر رصدهما ' : nR + ' سائقين تكرر رصدهم ') + rx.repeatMin + ' مرات أو أكثر خلال 30 يوم');
+    if (s.oldest && s.oldest.open >= 3) ta.push('الحافلة ' + s.oldest.bus + ' بعطل ' + s.oldest.faults.map(function (f) { return t('rx_f_' + f); }).join(' و') + ' مفتوح منذ ' + s.oldest.open + ' أيام');
+    if (ta.length) P.push(ta.join('، و'));
+    return P.join('. ') + '.';
+  }
+  function rxSummaryHTML(rx, d) {
+    if (!rx) return '';
+    var s = rx.sum, a = rx.act;
+    var tile = function (l, v, sub, tone) { return '<div class="kpi' + (tone ? ' ' + tone : '') + '"><span class="l">' + l + '</span><span class="v num">' + v + '</span>' + (sub ? '<span class="rxsub">' + sub + '</span>' : '') + '</div>'; };
+    var depts = [['drivers', 'b-bad'], ['its', 'b-info'], ['cdc', 'b-accent'], ['enf', 'b-ok'], ['fleet', 'b-warn']];
+    return '<section class="card"><div class="chead"><span class="bar4"></span><h2>' + t('rx_sum') + ' <small>' + t('rx_vs7') + '</small></h2></div>' +
+      '<div class="kpis rx6">' +
+      tile(t('rx_k_cdc'), fmtN(s.cdc.n), rxDelta(s.cdc.n, s.cdc.avg7, t('rx_above'), true)) +
+      tile(t('rx_k_eff'), s.eff.rate === null ? '—' : s.eff.rate + '%', rxDelta(s.eff.rate, s.eff.avg7, t('rx_pts'), false)) +
+      tile(t('rx_k_unreach'), fmtN(s.unreach.n), s.unreach.wrong ? '<span class="rxd t-bad">' + tf('rx_of_wrong', { n: s.unreach.wrong }) + '</span>' : '', s.unreach.n ? 'bad' : '') +
+      tile(t('rx_k_uni'), fmtN(s.uniform.n), rxDelta(s.uniform.n, s.uniform.avg7, '', true)) +
+      tile(t('rx_k_its'), fmtN(s.its.buses), s.its.recurring ? '<span class="rxd t-warn">' + tf('rx_recurring', { n: s.its.recurring }) + '</span>' : '', s.its.buses ? 'warn' : '') +
+      tile(t('rx_k_top'), s.top ? '<span class="ltr">' + esc(s.top.route) + '</span>' : '—', s.top ? '<span class="rxd t-muted">' + s.top.n + ' ' + t('rx_reports') + ' · <span class="ltr">' + esc(s.top.col) + '</span></span>' : '') +
+      '</div><p class="rxremark">' + esc(rxRemark(rx)) + '</p>' +
+      '<div class="rxact"><b>' + t('rx_action') + '</b>' + depts.map(function (x) { return '<span class="tag ' + x[1] + '">' + t('rx_d_' + x[0]) + ' · <span class="num">' + (a[x[0]] || 0) + '</span></span>'; }).join('') +
+      '<span class="muted" style="font-size:12px">' + t('rx_details') + '</span></div></section>';
+  }
+  function rxSec(cls, letter, title, sub, to, toCls, body) {
+    return '<section class="card rxsec ' + cls + '"><div class="chead"><span class="rxl">' + letter + '</span><h2>' + title + (sub ? ' <small>' + sub + '</small>' : '') + '</h2><span class="tag ' + toCls + ' rxto">' + t('rx_to') + to + '</span></div>' + body + '</section>';
+  }
+  function rxDeptHTML(rx, d) {
+    var h = '<div class="rephead"><div class="logo"><b>MBCO</b><small>Modern Bus Company Limited</small></div><div class="vsep"></div>' +
+      '<div class="reptitle"><b>' + t('rx_p2') + '</b><span>' + t('rx_p2_sub') + '</span></div><span class="spacer"></span>' +
+      '<div class="repmeta"><span class="tag b-accent ltr">' + t('daily') + ' · ' + esc(rx.date) + '</span></div></div>';
+    var none = '<div class="empty">' + t('rx_none') + '</div>';
+    var coord = '<span class="rxco">+ CDC</span>';
+    // أ. السائقون
+    var dr = rx.drivers;
+    var issue = function (x) {
+      if (x.issue === 'unreach') return t('rx_unreach') + ' · ' + t('rx_r_' + (x.reason || 'unreach')) + (x.coord ? coord : '');
+      if (x.issue === 'noticket') return t('rx_noticket') + (x.pax ? ' (' + tf('rx_pax', { n: x.pax }) + ')' : '');
+      return t('rx_uniform') + (x.place ? ' · ' + esc(tr(x.place)) : '');
+    };
+    var rep = rx.sum.repeaters || [];
+    h += rxSec('s-a', t('rx_a'), t('rx_drivers_t'), tf('rx_drivers_n', { n: rx.driversTotal }), t('rx_d_drivers'), 'b-bad',
+      (dr.length ? '<div class="tblwrap"><table class="tbl rxt"><thead><tr><th>' + t('rx_c_id') + '</th><th>' + t('rx_c_driver') + '</th><th>' + t('rx_c_phone') + '</th><th>' + t('rx_c_issue') + '</th><th>' + t('rx_c_busroute') + '</th><th>' + t('rx_c_time') + '</th><th>' + t('rx_c_30') + '</th></tr></thead><tbody>' +
+        dr.map(function (x) {
+          return '<tr><td class="num">' + (x.id ? esc(x.id) : '<span class="muted">' + t('rx_noid') + '</span>') + '</td><td>' + esc(tr(x.name) || '—') + '</td><td class="ltr num">' + esc(x.phone || '—') + '</td><td>' + issue(x) + '</td>' +
+            '<td class="ltr">' + esc([x.bus, x.route].filter(String).join(' · ') || '—') + '</td><td class="num ltr">' + esc(x.time || '') + '</td><td>' + rxBadge(x.n30, rx.repeatMin) + '</td></tr>';
+        }).join('') + '</tbody></table></div>' +
+        (rx.driversTotal > dr.length ? '<div class="muted rxnote">' + tf('rx_more', { n: rx.driversTotal - dr.length }) + '</div>' : '') +
+        '<div class="muted rxnote"><span class="rxb hot">' + rx.repeatMin + '+</span> ' + t('rx_drv_note') + ' · ' + coord + ' ' + t('rx_coord_note') +
+        (rep.length ? ' · ' + t('rx_follow') + ' <span class="num">' + rep.map(esc).join('، ') + '</span>' : '') + '</div>'
+        : none));
+    // ب. ITS
+    var its = rx.its, rec = its.filter(function (b) { return b.n30 >= 2; }).length;
+    var src = function (b) { return b.src === 'cdc' ? t('rx_src_cdc') + (b.cdcN > 1 ? ' ×' + b.cdcN : '') : t('rx_src_rdy') + (b.place ? ' · ' + esc(tr(b.place)) : ''); };
+    h += rxSec('s-b', t('rx_b'), t('rx_its_t'), tf('rx_its_n', { n: rx.itsTotal }) + (rec ? tf('rx_its_rec', { n: rec }) : ''), t('rx_d_its'), 'b-info',
+      (its.length ? '<div class="tblwrap"><table class="tbl rxt"><thead><tr><th>' + t('rx_c_bus') + '</th><th>' + t('rx_c_fault') + '</th><th>' + t('rx_c_src') + '</th><th>' + t('rx_c_first') + '</th><th>' + t('rx_c_rep') + '</th><th>' + t('rx_c_open') + '</th></tr></thead><tbody>' +
+        its.map(function (b) {
+          return '<tr><td class="ltr"><b>' + esc(b.bus) + '</b></td><td>' + b.faults.map(function (f) { return t('rx_f_' + f); }).join(' · ') + '</td><td>' + src(b) + '</td><td class="num ltr">' + esc(String(b.first || '').slice(5)) + '</td>' +
+            '<td>' + rxBadge(b.n30, 3) + '</td><td class="' + (b.open >= 5 ? 't-bad' : b.open >= 2 ? 't-warn' : '') + '" style="font-weight:' + (b.open >= 2 ? 700 : 400) + '">' + rxOpen(b.open) + '</td></tr>';
+        }).join('') + '</tbody></table></div>' : none) +
+      (rx.fleet.length ? '<div class="muted rxnote"><b class="t-warn">' + t('rx_d_fleet') + '</b> · ' + t('rx_fleet_line') + ': ' + rx.fleet.map(function (f) { return '<span class="ltr">' + esc(f.bus) + '</span>' + (f.place ? ' · ' + esc(tr(f.place)) : '') + ' (' + (f.n30 > 1 ? tf('rx_times', { n: f.n30 }) : t('rx_first_time')) + ')'; }).join('، ') + '</div>' : ''));
+    // ج. CDC
+    var q = rx.cdcq, mx = Math.max(q.total, 1);
+    var bar = function (l, n, col) { return '<div class="rxbar"><span>' + l + '</span><div><i style="width:' + Math.round(n / mx * 100) + '%;background:' + col + '"></i></div><b class="num">' + n + '</b></div>'; };
+    var rs = q.reasons, chips = [['off', 'b-bad', 'rx_r_off'], ['noans', 'b-bad', 'rx_r_noans'], ['wrong', 'b-bad', 'rx_r_wrong'], ['unreach', 'b-bad', 'rx_r_unreach'], ['valid', 'b-warn', 'rx_w_valid'], ['left', 'b-muted', 'rx_w_left'], ['false', 'b-muted', 'rx_w_false'], ['not_taken', 'b-muted', 'rx_w_not_taken']]
+      .filter(function (c) { return rs[c[0]]; }).map(function (c) { return '<span class="tag ' + c[1] + '">' + t(c[2]) + ' <span class="num">' + rs[c[0]] + '</span></span>'; }).join('');
+    var cBody = '<div class="rxbars">' + bar(t('rx_all'), q.total, 'var(--accent)') + bar(t('rx_effective'), q.effective, 'var(--c3)') + bar(t('rx_wasted'), q.wasted, 'var(--bad)') + '</div>' +
+      '<div class="kpis" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="kpi bad"><span class="l">' + t('rx_lost') + '</span><span class="v num">' + q.lostMin + ' <small>' + t('min') + '</small></span></div>' +
+      '<div class="kpi"><span class="l">' + t('rx_phone') + '</span><span class="v num">' + q.phoneIssues + ' <span class="rxco">' + t('rx_with_drv') + '</span></span></div></div>' +
+      '<span class="rxh">' + t('rx_reasons') + '</span><div class="rxchips">' + (chips || '<span class="muted">' + t('rx_none') + '</span>') + '</div>' +
+      (q.ops.length ? '<span class="rxh">' + t('rx_by_ops') + '</span><table class="tbl rxt"><thead><tr><th>' + t('rx_c_ops') + '</th><th>' + t('rx_all') + '</th><th>' + t('rx_wasted') + '</th></tr></thead><tbody>' +
+        q.ops.map(function (o, i) { return '<tr><td>' + esc(tr(o.name)) + '</td><td class="num">' + o.n + '</td><td class="num' + (i === 0 && o.pct >= 40 ? ' t-bad b' : '') + '">' + o.wasted + (o.pct !== null ? ' (' + o.pct + '%)' : '') + '</td></tr>'; }).join('') + '</tbody></table>' : '');
+    // د. نقاط التركز
+    var hot = rx.hot;
+    var hbars = function (list) {
+      var m = Math.max.apply(null, list.map(function (x) { return x.n; }).concat([1]));
+      return list.length ? '<div class="rxbars">' + list.map(function (x) {
+        var tr0 = x.d > 0 ? '<span class="t-bad">▲ ' + x.d + '</span>' : x.d < 0 ? '<span class="t-ok">▼ ' + Math.abs(x.d) + '</span>' : '<span class="muted">= ' + t('rx_usual') + '</span>';
+        return '<div class="rxbar hot"><span>' + esc(tr(x.name)) + '</span><div><i style="width:' + Math.round(x.n / m * 100) + '%"></i></div><b class="num">' + x.n + '</b><em>' + tr0 + '</em></div>';
+      }).join('') + '</div>' : none;
+    };
+    var sug = hot.peak ? '<div class="rxsug"><b>' + t('rx_suggest') + '</b> ' + tf('rx_sug', { r: esc(hot.peak.route), c: esc(hot.peak.col) }) + (hot.stations[0] ? tf('rx_sug_st', { s: esc(tr(hot.stations[0].name)) }) : '') + '.</div>' : '';
+    var dBody = '<span class="rxh">' + t('rx_hot_routes') + '</span>' + hbars(hot.routes) + '<span class="rxh">' + t('rx_hot_st') + '</span>' + hbars(hot.stations) + sug;
+    h += '<div class="rx2">' + rxSec('s-c', t('rx_c'), t('rx_cdc_t'), '', t('rx_d_cdc'), 'b-accent', cBody) + rxSec('s-d', t('rx_d'), t('rx_hot_t'), '', t('rx_d_enf'), 'b-ok', dBody) + '</div>';
+    h += '<div class="repfoot"><span>' + t('rx_foot30') + '</span><span class="ltr">MBCO · Modern Bus Company Limited · ' + esc(rx.date) + ' · 2 / 2</span></div>';
     return h;
   }
 
@@ -501,7 +670,7 @@
     } catch (e) {}
     return css ? Promise.resolve(css) : fetch('style.css').then(function (r) { return r.text(); }).catch(function () { return ''; });
   }
-  function renderReportCanvas(d) {
+  function renderReportCanvas(html) {
     var W = 1280, SCALE = 2;
     var box = document.createElement('div');
     box.className = 'pdfsheet';
@@ -509,7 +678,7 @@
     box.setAttribute('dir', st.lang === 'ar' ? 'rtl' : 'ltr');
     box.setAttribute('lang', st.lang);
     box.style.cssText = 'position:fixed;top:0;left:-30000px;width:' + W + 'px';
-    box.innerHTML = '<div class="sheet">' + homeHTML(d, true) + '</div>';
+    box.innerHTML = '<div class="sheet">' + html + '</div>';
     document.body.appendChild(box);
     return Promise.all([pageCss(), fontCss(), document.fonts ? document.fonts.ready : null]).then(function (res) {
       var H = Math.ceil(box.scrollHeight);
@@ -538,24 +707,27 @@
       });
     });
   }
-  /** PDF صفحة واحدة فيها صورة JPEG (عرض A4 والارتفاع حسب المحتوى) */
-  function jpegToPdf(jpg, wPx, hPx) {
+  /** PDF: كل صفحة صورة JPEG (عرض A4 والارتفاع حسب محتوى الصفحة). pages = [{ jpg, w, h }] */
+  function jpegToPdf(pages) {
     var enc = function (str) { var a = new Uint8Array(str.length); for (var i = 0; i < str.length; i++) a[i] = str.charCodeAt(i) & 255; return a; };
-    var Wpt = 595.28, Hpt = +(Wpt * hPx / wPx).toFixed(2);
     var chunks = [], len = 0, offs = [];
     var push = function (x) { var b = typeof x === 'string' ? enc(x) : x; chunks.push(b); len += b.length; };
     var obj = function (n, body) { offs[n] = len; push(n + ' 0 obj\n'); body(); push('\nendobj\n'); };
+    var N = pages.length, total = 2 + N * 3;
     push('%PDF-1.4\n%\u00e2\u00e3\u00cf\u00d3\n');
     obj(1, function () { push('<< /Type /Catalog /Pages 2 0 R >>'); });
-    obj(2, function () { push('<< /Type /Pages /Kids [3 0 R] /Count 1 >>'); });
-    obj(3, function () { push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + Wpt + ' ' + Hpt + '] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>'); });
-    obj(4, function () { push('<< /Type /XObject /Subtype /Image /Width ' + wPx + ' /Height ' + hPx + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + jpg.length + ' >>\nstream\n'); push(jpg); push('\nendstream'); });
-    var content = 'q ' + Wpt + ' 0 0 ' + Hpt + ' 0 0 cm /Im0 Do Q';
-    obj(5, function () { push('<< /Length ' + content.length + ' >>\nstream\n' + content + '\nendstream'); });
+    obj(2, function () { push('<< /Type /Pages /Kids [' + pages.map(function (_, i) { return (3 + i * 3) + ' 0 R'; }).join(' ') + '] /Count ' + N + ' >>'); });
+    pages.forEach(function (pg, i) {
+      var n = 3 + i * 3, Wpt = 595.28, Hpt = +(Wpt * pg.h / pg.w).toFixed(2);
+      var content = 'q ' + Wpt + ' 0 0 ' + Hpt + ' 0 0 cm /Im0 Do Q';
+      obj(n, function () { push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + Wpt + ' ' + Hpt + '] /Resources << /XObject << /Im0 ' + (n + 1) + ' 0 R >> >> /Contents ' + (n + 2) + ' 0 R >>'); });
+      obj(n + 1, function () { push('<< /Type /XObject /Subtype /Image /Width ' + pg.w + ' /Height ' + pg.h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + pg.jpg.length + ' >>\nstream\n'); push(pg.jpg); push('\nendstream'); });
+      obj(n + 2, function () { push('<< /Length ' + content.length + ' >>\nstream\n' + content + '\nendstream'); });
+    });
     var xref = len;
-    var x = 'xref\n0 6\n0000000000 65535 f \n';
-    for (var i = 1; i <= 5; i++) x += ('0000000000' + offs[i]).slice(-10) + ' 00000 n \n';
-    push(x + 'trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF');
+    var x = 'xref\n0 ' + (total + 1) + '\n0000000000 65535 f \n';
+    for (var i = 1; i <= total; i++) x += ('0000000000' + offs[i]).slice(-10) + ' 00000 n \n';
+    push(x + 'trailer\n<< /Size ' + (total + 1) + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF');
     var out = new Uint8Array(len), p = 0;
     chunks.forEach(function (c) { out.set(c, p); p += c.length; });
     return out;
@@ -568,6 +740,12 @@
       : '📊 MBCO · تقرير الأداء اليومي\n📅 ' + d.date + '\nCDC: ' + c.today + ' بلاغ · ' + c.open + ' مفتوح\nالفحص: ' + i.inspections + ' · المخالفات: ' + i.violations +
         '\nالحضور: ' + (r.rate === null || r.rate === undefined ? '—' : r.rate + '%') + ' (' + r.present + '/' + r.expected + ')\nالسيارات: ' + car.kmToday + ' كم · ' + car.handoversToday + ' عهدة\n👤 أرسله: ' + (st.user ? st.user.name : '');
   }
+  function rxCaption(d) {
+    var rx = rxFor(d); if (!rx) return '';
+    var a = rx.act, en = st.lang === 'en';
+    return en ? '\n⚠️ Action: Drivers ' + a.drivers + ' · ITS ' + a.its + ' · CDC ' + a.cdc + ' · Enforcement ' + a.enf + ' · Fleet ' + a.fleet
+      : '\n⚠️ مطلوب إجراء: السائقين ' + a.drivers + ' · ITS ' + a.its + ' · CDC ' + a.cdc + ' · التذاكر ' + a.enf + ' · الأسطول ' + a.fleet;
+  }
   function makeReport(send) {
     var d = st.home; if (!d) return;
     var status = document.getElementById('repStatus');
@@ -575,19 +753,25 @@
     var busy = function (on, msg) { btns.forEach(function (b) { if (b) b.disabled = on; }); if (status) status.textContent = msg || ''; };
     var filename = 'MBCO-Daily-Report-' + d.date + '.pdf';
     busy(true, t('rep_making'));
-    renderReportCanvas(d).then(function (canvas) {
-      var jpgB64 = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
-      var bin = atob(jpgB64), jpg = new Uint8Array(bin.length);
-      for (var i = 0; i < bin.length; i++) jpg[i] = bin.charCodeAt(i);
-      var pdf = jpegToPdf(jpg, canvas.width, canvas.height);
-      window.__lastReport = { name: filename, size: pdf.length, png: canvas.toDataURL('image/png') };
+    var htmls = rxFor(d) ? reportPages(d) : [homeHTML(d, true)];
+    htmls.reduce(function (p, html) {
+      return p.then(function (acc) { return renderReportCanvas(html).then(function (c) { acc.push(c); return acc; }); });
+    }, Promise.resolve([])).then(function (canvases) {
+      var pages = canvases.map(function (canvas) {
+        var jpgB64 = canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
+        var bin = atob(jpgB64), jpg = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) jpg[i] = bin.charCodeAt(i);
+        return { jpg: jpg, w: canvas.width, h: canvas.height };
+      });
+      var pdf = jpegToPdf(pages);
+      window.__lastReport = { name: filename, size: pdf.length, pages: pages.length, png: canvases.map(function (c) { return c.toDataURL('image/png'); }) };
       var a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([pdf], { type: 'application/pdf' }));
       a.download = filename;
       document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
       if (!send) { busy(false, t('rep_saved')); return; }
       busy(true, t('rep_sending'));
-      return api('sendReport', { date: d.date, filename: filename, caption: reportCaption(d), pdf: bufToB64(pdf.buffer) })
+      return api('sendReport', { date: d.date, filename: filename, caption: reportCaption(d) + rxCaption(d), pdf: bufToB64(pdf.buffer) })
         .then(function () { busy(false, t('rep_sent')); toast(t('rep_sent')); });
     }).catch(function (e) {
       busy(false, '');

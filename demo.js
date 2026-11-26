@@ -29,10 +29,10 @@ window.MBCO_DEMO = (function () {
       kpis: [
         { label: 'الحضور', sys: 'الروستر', val: 91, target: 95 }, { label: 'التوزيع قبل بداية الوردية', sys: 'الروستر', val: 83, target: 100 },
         { label: 'استلام بلاغ CDC خلال 10 د', sys: 'CDC', val: 78, target: 90 }, { label: 'الوصول للبلاغ خلال 30 د', sys: 'CDC', val: 86, target: 90 },
-        { label: 'طلبات عولجت قبل التصعيد', sys: 'الإجازات · 7 أيام', val: 100, target: 100 }, { label: 'تسليم السيارة بنفسه', sys: 'Carlog · 7 أيام', val: 88, target: 95 }
+        { label: 'طلبات عولجت قبل التصعيد', sys: 'الإجازات · 7 أيام', val: 100, target: 100 }, { label: 'بلاغات فعّالة', sys: 'CDC', val: 63, target: 80 }, { label: 'تسليم السيارة بنفسه', sys: 'Carlog · 7 أيام', val: 88, target: 95 }
       ],
-      cdc: { today: 27, open: 4, avgArrive: 18, waitingPatrol: 2, outcomes: [{ name: 'إنزال', n: 9 }, { name: 'مخالفة', n: 6 }, { name: 'شراء تذكرة', n: 5 }, { name: 'أخرى', n: 3 }] },
-      ins: { inspections: 64, violations: 9, fines: 1800, coverageH: 14, last7: last7 },
+      cdc: { today: 27, open: 4, avgArrive: 18, waitingPatrol: 2, outcomes: [{ name: 'إنزال الراكب', n: 9 }, { name: 'مخالفة', n: 6 }, { name: 'تعذر التواصل', n: 5 }, { name: 'أخرى', n: 7 }] },
+      ins: { inspections: 64, violations: 9, fines: 1800, coverageH: 14, last7: last7, rdy: { n: 41, items: [{ k: 'cctv', n: 3 }, { k: 'screens', n: 2 }, { k: 'validator', n: 2 }, { k: 'clean', n: 1 }, { k: 'uniform', n: 4 }] } },
       rst: { present: 31, absent: 2, leaveOff: 9, expected: 33, late: 3, lateMin: 47, permissions: 1, withdrawals: 0, rate: 94 },
       req: { pendingSup: 3, pendingMena: 2, adminNew: 4, adminDoing: 1, recent: [
         { type: 'مرضية · يومان', who: 'موظف من المحطات', status: 'بانتظار المشرف', tone: 'warn' },
@@ -60,6 +60,44 @@ window.MBCO_DEMO = (function () {
       ],
       dict: { 'صقر المجنوني': 'Saqer Almajnuni', 'سليمان الحازمي': 'Sulaiman Alhazmi', 'مخلد العتيبي': 'Mukhlid Alotaibi', 'موظف تجريبي 1': 'Demo employee 1', 'موظف تجريبي 2': 'Demo employee 2', 'موظف تجريبي 3': 'Demo employee 3', 'موظف تجريبي 4': 'Demo employee 4', 'موظف تجريبي 5': 'Demo employee 5' },
       badges: { cdc: 4, leaves: 5, requests: 4, car: 2 }
+    };
+  }
+
+  /** التقرير اليومي المطوّر (v2.7): نفس أرقام التصور المعتمد */
+  function reportX(date) {
+    var D = date || opDay();
+    var dr = function (id, name, ph, issue, reason, bus, route, time, n30, coord, place, pax) { return { id: id, name: name, phone: ph, issue: issue, reason: reason || '', bus: bus, route: route, time: time, n30: n30, coord: !!coord, place: place || '', pax: pax || 0 }; };
+    return {
+      date: D, generated: D + ' 23:10', repeatMin: 3,
+      sum: { cdc: { n: 27, avg7: 23 }, eff: { rate: 63, avg7: 71, effective: 17, wasted: 10 }, unreach: { n: 5, wrong: 2, off: 2, noans: 1 }, uniform: { n: 4, avg7: 5 },
+        its: { buses: 6, recurring: 3 }, top: { route: '7A', n: 14, col: '15–19' }, repeaters: ['48213', '47102'], oldest: { bus: 'MA1234', faults: ['cctv'], open: 6 } },
+      act: { drivers: 9, its: 6, cdc: 4, enf: 3, fleet: 1 },
+      drivers: [
+        dr('48213', 'سائق تجريبي 1', '055 000 0101', 'unreach', 'wrong', 'MA1234', '7A', '16:40', 4, true),
+        dr('47102', 'سائق تجريبي 2', '055 000 0102', 'unreach', 'off', 'MS5678', '3', '17:15', 3, true),
+        dr('49330', 'سائق تجريبي 3', '055 000 0103', 'noticket', '', 'MA4321', '7B', '18:05', 2, false, '', 2),
+        dr('46021', 'سائق تجريبي 4', '055 000 0104', 'unreach', 'noans', 'MA2210', '11', '15:50', 2),
+        dr('45590', 'سائق تجريبي 6', '055 000 0106', 'uniform', '', 'MA3007', '1', '08:30', 2, false, 'الزاهر'),
+        dr('48877', 'سائق تجريبي 5', '055 000 0105', 'unreach', 'wrong', 'MS1180', '5', '19:20', 1, true),
+        dr('47745', 'سائق تجريبي 7', '055 000 0107', 'uniform', '', 'MS2045', '9', '10:10', 1, false, 'المنصور'),
+        dr('49012', 'سائق تجريبي 8', '055 000 0108', 'uniform', '', 'MA0981', '4', '11:45', 1, false, 'النوارية'),
+        dr('46688', 'سائق تجريبي 9', '055 000 0109', 'unreach', 'off', 'MA1502', '10', '20:35', 1, true)
+      ], driversTotal: 9,
+      its: [
+        { bus: 'MA1234', faults: ['cctv'], src: 'rdy', place: 'الزاهر', cdcN: 0, first: add(D, -6), n30: 4, open: 6 },
+        { bus: 'MS5678', faults: ['screens'], src: 'rdy', place: 'المنصور', cdcN: 0, first: add(D, -4), n30: 3, open: 4 },
+        { bus: 'MA4321', faults: ['validator'], src: 'cdc', place: '', cdcN: 2, first: add(D, -3), n30: 3, open: 3 },
+        { bus: 'MA3007', faults: ['cctv'], src: 'rdy', place: 'العزيزية', cdcN: 0, first: add(D, -1), n30: 2, open: 1 },
+        { bus: 'MA2210', faults: ['cctv', 'screens'], src: 'rdy', place: 'النوارية', cdcN: 0, first: D, n30: 1, open: 0 },
+        { bus: 'MS1180', faults: ['validator'], src: 'cdc', place: '', cdcN: 1, first: D, n30: 1, open: 0 }
+      ], itsTotal: 6,
+      fleet: [{ bus: 'MA0981', place: 'الأحوال المدنية', n30: 1 }],
+      cdcq: { total: 27, effective: 17, wasted: 10, lostMin: 140, phoneIssues: 4, reasons: { off: 2, noans: 1, wrong: 2, unreach: 0, valid: 3, left: 2, 'false': 0, not_taken: 0 },
+        ops: [{ name: 'منسق أ', n: 11, wasted: 6, pct: 55 }, { name: 'منسق ب', n: 9, wasted: 3, pct: 33 }, { name: 'منسق ج', n: 7, wasted: 1, pct: 14 }] },
+      hot: { routes: [{ name: '7A', n: 14, avg: 8, d: 6 }, { name: '7B', n: 8, avg: 6, d: 2 }, { name: '11', n: 7, avg: 7, d: 0 }, { name: '3', n: 6, avg: 7, d: -1 }],
+        stations: [{ name: 'الزاهر', n: 9, avg: 5, d: 4 }, { name: 'المنصور', n: 7, avg: 5, d: 2 }, { name: 'النوارية', n: 6, avg: 6, d: 0 }, { name: 'العزيزية', n: 4, avg: 5, d: -1 }],
+        peak: { route: '7A', n: 14, col: '15–19' } },
+      systems: [{ code: 'CDC', ok: true }, { code: 'INS', ok: true }]
     };
   }
 
@@ -539,6 +577,7 @@ window.MBCO_DEMO = (function () {
       switch (p.action) {
         case 'me': return ok({ user: USER, sections: SECTIONS });
         case 'home': return ok({ data: home(p.date, Number(p.heatDays) === 30 ? 30 : 7) });
+        case 'reportX': return ok({ data: reportX(p.date) });
         case 'section': return ok({ data: section(p.key, p.from, p.to) });
         case 'changePin': return p.old === '1234' ? ok({ token: 'demo' }) : fail('badpin');
         case 'users': return ok({ users: [{ emp_id: '10190', name: 'ماجد', team: 'ADM', role: 'Admin', access: 'نعم', last_login: opDay() + ' 13:40' }, { emp_id: '10090', name: 'سامي الهوساوي', team: 'ENF', role: 'Supervisor', access: 'نعم', last_login: '' }, { emp_id: '10001', name: 'موظف تجريبي 1', team: 'ENF', role: 'Officer', access: 'لا', last_login: '' }] });
